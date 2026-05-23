@@ -1,0 +1,50 @@
+name: Release Checksum
+
+on:
+  release:
+    types: [published, edited]
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: 'Release tag (e.g. v26.2.24)'
+        required: true
+
+jobs:
+  add-checksum:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+
+    steps:
+      - name: Set tag name
+        id: tag
+        run: |
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            echo "tag=${{ github.event.inputs.tag }}" >> $GITHUB_OUTPUT
+          else
+            echo "tag=${{ github.event.release.tag_name }}" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Download release assets
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh release download "${{ steps.tag.outputs.tag }}" \
+            --repo "${{ github.repository }}" \
+            --pattern "keenetic_zapret2_manager.sh" \
+            --dir ./assets
+
+      - name: Generate SHA256SUMS
+        run: |
+          cd assets
+          sha256sum keenetic_zapret2_manager.sh > SHA256SUMS
+          cat SHA256SUMS
+
+      - name: Upload SHA256SUMS to release
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh release upload "${{ steps.tag.outputs.tag }}" \
+            ./assets/SHA256SUMS \
+            --repo "${{ github.repository }}" \
+            --clobber
