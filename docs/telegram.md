@@ -83,7 +83,7 @@ Bot kontrolünü aktif etmek için:
 3. Polling aralığını girin (varsayılan: 5 saniye)
 4. Bot başarıyla başlarsa `Bot AKTIF - 2 yonlu haberlesme calisiyor` mesajı görünür
 
-Bot etkinleştirildikten sonra router yeniden başlasa bile **otomatik olarak başlar** (`/opt/etc/init.d/S98zkm_telegram` üzerinden).
+Bot etkinleştirildikten sonra router yeniden başlasa bile **otomatik olarak başlar** (`/opt/etc/init.d/S98kzm2_telegram` üzerinden).
 
 ---
 
@@ -147,8 +147,8 @@ Hayır. Loglar `/tmp` altında tutulur, boyut sınırı aşılınca otomatik kı
 
 **Bot komutlarına yanıt vermiyor**
 - Bot etkin mi? (Menü 15 → Bot Yönetimi)
-- Bot'un çalıştığını `/tmp/zkm_telegram_bot.pid` dosyasından kontrol edin
-- `tail -20 /tmp/zkm_telegram_bot.log` ile log'a bakın
+- Bot'un çalıştığını `/tmp/kzm2_telegram_bot.pid` dosyasından kontrol edin
+- `tail -20 /tmp/kzm2_telegram_bot.log` ile log'a bakın
 
 **Ana banner'da `Telegram Bot : KAPALI` görünüyor**
 - `TG_BOT_ENABLE=1` ayarlıysa ama bot çalışmıyorsa: Menü 15 → Bot Yönetimi → Botu Yeniden Başlat
