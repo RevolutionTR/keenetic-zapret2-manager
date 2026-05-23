@@ -158,7 +158,7 @@ chmod +x /opt/lib/opkg/keenetic_zapret2_manager.sh
 ```
 
   
-İşlem tamamlandıktan sonra kurulu betiği komut satırına "kzm" , "KZM2" , "keenetic" veya "keenetic-zapret2" yazıp onaylayarak kullanmaya başlayabilirsiniz.
+İşlem tamamlandıktan sonra kurulu betiği komut satırına "kzm2" , "KZM2" , veya "keenetic-zapret2" yazıp onaylayarak kullanmaya başlayabilirsiniz.
 
 <img src="/docs/images/KZM2_Main_Menu.png" width="800">
   
