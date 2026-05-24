@@ -4,6 +4,12 @@ This document provides a full reference for **all main menus and sub-menus** in 
 
 Suitable for both new and advanced users.
 
+> [!WARNING]
+> **Important notice for existing KZM users:**
+> **Before** installing KZM2, you must fully remove your existing KZM installation using
+> **Menu U → KZM + Zapret Full Uninstall**.
+> KZM and KZM2 must not be installed at the same time — iptables rules and service files will conflict.
+
 ---
 
 ## 🚀 Installation — Up and Running in 30 Seconds
