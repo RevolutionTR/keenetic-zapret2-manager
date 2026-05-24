@@ -1,6 +1,10 @@
 # KEENETİC ROUTER'LAR İÇİN ÖZELLEŞTİRİLMİŞ ZAPRET2 BETİĞİ
 
-
+> [!WARNING]
+> **KZM (eski sürüm) kullanıcılarına önemli not:**
+> KZM2 kurulumundan **önce**, mevcut KZM kurulumunu **Menü U → KZM + Zapret Kaldır (Tam Temiz)** seçeneğiyle
+> tamamen kaldırmanız gerekmektedir.
+> KZM ve KZM2 aynı anda kurulu bırakılmamalıdır — iptables kuralları ve servis dosyaları çakışır.
   
 ## ZAPRET2 nedir ve ne işe yarar?
 Zapret2 kelime olarak Rusca “Yasak” anlamına gelir. Rus bir programcının Linux sistemler için geliştirdiği bir yazılım olup GitHub üzerinden açık kaynak kodlu olarak dağıtılmaktadır. Zapret2, ISS’larının DPI (Deep Packet Inspection) yoluyla web sitelerine getirdiği erişim engellerini kaldırmak için kullanılan bir araçtır.
