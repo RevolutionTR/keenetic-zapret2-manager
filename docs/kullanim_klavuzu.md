@@ -3,6 +3,11 @@
 Bu doküman betikte bulunan **tüm ana menüleri ve alt menüleri** eksiksiz şekilde açıklar.
 
 Yeni kullanıcılar için olduğu kadar ileri seviye kullanıcılar için de referans niteliğindedir.
+> [!WARNING]
+> **KZM (eski sürüm) kullanıcılarına önemli not:**
+> KZM2 kurulumundan **önce**, mevcut KZM kurulumunu **Menü U → KZM + Zapret Kaldır (Tam Temiz)** seçeneğiyle
+> tamamen kaldırmanız gerekmektedir.
+> KZM ve KZM2 aynı anda kurulu bırakılmamalıdır — iptables kuralları ve servis dosyaları çakışır.
 
 ---
 ## 🚀 Kurulum — 30 Saniyede Kurulum
