@@ -29,7 +29,7 @@ Bir USB portu ve/veya dahili depolaması olan, OPKG paket yöneticisi kurulabile
 Router’ınızın web arayüzüne, YÖNETİM / Sistem Ayarları / Bileşen seçenekleri’ne giderek IPv6, DoT (DNS-over-TLS), DoH (DNS-over-HTTPS) SSH Sunucu ve aşağıda gösterilen OPKG bileşenlerini işaretleyip KeeneticOS’yi güncelleyin. Cihaz yeniden başlatılacaktır (OS güncel versiyonda değilseniz DİKKAT! Bileşen ayarlarını değiştirmek KeeneticOS 'u en güncel versiyona yükseltecektir).
 
 
-<img src="/docs/images/KZM21.png" width="800">
+<img src="/docs/images/KZM1.png" width="800">
 
 
 
@@ -37,7 +37,7 @@ Router’ınızın web arayüzüne, YÖNETİM / Sistem Ayarları / Bileşen seç
 
 Router’ınızın web arayüzüne, AĞ KURALLARI / İnternet Güvenliği / DNS Yapılandırması’na gidin. “+ Sunucu Ekle” butonunu kullanarak DoT ve DoH DNS sunucuları ekleyin. DoH için önerilen DNS sunucuları: Google, CloudFlare, Adguard, Quad9’dur. Sonraki adım olan İSP'den gelen DNS’leri yoksay’madan önce mutlaka DoT, DoH, ISP'nin DNS’i, girili olmalıdır.
 
-<img src="/docs/images/KZM2.png" width="800">
+<img src="/docs/images/KZM.png" width="800">
 
 DNS kontrollerinizi aşağıdaki adreslerden yapabilirsiniz:  
 [DNS Leak Test](https://www.dnsleaktest.com) , [Browser Leaks - DNS](https://browserleaks.com/dns)
@@ -46,7 +46,7 @@ DNS kontrollerinizi aşağıdaki adreslerden yapabilirsiniz:
 Router’ınızın web arayüzünde, internet hizmeti aldığınız bağlantıya göre İNTERNET / Ethernet Kablosu (veya DSL) girin. İSS Kimlik Doğrulama (PPPoE / PPTP / L2TP) / Gelişmiş PPPoE ayarlarını göster’de  
 İSP'den gelen DNSv4 yoksay’ı, IPv6 kullanıyorsanız aynı şekilde DNSv6 yoksay’ı işaretleyip kaydedin.
 
-<img src="/docs/images/KZM23.png" width="800">
+<img src="/docs/images/KZM3.png" width="800">
 
 (Mevcut kurulu düzeninizde OPKG paketlerini yükleyebilecek şekilde router’ınızı hazırlamış hatta OPKG paketleri kuruyor/kurmuşsanız bundan sonra anlatılan ön hazırlık faslını atlayabilirsiniz)
   
@@ -76,7 +76,7 @@ Bu aşamada dikkat etmeniz gereken nokta kurulum yapılacak cihazın işlemci mi
 
 Ayrıca arayıp bulamayan, nerde bu diyenler SSH bağlı iken 'show version' yazarlarsa cihazın mimarisi en üstteki satırlarda yazar
 
-<img src="/docs/images/KZM27.jpeg" width="800">
+<img src="/docs/images/KZM7.jpeg" width="800">
   
 OPKG ile ilgili daha detaylı bilgi almak için online kullanım kılavuzlarınızda, altta yolu tarif edilmiş yazıyı okuyabilirsiniz.  
 Kullanım Kılavuzu / Yönetim / OPKG / OPKG bileşen açıklaması  
@@ -105,7 +105,7 @@ Ayrıca cihazınıza Telnet ile de bağlanabilirsiniz. Bu durumda portu 23 olara
 
 Yazıp yine Entware BusyBox'a geçebilirsiniz.
 
-<img src="/docs/images/KZM24.png" width="800">
+<img src="/docs/images/KZM4.png" width="800">
 
 Open dedikten sonra gelen ekrana default olarak:
   
@@ -114,7 +114,7 @@ root@192.168.1.1’s password: keenetic
   
 (Uyarı: Password yazılırken yazı gözükmez, ekran tepkisizdir. Siz yazmaya devam edip onaylayın.) İşlem sonunda komut girme ekranı gelecektir.
   
-<img src="/docs/images/KZM25.png" width="800">
+<img src="/docs/images/KZM5.png" width="800">
 
 - Varsayılan keenetic parolasını değiştirmek için aşağıdaki komutu girin:
   
