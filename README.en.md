@@ -15,6 +15,11 @@
 [![Open Source](https://img.shields.io/badge/Open%20Source-Yes-brightgreen?style=for-the-badge)](https://github.com/RevolutionTR/keenetic-zapret2-manager)
 [![Mobile Compatible](https://img.shields.io/badge/Mobile%20Compatible-100%25-brightgreen?style=for-the-badge&logo=android)](https://github.com/RevolutionTR/keenetic-zapret2-manager)
 
+> [!WARNING]
+> **Important notice for existing KZM users:**
+> **Before** installing KZM2, you must fully remove your existing KZM installation using
+> **Menu U → KZM + Zapret Full Uninstall**.
+> KZM and KZM2 must not be installed at the same time — iptables rules and service files will conflict.
 <br>
 <br>
 
