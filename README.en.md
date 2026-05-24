@@ -37,6 +37,8 @@
 
 <img src="docs/images/KZM2_Main5.png" width="800">
 
+<img src="docs/images/KZM2_Main6.png" width="800">
+
 > [!WARNING]
 > ## 🔒 Web Panel Security Notice
 >
@@ -138,9 +140,8 @@ In that case, even if Zapret2 is working, the connection may still fail.
 - Latest version notifications
 
 ### CLI Shortcuts
-- `kzm`
+- `kzm2`
 - `KZM2`
-- `keenetic`
 - `keenetic-zapret2`
 - Run the script without typing the full path
 
@@ -193,7 +194,7 @@ Symbols and text are formatted for terminal compatibility and readability.
 ## 🤖 Telegram Notifications
 
 To receive instant notifications from your router:  
-➡️ [Telegram Setup Guide](docs/telegram.md)
+➡️ [Telegram Setup Guide](docs/telegram_en.md)
 
 ---
 
