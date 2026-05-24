@@ -29,7 +29,7 @@ You can use it on Keenetic models that have a USB port and/or internal storage, 
 In your router's web interface, go to **MANAGEMENT / System Settings / Component Options** and enable IPv6, DoT (DNS-over-TLS), DoH (DNS-over-HTTPS), SSH Server, and the OPKG components shown below. Then update KeeneticOS — the device will reboot. (**Warning:** If your OS is not already up to date, changing component settings will upgrade KeeneticOS to the latest version.)
 
 
-<img src="/docs/images/KZM21.png" width="800">
+<img src="/docs/images/KZM1.png" width="800">
 
 
 
@@ -45,7 +45,7 @@ You can verify your DNS settings at the following addresses:
 ## === Ignore ISP-provided DNS ===
 In your router's web interface, navigate to your internet connection — **INTERNET / Ethernet Cable** (or DSL, depending on your setup). Under ISP Authentication (PPPoE / PPTP / L2TP) / Show Advanced PPPoE Settings, enable **Ignore ISP DNSv4** — and if you use IPv6, also enable **Ignore ISP DNSv6** — then save.
 
-<img src="/docs/images/KZM23.png" width="800">
+<img src="/docs/images/KZM3.png" width="800">
 
 *(If your router is already set up to install OPKG packages, or you have already installed OPKG packages, you can skip the remaining pre-installation steps.)*
   
@@ -75,7 +75,7 @@ One important point at this stage: install the OPKG Entware package manager that
 
 In addition, if you cannot find it and are wondering where to look — while connected via SSH, type `show version` and the device architecture will appear in the first few lines.
 
-<img src="/docs/images/KZM27.jpeg" width="800">
+<img src="/docs/images/KZM7.jpeg" width="800">
   
 For more detailed information about OPKG, refer to the following section of your online user manual:  
 User Manual / Management / OPKG / OPKG Component Description  
@@ -104,7 +104,7 @@ You can also connect to your device via Telnet. In that case, set the port to 23
 
 This switches you to the Entware BusyBox shell.
 
-<img src="/docs/images/KZM24.png" width="800">
+<img src="/docs/images/KZM4.png" width="800">
 
 After clicking Open, the login screen appears. Enter the defaults:
   
@@ -113,7 +113,7 @@ root@192.168.1.1's password: keenetic
   
 *(Note: The password is not displayed as you type — the screen appears unresponsive. Keep typing and press Enter to confirm.)* The command prompt will appear after a successful login.
   
-<img src="/docs/images/KZM25.png" width="800">
+<img src="/docs/images/KZM5.png" width="800">
 
 - To change the default Keenetic password, enter the following command:
   
