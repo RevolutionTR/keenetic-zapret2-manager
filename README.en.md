@@ -13,6 +13,7 @@
 <br>
 ![Languages](https://img.shields.io/badge/Languages-TR%20%7C%20EN-orange?style=for-the-badge)
 [![Open Source](https://img.shields.io/badge/Open%20Source-Yes-brightgreen?style=for-the-badge)](https://github.com/RevolutionTR/keenetic-zapret2-manager)
+[![Mobile Compatible](https://img.shields.io/badge/Mobile%20Compatible-100%25-brightgreen?style=for-the-badge&logo=android)](https://github.com/RevolutionTR/keenetic-zapret2-manager)
 
 <br>
 <br>
