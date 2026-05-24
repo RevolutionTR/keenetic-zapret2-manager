@@ -37,6 +37,8 @@
 
 <img src="docs/images/KZM2_Main5.png" width="800">
 
+<img src="docs/images/KZM2_Main6.png" width="800">
+
 > [!WARNING]
 > ## 🔒 Web Panel Güvenlik Notu
 >
@@ -140,7 +142,6 @@ Bu durumda Zapret2 çalışıyor olsa bile bağlantı kurulamayabilir.
 ### CLI Kısayollar
 - `kzm2`
 - `KZM2`
-- `keenetic`
 - `keenetic-zapret2`
 - Script'i tam path yazmadan çalıştırabilme
 
