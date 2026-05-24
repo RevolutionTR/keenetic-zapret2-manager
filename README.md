@@ -1,3 +1,6 @@
+[![🇬🇧 English](https://img.shields.io/badge/README-English-blue)](README.en.md)
+[![🇹🇷 Türkçe](https://img.shields.io/badge/README-Türkçe-red)](README.md)
+
 # Keenetic Zapret2 Manager (KZM2)
 
 ## 📦 Kurulum ve İndirme
