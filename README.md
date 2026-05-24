@@ -15,6 +15,11 @@
 [![Open Source](https://img.shields.io/badge/Open%20Source-Yes-brightgreen?style=for-the-badge)](https://github.com/RevolutionTR/keenetic-zapret2-manager)
 [![Mobile Compatible](https://img.shields.io/badge/Mobil%20Uyumlu-100%25-brightgreen?style=for-the-badge&logo=android)](https://github.com/RevolutionTR/keenetic-zapret2-manager)
 
+> [!WARNING]
+> **KZM (eski sürüm) kullanıcılarına önemli not:**
+> KZM2 kurulumundan **önce**, mevcut KZM kurulumunu **Menü U → KZM + Zapret Kaldır (Tam Temiz)** seçeneğiyle
+> tamamen kaldırmanız gerekmektedir.
+> KZM ve KZM2 aynı anda kurulu bırakılmamalıdır — iptables kuralları ve servis dosyaları çakışır.
 <br>
 <br>
 
