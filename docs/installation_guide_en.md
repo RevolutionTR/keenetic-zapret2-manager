@@ -1,7 +1,13 @@
 # CUSTOMIZED ZAPRET2 SCRIPT FOR KEENETIC ROUTERS
 
 
-  
+> [!WARNING]
+> **Important notice for existing KZM users:**
+> **Before** installing KZM2, you must fully remove your existing KZM installation using
+> **Menu U → KZM + Zapret Full Uninstall**.
+> KZM and KZM2 must not be installed at the same time — iptables rules and service files will conflict.
+
+
 ## What is Zapret2 and what does it do?
 Zapret2 literally means "Prohibition" in Russian. It is a piece of software developed by a Russian programmer for Linux-based systems and is distributed as open-source on GitHub. Zapret2 is a tool used to bypass website access restrictions imposed by ISPs through DPI (Deep Packet Inspection).
   
