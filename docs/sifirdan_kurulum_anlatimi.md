@@ -41,7 +41,7 @@ Router’ınızın web arayüzüne, YÖNETİM / Sistem Ayarları / Bileşen seç
 
 Router’ınızın web arayüzüne, AĞ KURALLARI / İnternet Güvenliği / DNS Yapılandırması’na gidin. “+ Sunucu Ekle” butonunu kullanarak DoT ve DoH DNS sunucuları ekleyin. DoH için önerilen DNS sunucuları: Google, CloudFlare, Adguard, Quad9’dur. Sonraki adım olan İSP'den gelen DNS’leri yoksay’madan önce mutlaka DoT, DoH, ISP'nin DNS’i, girili olmalıdır.
 
-<img src="/docs/images/KZM.png" width="800">
+<img src="/docs/images/KZM2.png" width="800">
 
 DNS kontrollerinizi aşağıdaki adreslerden yapabilirsiniz:  
 [DNS Leak Test](https://www.dnsleaktest.com) , [Browser Leaks - DNS](https://browserleaks.com/dns)
