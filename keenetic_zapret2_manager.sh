@@ -37,7 +37,7 @@
 # -------------------------------------------------------------------
 SCRIPT_NAME="keenetic_zapret2_manager.sh"
 # Version scheme: vYY.M.D[.N]  (YY=year, M=month, D=day, N=daily revision)
-SCRIPT_VERSION="v26.5.25"
+SCRIPT_VERSION="v26.5.25.1"
 SCRIPT_REPO="https://github.com/RevolutionTR/keenetic-zapret2-manager"
 KZM2_SCRIPT_PATH="/opt/lib/opkg/keenetic_zapret2_manager.sh"
 SCRIPT_AUTHOR="RevolutionTR"
@@ -3903,6 +3903,20 @@ fix_zapret2_runtime_permissions() {
     chmod 755 /opt/zapret2/binaries/linux-arm64/nfqws2 2>/dev/null
     chmod 755 /opt/zapret2/init.d/sysv/zapret2 /opt/zapret2/init.d/sysv/zapret2.real 2>/dev/null
     chmod 644 /opt/zapret2/config /opt/zapret2/config.default /opt/zapret2/version 2>/dev/null
+    # ipset dizini ve host listesi dosyalari (nobody tarafindan okunabilmeli)
+    chmod 755 /opt/zapret2/ipset 2>/dev/null
+    chmod 644 /opt/zapret2/ipset/*.txt /opt/zapret2/ipset/*.gz 2>/dev/null
+    # zapret-hosts-auto.txt: nfqws2 hem okur hem yazar — nobody sahibi olmali
+    # Dosya yoksa olustur (ilk kurulum veya restore sonrasi)
+    touch /opt/zapret2/ipset/zapret-hosts-auto.txt 2>/dev/null
+    chown nobody /opt/zapret2/ipset/zapret-hosts-auto.txt 2>/dev/null
+    # nfq2 dizinindeki binary calistirilabilir olmali
+    chmod 755 /opt/zapret2/nfq2/nfqws2 2>/dev/null
+    # /opt/etc/init.d/ icindeki KZM2 autostart scriptleri calistirilabilir olmali
+    # (restore sonrasi izinleri bozulabilir)
+    chmod 755 /opt/etc/init.d/S99kzm2_healthmon 2>/dev/null
+    chmod 755 /opt/etc/init.d/S98kzm2_telegram 2>/dev/null
+    chmod 755 /opt/etc/init.d/S90-zapret2 2>/dev/null
     return 0
 }
 
@@ -5535,6 +5549,8 @@ kzm2_get_installed_script_version() {
 # Basarili KZM guncellemesinden sonra Telegram bot ve HealthMon'u yeniden baslatir.
 # Sadece manuel guncelleme (interaktif) icin cagrilir.
 _kzm2_restart_services_after_update() {
+    # Izinleri duzelt (restore/guncelleme sonrasi bozulmus olabilir)
+    fix_zapret2_runtime_permissions 2>/dev/null || true
     if ps 2>/dev/null | grep -q '[t]elegram-daemon'; then
         print_status INFO "$(T _ 'Telegram bot yeniden baslatiliyor...' 'Restarting Telegram bot...')"
         telegram_bot_stop
@@ -14722,6 +14738,9 @@ case "$ACTION" in
         [ -f "$_kzm" ] || { ok "Zapret2 yeniden baslatildi"; exit 0; }
         KZM2_SKIP_LOCK=1 sh "$_kzm" --cgi-action restart_zapret2 >/dev/null 2>&1
         sleep 2; wait_zapret2 up; sleep 2; refresh; ok "Zapret2 yeniden baslatildi" ;;
+    fix_permissions)
+        fix_zapret2_runtime_permissions 2>/dev/null
+        ok "Izinler duzeltildi" ;;
     healthmon_start)
         CONF=/opt/etc/healthmon.conf
         SCRIPT="/opt/lib/opkg/keenetic_zapret2_manager.sh"
@@ -15293,6 +15312,7 @@ case "$ACTION" in
         esac
         rm -rf "$_tmp" 2>/dev/null
         _kzm="/opt/lib/opkg/keenetic_zapret2_manager.sh"
+        KZM2_SKIP_LOCK=1 sh "$_kzm" --cgi-action fix_permissions >/dev/null 2>&1
         KZM2_SKIP_LOCK=1 sh "$_kzm" --cgi-action zapret_restart >/dev/null 2>&1 &
         ok "Geri yuklendi (kapsam:$_scope)" ;;
     settings_clean)
