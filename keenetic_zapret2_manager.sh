@@ -37,7 +37,7 @@
 # -------------------------------------------------------------------
 SCRIPT_NAME="keenetic_zapret2_manager.sh"
 # Version scheme: vYY.M.D[.N]  (YY=year, M=month, D=day, N=daily revision)
-SCRIPT_VERSION="v26.5.25.1"
+SCRIPT_VERSION="v26.5.26"
 SCRIPT_REPO="https://github.com/RevolutionTR/keenetic-zapret2-manager"
 KZM2_SCRIPT_PATH="/opt/lib/opkg/keenetic_zapret2_manager.sh"
 SCRIPT_AUTHOR="RevolutionTR"
@@ -1302,8 +1302,6 @@ TXT_HM_DISK_HEALTH_IO_TR="Kritik I/O hatasi"
 TXT_HM_DISK_HEALTH_IO_EN="Critical I/O error"
 TXT_HM_DISK_HEALTH_JOURNAL_TR="Journal hatasi (e2fsck onerilir)"
 TXT_HM_DISK_HEALTH_JOURNAL_EN="Journal error (e2fsck recommended)"
-TXT_HM_DISK_HEALTH_MOUNTCNT_TR="Rutin bakim: mount sayisi sinirina ulasti — disk arizasi degil, e2fsck ile kontrol onerilir"
-TXT_HM_DISK_HEALTH_MOUNTCNT_EN="Routine check: max mount count reached — not a failure, e2fsck recommended"
 TXT_HM_DISK_HEALTH_USBDISCON_TR="USB baglantisi koptu"
 TXT_HM_DISK_HEALTH_USBDISCON_EN="USB disconnected"
 TXT_HM_DISK_HEALTH_USBPROTO_TR="USB protokol hatasi"
@@ -1748,8 +1746,6 @@ TXT_HEALTH_DISK_OK_TR="Saglikli"
 TXT_HEALTH_DISK_OK_EN="Healthy"
 TXT_HEALTH_DISK_JOURNAL_TR="Journal hatasi - e2fsck onerilir"
 TXT_HEALTH_DISK_JOURNAL_EN="Journal error - e2fsck recommended"
-TXT_HEALTH_DISK_MOUNTCNT_TR="Rutin bakim: mount sayisi siniri - e2fsck onerilir"
-TXT_HEALTH_DISK_MOUNTCNT_EN="Routine check: max mount count - e2fsck recommended"
 TXT_HEALTH_DISK_USBDISCON_TR="USB baglantisi koptu (yeniden baglandi)"
 TXT_HEALTH_DISK_USBDISCON_EN="USB disconnected (reconnected)"
 TXT_HEALTH_DISK_USBPROTO_TR="USB protokol hatasi tespit edildi"
@@ -2206,10 +2202,8 @@ TXT_MENU_B_TR=" B. Blockcheck Test (Otomatik DPI)"
 TXT_MENU_B_EN=" B. Blockcheck Test (Auto DPI)"
 TXT_BLOCKCHECK_TEST_TITLE_TR="Blockcheck Test Menusu"
 TXT_BLOCKCHECK_TEST_TITLE_EN="Blockcheck Test Menu"
-TXT_BLOCKCHECK_FULL_TR="Tam Test"
-TXT_BLOCKCHECK_FULL_EN="Full Test"
-TXT_BLOCKCHECK_SUMMARY_TR="Ozet (Sadece SUMMARY) (Otomatik DPI icin kullanilir)"
-TXT_BLOCKCHECK_SUMMARY_EN="Summary (SUMMARY only) (Used for Auto DPI)"
+TXT_BLOCKCHECK_SUMMARY_TR="Blockcheck Test (Otomatik DPI Profili)"
+TXT_BLOCKCHECK_SUMMARY_EN="Blockcheck Test (Auto DPI Profile)"
 TXT_BLOCKCHECK_CLEAN_TR="Test Sonuclarini Temizle"
 TXT_BLOCKCHECK_CLEAN_EN="Clean Test Results"
 TXT_BLOCKCHECK_EXPORT_TR="Aktif DPI Profilini Disa Aktar"
@@ -2232,8 +2226,6 @@ TXT_BLOCKCHECK_SUMMARY_SAVED_TR="Ozet rapor kaydedildi:"
 TXT_BLOCKCHECK_SUMMARY_SAVED_EN="Summary saved:"
 TXT_BLOCKCHECK_SUMMARY_NOT_FOUND_TR="UYARI: SUMMARY bolumu bulunamadi."
 TXT_BLOCKCHECK_SUMMARY_NOT_FOUND_EN="WARNING: SUMMARY section not found."
-TXT_BLK_HM_AUTORESTART_WARN_TR="HealthMon, Zapret2'yi test sirasinda otomatik baslatabilir. Gecici olarak devre disi birakilsin mi? (e/h): "
-TXT_BLK_HM_AUTORESTART_WARN_EN="HealthMon may restart Zapret2 during test. Disable temporarily? (y/n): "
 TXT_BLK_HM_AUTORESTART_PAUSED_TR="HealthMon otomatik baslama gecici olarak devre disi birakildi."
 TXT_BLK_HM_AUTORESTART_PAUSED_EN="HealthMon auto-restart temporarily disabled."
 TXT_BLK_HM_AUTORESTART_RESTORED_TR="HealthMon otomatik baslama eski haline getirildi."
@@ -2700,54 +2692,20 @@ enforce_wan_if_nfqueue_rules() {
     return 0
 }
 # --- Keenetic: persistently pin NFQUEUE POSTROUTING rules to real WAN (-o ppp0/wgX) ---
-create_keenetic_fw_post_up_hook() {
-    # Creates /opt/zapret2/keenetic_fw_post_up.sh (idempotent).
-    # This hook can be invoked manually and by patched zapret init script.
-    local HOOK="/opt/zapret2/keenetic_fw_post_up.sh"
-    mkdir -p /opt/zapret2 >/dev/null 2>&1
-    cat > "$HOOK" <<'EOF'
-#!/bin/sh
-# Keenetic post-up helper: pin NFQUEUE POSTROUTING rules that use zapret2_clients/nozapret ipsets to the real default WAN iface.
-# Works even if default route line is "default dev ppp0 ..." (Keenetic).
-WAN="$(ip route 2>/dev/null | awk '/^default/ {for(i=1;i<=NF;i++) if($i=="dev"){print $(i+1); exit}}')"
-[ -z "$WAN" ] && WAN="ppp0"
-# For each NFQUEUE rule in POSTROUTING that matches zapret ipsets but has no "-o", re-add it with "-o $WAN".
-# Keep it safe: only touch rules that contain "match-set zapret2_clients src" OR "match-set nozapret".
-iptables -t mangle -S POSTROUTING 2>/dev/null | grep NFQUEUE 2>/dev/null | while IFS= read -r r; do
-    echo "$r" | grep -q -- " -o " && continue
-    echo "$r" | grep -Eq -- 'match-set (zapret2_clients src|nozapret)' || continue
-    del="${r/-A /-D }"
-    add="$(echo "$r" | sed "s/ -j NFQUEUE/ -o $WAN -j NFQUEUE/")"
-    iptables -t mangle $del >/dev/null 2>&1
-    iptables -t mangle $add >/dev/null 2>&1
-done
-exit 0
-EOF
-    chmod +x "$HOOK" >/dev/null 2>&1
-}
-patch_zapret_real_to_run_post_hook() {
-    # zapret upstream init script does not always support config-level hooks on Keenetic builds.
-    # So we patch zapret.real to execute the post-up hook right after each zapret_apply_firewall call.
-    local REAL="/opt/zapret2/init.d/sysv/zapret2.real"
-    local HOOK="/opt/zapret2/keenetic_fw_post_up.sh"
-    [ -f "$REAL" ] || return 0
-    [ -x "$HOOK" ] || return 0
-    # Already patched?
-    grep -q "keenetic_fw_post_up.sh" "$REAL" 2>/dev/null && return 0
-    local BAK="${REAL}.bak_$(date +%Y%m%d_%H%M%S 2>/dev/null).sh"
-    cp -a "$REAL" "$BAK" >/dev/null 2>&1 || return 0
-    awk '
-    {
-        print $0
-        # After any zapret_apply_firewall invocation (either "zapret_apply_firewall;" or "{ zapret_apply_firewall; }")
-        if ($0 ~ /zapret_apply_firewall/) {
-            print "        [ -x /opt/zapret2/keenetic_fw_post_up.sh ] && /opt/zapret2/keenetic_fw_post_up.sh >/dev/null 2>&1"
-        }
-    }' "$BAK" > "$REAL" 2>/dev/null || {
-        cp -a "$BAK" "$REAL" >/dev/null 2>&1
-        return 0
-    }
-    chmod +x "$REAL" >/dev/null 2>&1
+_cleanup_post_up_hook() {
+    # keenetic_fw_post_up.sh hook'u etki etmiyordu (Keenetic firewall reset'i degisiklikleri siliyordu)
+    # ve zapret2.real'i patch etmek zapret2 guncellemelerinde bozuluyordu. Temizle.
+    local _real="/opt/zapret2/init.d/sysv/zapret2.real"
+    local _hook="/opt/zapret2/keenetic_fw_post_up.sh"
+    # zapret2.real'den hook satirlarini kaldir
+    if [ -f "$_real" ] && grep -q "keenetic_fw_post_up" "$_real" 2>/dev/null; then
+        local _bak="${_real}.bak_pre_cleanup"
+        cp -a "$_real" "$_bak" 2>/dev/null
+        grep -v "keenetic_fw_post_up" "$_bak" > "$_real" 2>/dev/null
+        chmod +x "$_real" 2>/dev/null
+    fi
+    # Hook dosyasini sil
+    rm -f "$_hook" 2>/dev/null
 }
 # --- DPI PROFIL SECIMI (NFQWS2_OPT) ---
 DPI_PROFILE_FILE="/opt/zapret2/dpi_profile"
@@ -3068,12 +3026,6 @@ kzm2_disk_health_check() {
             _dh_reason="journal_error"
             return 0
         fi
-        # Maksimum mount sayisi (WARN)
-        if dmesg 2>/dev/null | grep -q "EXT4-fs (${_dev_full}): warning: maximal mount count"; then
-            _dh_status="WARN"
-            _dh_reason="mount_count"
-            return 0
-        fi
         # USB baglantisi koptu (WARN) — sadece USB cihazlarda
         if [ "$_is_usb" = "1" ] && dmesg 2>/dev/null | grep -q "USB disconnect"; then
             _dh_status="WARN"
@@ -3320,7 +3272,12 @@ update_kernel_module_config() {
 # NFQWS parametrelerini gunceller
 update_nfqws_parameters() {
     local profile="$(get_dpi_profile)"
-    local ipv6="$ZAPRET_IPV6"
+    local ipv6="n"
+    # Source of truth for Zapret2 IPv6 support is /opt/zapret2/config:
+    #   DISABLE_IPV6=0 -> IPv6 support ON
+    #   DISABLE_IPV6=1 -> IPv6 support OFF
+    # Do not rely on NFQWS2_OPT/ip6_ttl or ip6tables runtime state here.
+    _zapret2_ipv6_enabled 2>/dev/null && ipv6="y"
     # Kapsam modu: global (tum ag) | smart (yalnizca listeler/auto)
     local scope="$(get_scope_mode)"
     local mf="$(get_mode_filter)"
@@ -3435,6 +3392,22 @@ update_nfqws_parameters() {
     elif [ "$profile" = "blockcheck_auto" ] && printf '%s' "$AUTO_PARAMS" | grep -q -- '--filter-'; then
         AUTO_FULL="$AUTO_PARAMS"
         AUTO_PARAMS=""
+        # IPv6 aktifse blockcheck_auto params sadece ip_ttl=N iceriyor olabilir
+        # (test IPVS=4 ile yapildi). ip6_ttl=N ekle ki IPv6 trafikte de DPI bypass calissin.
+        if [ "$ipv6" = "y" ] || [ "$ipv6" = "Y" ]; then
+            if ! printf '%s' "$AUTO_FULL" | grep -q ':ip6_ttl='; then
+                AUTO_FULL="$(printf '%s' "$AUTO_FULL" | \
+                    sed 's/:ip_ttl=\([0-9][0-9]*\)/:ip_ttl=\1:ip6_ttl=\1/g')"
+            fi
+        else
+            # Menu 7 disables Zapret2 IPv6 by setting DISABLE_IPV6=1.
+            # Blockcheck params may have been saved while IPv6 was ON, so
+            # remove stale ip6_ttl immediately when rebuilding NFQWS2_OPT.
+            AUTO_FULL="$(printf '%s' "$AUTO_FULL" | sed 's/:ip6_ttl=[0-9][0-9]*//g')"
+        fi
+        # Keep saved auto params normalized with current Menu 7 IPv6 state.
+        printf "%s
+" "$AUTO_FULL" > "$BLOCKCHECK_AUTO_PARAMS_FILE" 2>/dev/null
     fi
     if [ "$profile" != "none" ]; then
     L1="$(build_line tcp 80  http http_req          "$(_kzm2_desync_http)" "--new")"
@@ -3904,12 +3877,16 @@ fix_zapret2_runtime_permissions() {
     chmod 755 /opt/zapret2/init.d/sysv/zapret2 /opt/zapret2/init.d/sysv/zapret2.real 2>/dev/null
     chmod 644 /opt/zapret2/config /opt/zapret2/config.default /opt/zapret2/version 2>/dev/null
     # ipset dizini ve host listesi dosyalari (nobody tarafindan okunabilmeli)
+    mkdir -p /opt/zapret2/ipset 2>/dev/null
     chmod 755 /opt/zapret2/ipset 2>/dev/null
+    # Dosyalar restore'dan eksik gelebilir — garanti olustur
+    touch /opt/zapret2/ipset/zapret-hosts-user.txt \
+          /opt/zapret2/ipset/zapret-hosts-user-exclude.txt \
+          /opt/zapret2/ipset/zapret-hosts-auto.txt 2>/dev/null
     chmod 644 /opt/zapret2/ipset/*.txt /opt/zapret2/ipset/*.gz 2>/dev/null
-    # zapret-hosts-auto.txt: nfqws2 hem okur hem yazar — nobody sahibi olmali
-    # Dosya yoksa olustur (ilk kurulum veya restore sonrasi)
-    touch /opt/zapret2/ipset/zapret-hosts-auto.txt 2>/dev/null
+    # zapret-hosts-auto.txt: nfqws2 hem okur hem yazar — nobody sahibi ve yaz izni olmali
     chown nobody /opt/zapret2/ipset/zapret-hosts-auto.txt 2>/dev/null
+    chmod 664 /opt/zapret2/ipset/zapret-hosts-auto.txt 2>/dev/null
     # nfq2 dizinindeki binary calistirilabilir olmali
     chmod 755 /opt/zapret2/nfq2/nfqws2 2>/dev/null
     # /opt/etc/init.d/ icindeki KZM2 autostart scriptleri calistirilabilir olmali
@@ -3953,7 +3930,9 @@ if [ -f "$PAUSE" ]; then
 fi
 exec "$REAL" "$@"
 EOF
-    chmod +x "$Z" 2>/dev/null
+    chmod 755 "$Z" 2>/dev/null || chmod +x "$Z" 2>/dev/null
+    # chmod basarisiz olursa tekrar dene (filesystem gecikmesi olabilir)
+    [ -x "$Z" ] || { sleep 1; chmod 755 "$Z" 2>/dev/null; }
 }
 # NFQUEUE kurallarini (genel + ipset) temizlemek icin line-number tabanli guvenli temizleyici
 # BusyBox ortaminda awk sorun cikarmasin diye sed/head kullaniliyor.
@@ -4019,7 +3998,8 @@ _zapret2_iptables_ok() {
 }
 # Zapret2'yin yuklu olup olmadigini kontrol eder
 is_zapret2_installed() {
-    [ -x "/opt/zapret2/init.d/sysv/zapret2" ]
+    [ -x "/opt/zapret2/init.d/sysv/zapret2" ] || \
+    [ -x "/opt/zapret2/nfq2/nfqws2" ]
 }
 KZM2_IP_EXCLUDE_SET="zapret2_ip_exclude"
 KZM2_IP6_EXCLUDE_SET="zapret2_ip6_exclude"
@@ -4074,12 +4054,16 @@ start_zapret2() {
         echo "$(T TXT_START_NOT_INSTALLED)"
         return 1
     fi
+    # Init script eksikse yeniden olustur (blockcheck sonrasi nadiren olabilir)
+    if [ ! -x "/opt/zapret2/init.d/sysv/zapret2" ]; then
+        install_zapret_pause_guard 2>/dev/null
+    fi
     ln -fs /opt/zapret2/init.d/sysv/zapret2 /opt/etc/init.d/S90-zapret2 2>/dev/null
     # Start edilecekse pause kaldir
     zapret_resume
     install_zapret_pause_guard
-    # Hostlist dosya izinlerini duzelt (nfqws nobody user ile calisir)
-    chmod 644 /opt/zapret2/ipset/*.txt 2>/dev/null || true
+    # Tum runtime izinlerini duzelt (nfqws2 nobody user ile calisir)
+    fix_zapret2_runtime_permissions
     if is_zapret2_running; then
         echo "$(T TXT_START_ALREADY)"
         return 0
@@ -4331,12 +4315,23 @@ check_remote_update() {
     press_enter_to_continue
 }
 # --- ZAPRET IPV6 DURUM KONTROLU ---
+_zapret2_ipv6_enabled() {
+    # KZM2 source of truth: /opt/zapret2/config
+    #   DISABLE_IPV6=0 -> IPv6 support ON
+    #   DISABLE_IPV6=1 -> IPv6 support OFF
+    # Menu 7 changes this value, so all IPv6 decisions must read it.
+    # Do NOT infer from ip6_ttl in NFQWS2_OPT or ip6tables runtime rules.
+    local _v
+    [ -f /opt/zapret2/config ] || return 1
+    _v="$(grep -E '^DISABLE_IPV6=' /opt/zapret2/config 2>/dev/null | tail -n 1 | cut -d= -f2- | tr -d '\042\047[:space:]')"
+    [ "$_v" = "0" ]
+}
 check_zapret_ipv6_status() {
     if [ ! -f "/opt/zapret2/config" ]; then
         echo "$(T ipv6_status_unknown 'Zapret2 IPv6 durumu: Bilinmiyor (config yok)' 'Zapret2 IPv6 status: Unknown (config missing)')"
         return 1
     fi
-    if grep -q -- "--dpi-desync-ttl6" /opt/zapret2/config 2>/dev/null; then
+    if _zapret2_ipv6_enabled; then
         echo "${CLR_BOLD}${CLR_GREEN}$(T ipv6_status_on 'Zapret2 IPv6 destegi: ACIK' 'Zapret2 IPv6 support: ON')${CLR_RESET}"
     else
         echo "${CLR_BOLD}${CLR_RED}$(T ipv6_status_off 'Zapret2 IPv6 destegi: KAPALI' 'Zapret2 IPv6 support: OFF')${CLR_RESET}"
@@ -4363,16 +4358,18 @@ configure_zapret_ipv6_support() {
         [eEyY]) IPV6_ANSWER="y" ;;
         *)    IPV6_ANSWER="n" ;;
     esac
-    # Secimi global degiskene yaz (NFQWS2_OPT ttl6/ttl icin)
+    # Secimi global degiskene yaz (install_easy cevabi icin)
     ZAPRET_IPV6="$IPV6_ANSWER"
-# Mevcut IPv6 durumunu algila (config icinden)
+# Mevcut IPv6 durumunu config'deki DISABLE_IPV6 satirindan algila
 CURRENT_IPV6="n"
-if [ -f "/opt/zapret2/config" ] && grep -q -- "--dpi-desync-ttl6" /opt/zapret2/config 2>/dev/null; then
-    CURRENT_IPV6="y"
-fi
-# Kullanici secimi mevcut durumla ayniysa hicbir islem yapma
+_zapret2_ipv6_enabled && CURRENT_IPV6="y"
+# Kullanici secimi mevcut durumla ayniysa bile NFQWS2_OPT yeniden yazilir.
+# Eski Blockcheck Auto kaydinda ip6_ttl kalmis olabilir; Menu 7 durumu
+# DISABLE_IPV6 uzerinden kaynak kabul edilir ve config aninda senkronlanir.
 if [ "$IPV6_ANSWER" = "$CURRENT_IPV6" ]; then
-    echo "$(T ipv6_no_change 'Degisiklik yok (IPv6 destegi zaten bu durumda).' 'No change (IPv6 support is already in this state).')"
+    update_nfqws_parameters >/dev/null 2>&1 || true
+    restart_zapret2 >/dev/null 2>&1 || true
+    echo "$(T ipv6_no_change 'Degisiklik yok (IPv6 destegi zaten bu durumda). DPI parametreleri senkronlandi.' 'No change (IPv6 support is already in this state). DPI parameters synchronized.')"
     press_enter_to_continue
     clear
     return 0
@@ -4396,13 +4393,11 @@ echo "$(tpl_render "$(T TXT_IPV6_WIZARD_START)" VAL "$IPV6_ANSWER")"
     allow_firewall
     add_auto_start_zapret2
     fix_zapret2_runtime_permissions
-    # Keenetic: ensure post-up hook exists and is automatically executed after firewall applies
-    create_keenetic_fw_post_up_hook
-    patch_zapret_real_to_run_post_hook
+    # Eski keenetic_fw_post_up hook'u temizle (etki etmiyordu, zapret2.real patch'i riskli)
+    _cleanup_post_up_hook
     # FW kurallarini ve servisi tazele
     /opt/zapret2/init.d/sysv/zapret2 restart-fw &> /dev/null
     restart_zapret2
-    /opt/zapret2/keenetic_fw_post_up.sh >/dev/null 2>&1
     enforce_wan_if_nfqueue_rules >/dev/null 2>&1
     echo "IPv6 destegi ayari tamamlandi."
     press_enter_to_continue
@@ -7755,7 +7750,6 @@ run_health_check() {
         ro)             disk_health_msg="$(T TXT_HEALTH_DISK_RO)" ;;
         io_error)       disk_health_msg="$(T TXT_HEALTH_DISK_IO_ERR)" ;;
         journal_error)  disk_health_msg="$(T TXT_HEALTH_DISK_JOURNAL)" ;;
-        mount_count)    disk_health_msg="$(T TXT_HEALTH_DISK_MOUNTCNT)" ;;
         usb_disconnect) disk_health_msg="$(T TXT_HEALTH_DISK_USBDISCON)" ;;
         usb_proto)      disk_health_msg="$(T TXT_HEALTH_DISK_USBPROTO)" ;;
         *)              disk_health_msg="$(T TXT_HEALTH_DISK_OK)" ;;
@@ -8041,31 +8035,24 @@ run_blockcheck() {
     stopped_by_us=0
     if is_zapret2_running; then
         was_running=1
-        echo "$(T blk_running 'Not: Zapret2 su anda calisiyor. Blockcheck testi icin gecici olarak durdurulmesi onerilir.' 'Note: Zapret2 is currently running. It is recommended to stop it temporarily for blockcheck.')"
-        printf '%s' "$(T blk_stopq 'Zapret2 gecici olarak durdurulsun mu? (e/h) [e]: ' 'Stop Zapret2 temporarily? (y/n) [y]: ')"; read -r stop_ans
-        case "$stop_ans" in
-            [hHnN]) do_stop=0 ;;
-            *) do_stop=1 ;;
-        esac
-        if [ "$do_stop" -eq 1 ]; then
-            stop_zapret2 >/dev/null 2>&1
-            stopped_by_us=1
-        fi
+        echo "$(T blk_running 'Not: Blockcheck icin Zapret2 gecici olarak durduruluyor...' 'Note: Stopping Zapret2 temporarily for blockcheck...')"
+        stop_zapret2 >/dev/null 2>&1
+        stopped_by_us=1
+        # nfqws2'nin gercekten olmesini bekle (blockcheck WARNING gostermemesi icin)
+        local _wait=0
+        while is_zapret2_running && [ "$_wait" -lt 5 ]; do
+            sleep 1; _wait=$(( _wait + 1 ))
+        done
+        killall -9 nfqws2 2>/dev/null; sleep 1
     fi
     # HealthMon autorestart kontrolu
     healthmon_load_config 2>/dev/null
     if [ "${HM_ZAPRET_AUTORESTART:-0}" = "1" ]; then
         hm_was_autorestart=1
-        printf "%s" "$(T TXT_BLK_HM_AUTORESTART_WARN)"
-        read -r hm_pause_ans </dev/tty 2>/dev/null || read -r hm_pause_ans
-        case "$hm_pause_ans" in
-            e|E|y|Y|"")
-                HM_ZAPRET_AUTORESTART="0"
-                healthmon_write_config 2>/dev/null
-                hm_pause_done=1
-                echo "$(T TXT_BLK_HM_AUTORESTART_PAUSED)"
-                ;;
-        esac
+        HM_ZAPRET_AUTORESTART="0"
+        healthmon_write_config 2>/dev/null
+        hm_pause_done=1
+        echo "$(T TXT_BLK_HM_AUTORESTART_PAUSED)"
     fi
     echo
     echo "$(T blk_running2 "Calistiriliyor... (Rapor: ${report})" "Running... (Report: ${report})")"
@@ -8093,6 +8080,7 @@ run_blockcheck() {
             [ -f "$_bc_common" ] && cp -f "$_bc_common" "$_kzm_bc_dir/$(basename "$_bc_common")" 2>/dev/null
         done
         [ -f /opt/zapret2/blockcheck2.d/standard/10-http-basic.sh ] && cp -f /opt/zapret2/blockcheck2.d/standard/10-http-basic.sh "$_kzm_bc_dir/10-http-basic.sh" 2>/dev/null
+        [ -f /opt/zapret2/blockcheck2.d/standard/20-multi.sh ] && cp -f /opt/zapret2/blockcheck2.d/standard/20-multi.sh "$_kzm_bc_dir/20-multi.sh" 2>/dev/null
         [ -f /opt/zapret2/blockcheck2.d/standard/25-fake.sh ] && cp -f /opt/zapret2/blockcheck2.d/standard/25-fake.sh "$_kzm_bc_dir/25-fake.sh" 2>/dev/null
         export TEST="kzmquick"
         export TEST_DEFAULT="kzmquick"
@@ -8115,18 +8103,33 @@ run_blockcheck() {
     export ENABLE_HTTPS_TLS12="1"
     export ENABLE_HTTPS_TLS13="0"
     export ENABLE_HTTP3="0"
+    # Her curl testi icin maximum sure (saniye). Set edilmezse blockcheck2 default'u
+    # 15-30sn olabilir; engelli sitelerde 100+ kombinasyon x 20sn = saatler.
+    export CURL_MAXTIME=8
+    export TIMEOUT_CURL=8
 
     # BusyBox xargs bu router'da pipe icinde Illegal instruction verebildigi icin
     # PATH basina minimal xargs wrapper koyuyoruz.
+    # Wrapper xargs flag'lerini (-n, -I, -P, -0 vb.) atlar; ilk non-flag argumani
+    # komut olarak alir. "xargs cmd" ve "xargs -n1 cmd" desenlerini dogru karsilar.
     _xargs_wrap="/opt/etc/kzm_xargs_wrap.sh"
     {
         printf '%s\n' '#!/bin/sh'
-        printf '%s\n' 'if [ $# -eq 0 ]; then'
+        printf '%s\n' '# KZM2 xargs wrapper - BusyBox SIGILL workaround'
+        printf '%s\n' '_cmd=""'
+        printf '%s\n' 'for _a in "$@"; do'
+        printf '%s\n' '    case "$_a" in'
+        printf '%s\n' '        -n*|-I*|-P*|-0*|-d*|-r|-L*|-s*|-t) shift; continue ;;'
+        printf '%s\n' '    esac'
+        printf '%s\n' '    _cmd="$_a"; shift; break'
+        printf '%s\n' 'done'
+        printf '%s\n' 'if [ -z "$_cmd" ]; then'
         printf '%s\n' "    tr '\\n' ' ' | sed 's/^ *//;s/ *\$//'"
-        printf '%s\n' 'else'
-        printf '%s\n' '    _cmd="$1"; shift'
-        printf '%s\n' '    while IFS= read -r _line; do "$_cmd" "$@" $_line; done'
+        printf '%s\n' '    exit 0'
         printf '%s\n' 'fi'
+        printf '%s\n' 'while IFS= read -r _line || [ -n "$_line" ]; do'
+        printf '%s\n' '    [ -n "$_line" ] && "$_cmd" "$@" $_line'
+        printf '%s\n' 'done'
     } > "$_xargs_wrap"
     chmod +x "$_xargs_wrap"
     _kzm_path_dir="/tmp/kzm_path_$$"
@@ -8134,14 +8137,21 @@ run_blockcheck() {
     ln -sf "$_xargs_wrap" "$_kzm_path_dir/xargs"
     export PATH="$_kzm_path_dir:$PATH"
 
+    # </dev/null: stdin kapatilir. BATCH=1 kapsamadigi read cagrilari sonsuza
+    # beklemek yerine EOF alir ve atlanir. Full standard modunda kritik.
     if command -v tee >/dev/null 2>&1; then
-        ( cd /opt/zapret2 && sh "$BLOCKCHECK" 2>&1 ) | tee "$report"
+        ( cd /opt/zapret2 && sh "$BLOCKCHECK" 2>&1 </dev/null ) | tee "$report"
     else
-        ( cd /opt/zapret2 && sh "$BLOCKCHECK" >"$report" 2>&1 )
+        ( cd /opt/zapret2 && sh "$BLOCKCHECK" >"$report" 2>&1 </dev/null )
         cat "$report" 2>/dev/null
     fi
+    # Pipeline bittikten sonra askida kalan blockcheck alt processleri temizle.
+    # Kullanici Ctrl+Z ile suspend edip geri donerse T-state processler
+    # daha sonra start_zapret2 cagirarak zapret2'yi yeniden baslatabilir.
+    killall blockcheck2.sh 2>/dev/null
+    killall -KILL blockcheck2.sh 2>/dev/null
 
-    unset SECURE_DNS BATCH TEST DOMAINS DOMAINS_DEFAULT IPVS TEST_DEFAULT REPEATS PARALLEL ENABLE_HTTP ENABLE_HTTPS_TLS12 ENABLE_HTTPS_TLS13 ENABLE_HTTP3 SCANLEVEL
+    unset SECURE_DNS BATCH TEST DOMAINS DOMAINS_DEFAULT IPVS TEST_DEFAULT REPEATS PARALLEL ENABLE_HTTP ENABLE_HTTPS_TLS12 ENABLE_HTTPS_TLS13 ENABLE_HTTP3 SCANLEVEL CURL_MAXTIME TIMEOUT_CURL
     export PATH="$(printf '%s' "$PATH" | sed "s|$_kzm_path_dir:||")"
     rm -rf "$_kzm_path_dir"
     print_line "-"
@@ -8207,7 +8217,27 @@ if [ -n "$ws_ln" ] && [ "$ws_ln" -gt 0 ] 2>/dev/null; then
 fi
 sum_ln="$(grep -ni '^\* SUMMARY' "$src_report" 2>/dev/null | tail -n 1 | cut -d: -f1)"
 if [ -n "$sum_ln" ] && [ "$sum_ln" -gt 0 ] 2>/dev/null; then
-    sed -n "${sum_ln},\$p" "$src_report" 2>/dev/null >> "$summary_file"
+    # Blockcheck'in buldugu ilk calisani kullan — ip_ttl=2 tercih etme.
+    # Diger ISP'lerde (Superonline, Turkcell vb.) farkli strateji dogru olabilir.
+    _s_http="$(sed -n "${sum_ln},\$p" "$src_report" 2>/dev/null | \
+        grep -i '^curl_test_http ' | grep 'nfqws2' | head -n1)"
+
+    _s_tls="$(sed -n "${sum_ln},\$p" "$src_report" 2>/dev/null | \
+        grep -i '^curl_test_https_tls12 ' | grep 'nfqws2' | head -n1)"
+    [ -z "$_s_tls" ] && _s_tls="$(sed -n "${sum_ln},\$p" "$src_report" 2>/dev/null | \
+        grep -i '^curl_test_https_tls13 ' | grep 'nfqws2' | head -n1)"
+
+    _s_quic="$(sed -n "${sum_ln},\$p" "$src_report" 2>/dev/null | \
+        grep -Ei '^(curl_test_http3|curl_test_quic|curl_test_udp)' | \
+        grep 'nfqws2' | head -n1)"
+
+    {
+        printf '* SUMMARY\n'
+        [ -n "$_s_http" ] && printf '%s\n' "$_s_http"
+        [ -n "$_s_tls" ] && printf '%s\n' "$_s_tls"
+        [ -n "$_s_quic" ] && printf '%s\n' "$_s_quic"
+        printf '\nPlease note this SUMMARY does not guarantee a magic pill for you to copy/paste and be happy.\n'
+    } >> "$summary_file"
 fi
 if [ ! -s "$summary_file" ]; then
     # Zapret2 kisa/custom testlerde her zaman * SUMMARY uretmez.
@@ -8254,21 +8284,44 @@ fi
         done
         params_filtered="$(echo "$params_filtered" | sed 's/^ *//; s/ *$//')"
         # Zapret2 SUMMARY can contain many successful single-test strategies.
-        # KZM2 must not apply only one HTTPS line; build a combined profile:
-        # HTTP + TLS + QUIC. Prefer conservative fake_default_* TTL2 candidates.
-        local _bc_http _bc_tls _bc_quic _bc_combined
-        _bc_http="$(grep -i '^curl_test_http ' "$summary_file" 2>/dev/null | grep -F -- '--payload=http_req' | grep -F 'fake:blob=fake_default_http:ip_ttl=2:repeats=1' | head -n 1 | sed -n 's/^.* : nfqws2[[:space:]]*//p')"
-        _bc_tls="$(grep -i '^curl_test_https_tls12 ' "$summary_file" 2>/dev/null | grep -F -- '--payload=tls_client_hello' | grep -F 'fake:blob=fake_default_tls:ip_ttl=2:repeats=1' | head -n 1 | sed -n 's/^.* : nfqws2[[:space:]]*//p')"
-        _bc_quic="$(grep -Ei '^(curl_test_http3|curl_test_quic|curl_test_udp)' "$summary_file" 2>/dev/null | grep -F -- '--payload=quic_initial' | grep -F 'fake:blob=fake_default_quic:ip_ttl=2' | head -n 1 | sed -n 's/^.* : nfqws2[[:space:]]*//p')"
-        [ -n "$_bc_http" ] || _bc_http='--payload=http_req --lua-desync=fake:blob=fake_default_http:ip_ttl=2:repeats=1'
-        [ -n "$_bc_tls" ] || _bc_tls='--payload=tls_client_hello --lua-desync=fake:blob=fake_default_tls:ip_ttl=2:repeats=1'
-        [ -n "$_bc_quic" ] || _bc_quic='--payload=quic_initial --lua-desync=fake:blob=fake_default_quic:ip_ttl=2:repeats=6'
-        # Only override with combined profile when Blockcheck found at least one
-        # sane fake_default_http/tls TTL2 candidate in the report/summary.
-        if grep -Eq 'fake:blob=fake_default_(http|tls):ip_ttl=2:repeats=1' "$summary_file" 2>/dev/null; then
-            _bc_combined="--filter-tcp=80 <HOSTLIST> --filter-l7=http ${_bc_http} --new --filter-tcp=443 <HOSTLIST> --filter-l7=tls ${_bc_tls} --new --filter-udp=443 <HOSTLIST> --filter-l7=quic ${_bc_quic}"
-            params_filtered="$_bc_combined"
+        # KZM2 must apply ONLY what Blockcheck really found for protocol blocks:
+        #   - HTTP only if SUMMARY has HTTP
+        #   - TLS only if SUMMARY has TLS
+        #   - QUIC/UDP only if SUMMARY has QUIC/UDP
+        # IPv6 is controlled separately by Menu 7 via DISABLE_IPV6 in config.
+        # If Menu 7 IPv6 is ON, add ip6_ttl to found HTTP/TLS/QUIC blocks.
+        local _bc_http _bc_tls _bc_quic _bc_combined _bc_ipv6
+        _bc_http="$(grep -i '^curl_test_http ' "$summary_file" 2>/dev/null | grep -F -- '--payload=http_req' | head -n 1 | sed -n 's/^.* : nfqws2[[:space:]]*//p')"
+        _bc_tls="$(grep -i '^curl_test_https_tls12 ' "$summary_file" 2>/dev/null | grep -F -- '--payload=tls_client_hello' | head -n 1 | sed -n 's/^.* : nfqws2[[:space:]]*//p')"
+        [ -z "$_bc_tls" ] && _bc_tls="$(grep -i '^curl_test_https_tls13 ' "$summary_file" 2>/dev/null | grep -F -- '--payload=tls_client_hello' | head -n 1 | sed -n 's/^.* : nfqws2[[:space:]]*//p')"
+        _bc_quic="$(grep -Ei '^(curl_test_http3|curl_test_quic|curl_test_udp)' "$summary_file" 2>/dev/null | grep -F -- '--payload=quic_initial' | head -n 1 | sed -n 's/^.* : nfqws2[[:space:]]*//p')"
+
+        _bc_ipv6="n"
+        _zapret2_ipv6_enabled 2>/dev/null && _bc_ipv6="y"
+        if [ "$_bc_ipv6" = "y" ]; then
+            # Blockcheck quick summary is often IPv4-only. Menu 7 is the user decision
+            # for Zapret2 IPv6 support, so mirror ip_ttl=N to ip6_ttl=N on found blocks.
+            [ -n "$_bc_http" ] && ! printf '%s' "$_bc_http" | grep -q ':ip6_ttl=' && _bc_http="$(printf '%s' "$_bc_http" | sed 's/:ip_ttl=\([0-9][0-9]*\)/:ip_ttl=\1:ip6_ttl=\1/g')"
+            [ -n "$_bc_tls" ] && ! printf '%s' "$_bc_tls" | grep -q ':ip6_ttl=' && _bc_tls="$(printf '%s' "$_bc_tls" | sed 's/:ip_ttl=\([0-9][0-9]*\)/:ip_ttl=\1:ip6_ttl=\1/g')"
+            [ -n "$_bc_quic" ] && ! printf '%s' "$_bc_quic" | grep -q ':ip6_ttl=' && _bc_quic="$(printf '%s' "$_bc_quic" | sed 's/:ip_ttl=\([0-9][0-9]*\)/:ip_ttl=\1:ip6_ttl=\1/g')"
         fi
+
+        _bc_combined=""
+        if [ -n "$_bc_http" ]; then
+            _bc_combined="--filter-tcp=80 <HOSTLIST> --filter-l7=http ${_bc_http}"
+        fi
+        if [ -n "$_bc_tls" ]; then
+            [ -n "$_bc_combined" ] && _bc_combined="${_bc_combined} --new "
+            _bc_combined="${_bc_combined}--filter-tcp=443 <HOSTLIST> --filter-l7=tls ${_bc_tls}"
+        fi
+        if [ -n "$_bc_quic" ]; then
+            [ -n "$_bc_combined" ] && _bc_combined="${_bc_combined} --new "
+            _bc_combined="${_bc_combined}--filter-udp=443 <HOSTLIST> --filter-l7=quic ${_bc_quic}"
+        fi
+
+        # If structured SUMMARY entries were available, prefer the protocol-aware chain.
+        # Otherwise keep the single safe candidate extracted above as fallback.
+        [ -n "$_bc_combined" ] && params_filtered="$_bc_combined"
         
 if [ -z "$params_filtered" ]; then
     echo "$(T TXT_BLOCKCHECK_NO_STRAT)"
@@ -8357,7 +8410,7 @@ else
                 # Save only (do not switch current profile / restart)
                 printf "%s\n" "$params_filtered" > "$BLOCKCHECK_AUTO_PARAMS_FILE" 2>/dev/null
                 printf "%s\n" "$params_filtered" > "$DPI_PROFILE_PARAMS_FILE" 2>/dev/null
-                echo "$(T TXT_BLOCKCHECK_SUMMARY_SAVED) $SUMMARY_FILE"
+                echo "$(T TXT_BLOCKCHECK_SUMMARY_SAVED) $summary_file"
                 break
             ;;
             0|"")
@@ -8482,18 +8535,16 @@ blockcheck_test_menu() {
         print_line
         echo "$(T TXT_BLOCKCHECK_TEST_TITLE)"
         print_line
-        echo " 1. $(T TXT_BLOCKCHECK_FULL)"
-        echo " 2. $(T TXT_BLOCKCHECK_SUMMARY)"
-        echo " 3. $(T TXT_BLOCKCHECK_CLEAN)"
-        echo " 4. $(T TXT_BLOCKCHECK_EXPORT)"
+        echo " 1. $(T TXT_BLOCKCHECK_SUMMARY)"
+        echo " 2. $(T TXT_BLOCKCHECK_CLEAN)"
+        echo " 3. $(T TXT_BLOCKCHECK_EXPORT)"
         echo " 0. $(T TXT_BACK)"
         print_line
         printf '%s' "$(T TXT_CHOICE) "; read -r ch || return 0
         case "$ch" in
-            1) run_blockcheck ;;
-            2) run_blockcheck_save_summary ;;
-            3) clean_blockcheck_reports; press_enter_to_continue ;;
-            4) kzm2_export_active_dpi_profile; press_enter_to_continue ;;
+            1) run_blockcheck_save_summary ;;
+            2) clean_blockcheck_reports; press_enter_to_continue ;;
+            3) kzm2_export_active_dpi_profile; press_enter_to_continue ;;
             0) return ;;
             *) echo "$(T TXT_INVALID_CHOICE)"; press_enter_to_continue ;;
         esac
@@ -8746,7 +8797,6 @@ backup_zapret_settings() {
     add_rel "/opt/etc/healthmon.conf"
     add_rel "/opt/etc/telegram.conf"
     add_rel "/opt/etc/kzm2_gui.conf"
-    add_rel "/opt/zapret2/keenetic_fw_post_up.sh"
     add_rel "/opt/zapret2/init.d/sysv/zapret2.real"
     add_rel "/opt/zapret2/init.d/sysv/custom.d/90-keenetic-client-ipset"
     add_rel "/opt/etc/init.d/S99kzm2_healthmon"
@@ -9978,7 +10028,6 @@ tgbot_status_text() {
         ro)             disk_health_val="$(T _ 'Salt okunur!' 'Read-only!')" ;;
         io_error)       disk_health_val="$(T _ 'I/O Hatasi!' 'I/O Error!')" ;;
         journal_error)  disk_health_val="$(T TXT_HM_DISK_HEALTH_JOURNAL)" ;;
-        mount_count)    disk_health_val="$(T TXT_HM_DISK_HEALTH_MOUNTCNT)" ;;
         usb_disconnect) disk_health_val="$(T TXT_HM_DISK_HEALTH_USBDISCON)" ;;
         usb_proto)      disk_health_val="$(T TXT_HM_DISK_HEALTH_USBPROTO)" ;;
         *)              disk_health_val="OK" ;;
@@ -10214,7 +10263,6 @@ tgbot_handle_callback() {
                       /opt/zapret2/dpi_profile_params /opt/zapret2/blockcheck_auto_params \
                       /opt/zapret2/dpi_profiles \
                       /opt/etc/healthmon.conf /opt/etc/telegram.conf /opt/etc/kzm2_gui.conf \
-                      /opt/zapret2/keenetic_fw_post_up.sh \
                       /opt/zapret2/init.d/sysv/zapret2.real \
                       /opt/zapret2/init.d/sysv/custom.d/90-keenetic-client-ipset \
                       /opt/etc/init.d/S99kzm2_healthmon; do
@@ -11348,7 +11396,6 @@ healthmon_updatecheck_do() {
             ro)             _dh_val="$(T _ 'Salt okunur! Disk hatali olabilir.' 'Read-only! Disk may be damaged.')" ;;
             io_error)       _dh_val="$(T _ 'Kritik I/O hatasi' 'Critical I/O error')" ;;
             journal_error)  _dh_val="$(T TXT_HM_DISK_HEALTH_JOURNAL)" ;;
-            mount_count)    _dh_val="$(T TXT_HM_DISK_HEALTH_MOUNTCNT)" ;;
             usb_disconnect) _dh_val="$(T TXT_HM_DISK_HEALTH_USBDISCON)" ;;
             usb_proto)      _dh_val="$(T TXT_HM_DISK_HEALTH_USBPROTO)" ;;
             *)              _dh_val="$(T _ 'OK ✅' 'OK ✅')" ;;
@@ -11671,7 +11718,6 @@ healthmon_loop() {
             ro)             _dh_down=1; _dh_msg="$(T TXT_HM_DISK_HEALTH_RO)" ;;
             io_error)       _dh_down=1; _dh_msg="$(T TXT_HM_DISK_HEALTH_IO)" ;;
             journal_error)  _dh_down=1; _dh_msg="$(T TXT_HM_DISK_HEALTH_JOURNAL)" ;;
-            mount_count)    _dh_down=1; _dh_msg="$(T TXT_HM_DISK_HEALTH_MOUNTCNT)" ;;
             usb_disconnect) _dh_down=1; _dh_msg="$(T TXT_HM_DISK_HEALTH_USBDISCON)" ;;
             usb_proto)      _dh_down=1; _dh_msg="$(T TXT_HM_DISK_HEALTH_USBPROTO)" ;;
         esac
@@ -11707,11 +11753,12 @@ healthmon_loop() {
         fi
         # ---- Zapret2 watchdog ----
         if [ "$HM_ZAPRET_WATCHDOG" = "1" ]; then
+            # Her iterasyonda sifirla — pause branch atlandiginda eski deger kalmasin
+            local _zap_down=0 _zap_reason=""
             # Kullanici Manuel durdurduysa watchdog mudahale etmesin
             if [ -f "/tmp/.zapret2_paused" ]; then
                 hm_debug_log "zapret_wd | paused by user, skipping"
             else
-            local _zap_down=0 _zap_reason=""
             if is_zapret2_installed; then
                 if ! is_zapret2_running; then
                     _zap_down=1; _zap_reason="no_process"
@@ -12560,7 +12607,6 @@ DEOF
                 ro)             _dh_msg="$(T TXT_HEALTH_DISK_RO)" ;;
                 io_error)       _dh_msg="$(T TXT_HEALTH_DISK_IO_ERR)" ;;
                 journal_error)  _dh_msg="$(T TXT_HEALTH_DISK_JOURNAL)" ;;
-                mount_count)    _dh_msg="$(T TXT_HEALTH_DISK_MOUNTCNT)" ;;
                 usb_disconnect) _dh_msg="$(T TXT_HEALTH_DISK_USBDISCON)" ;;
                 usb_proto)      _dh_msg="$(T TXT_HEALTH_DISK_USBPROTO)" ;;
                 *)              _dh_msg="$(T TXT_HEALTH_DISK_OK)" ;;
@@ -14064,9 +14110,6 @@ if [ -n "$_st_dev" ]; then
     # EXT4 journal hatasi
     elif [ -n "$_st_bdev" ] && dmesg 2>/dev/null | grep -q "EXT4-fs (${_st_bdev}[0-9]*): error loading journal"; then
         _dh_status="warn"; _dh_msg="Journal error - e2fsck recommended"
-    # Maksimum mount sayisi
-    elif [ -n "$_st_bdev" ] && dmesg 2>/dev/null | grep -q "EXT4-fs (${_st_bdev}[0-9]*): warning: maximal mount count"; then
-        _dh_status="warn"; _dh_msg="Max mount count - e2fsck recommended"
     # USB baglantisi koptu
     elif [ "$_st_is_usb" = "1" ] && dmesg 2>/dev/null | grep -q "USB disconnect"; then
         _dh_status="warn"; _dh_msg="USB disconnect detected"
@@ -14727,6 +14770,8 @@ wait_zapret2() {
 case "$ACTION" in
     zapret_start)
         rm -f /tmp/.zapret2_paused 2>/dev/null
+        _kzm="/opt/lib/opkg/keenetic_zapret2_manager.sh"
+        [ -f "$_kzm" ] && KZM2_SKIP_LOCK=1 sh "$_kzm" --cgi-action fix_permissions >/dev/null 2>&1
         sh /opt/etc/init.d/S90-zapret2 start >/dev/null 2>&1
         wait_zapret2 up; refresh; ok "Zapret2 baslatildi" ;;
     zapret_stop)
@@ -15209,7 +15254,6 @@ case "$ACTION" in
         _ar /opt/etc/healthmon.conf
         _ar /opt/etc/telegram.conf
         _ar /opt/etc/kzm2_gui.conf
-        _ar /opt/zapret2/keenetic_fw_post_up.sh
         _ar /opt/zapret2/init.d/sysv/zapret2.real
         _ar /opt/zapret2/init.d/sysv/custom.d/90-keenetic-client-ipset
         _ar /opt/etc/init.d/S99kzm2_healthmon
