@@ -37,7 +37,7 @@
 # -------------------------------------------------------------------
 SCRIPT_NAME="keenetic_zapret2_manager.sh"
 # Version scheme: vYY.M.D[.N]  (YY=year, M=month, D=day, N=daily revision)
-SCRIPT_VERSION="v26.5.26"
+SCRIPT_VERSION="v26.5.27"
 SCRIPT_REPO="https://github.com/RevolutionTR/keenetic-zapret2-manager"
 KZM2_SCRIPT_PATH="/opt/lib/opkg/keenetic_zapret2_manager.sh"
 SCRIPT_AUTHOR="RevolutionTR"
@@ -694,11 +694,13 @@ print_status() {
 }
 color_mode_name() {
     # outputs colored mode name for menu display
-    case "$1" in
-        autohostlist) printf '%b' "${CLR_GREEN}autohostlist${CLR_RESET}" ;;
-        hostlist)     printf '%b' "${CLR_YELLOW}hostlist${CLR_RESET}" ;;
-        none|"")      printf '%b' "${CLR_RED}none${CLR_RESET}" ;;
-        *)            printf '%b' "$1" ;;
+    local _m="$1"
+    [ -z "$_m" ] && _m="$(get_mode_filter)"
+    case "$_m" in
+        autohostlist) printf '%b' "${CLR_GREEN}$(T _ 'Otomatik Liste' 'Auto Hostlist')${CLR_RESET}" ;;
+        hostlist)     printf '%b' "${CLR_CYAN}$(T _ 'Manuel Liste' 'Hostlist')${CLR_RESET}" ;;
+        none|"")      printf '%b' "${CLR_YELLOW}$(T _ 'Listesiz' 'No Filter')${CLR_RESET}" ;;
+        *)            printf '%b' "$_m" ;;
     esac
 }
 # Zapret2 installed version (from file). Safe if not installed.
@@ -2110,10 +2112,12 @@ TXT_SCOPE_CHANGED_TR="Kapsam Modu Degistirildi: %s"
 TXT_SCOPE_CHANGED_EN="Scope Mode Changed: %s"
 TXT_SCOPE_INVALID_TR="Gecersiz Secim."
 TXT_SCOPE_INVALID_EN="Invalid Choice."
-TXT_HL_CURRENT_MODE_TR="Mevcut Mod: "
-TXT_HL_CURRENT_MODE_EN="Current Mode: "
-TXT_HL_COUNTS_TR="User/Exclude/Auto Sayilari: "
-TXT_HL_COUNTS_EN="User/Exclude/Auto Counts: "
+TXT_HL_CURRENT_MODE_TR="Filtreleme Modu : "
+TXT_HL_CURRENT_MODE_EN="Filter Mode     : "
+TXT_HL_SCOPE_MODE_TR="Kapsam Modu     : "
+TXT_HL_SCOPE_MODE_EN="Scope Mode      : "
+TXT_HL_COUNTS_TR="User/Excl./Auto : "
+TXT_HL_COUNTS_EN="User/Excl./Auto : "
 TXT_HL_OPT_1_TR="Filtreleme Modunu Degistir"
 TXT_HL_OPT_1_EN="Change Filtering Mode"
 TXT_HL_OPT_2_TR="User hostlist: Domain Ekle"
@@ -2291,7 +2295,7 @@ TXT_IPSET_0_EN=" 0. Back to Main Menu"
 TXT_PROMPT_IPSET_TR=" Seciminizi Yapin (0-7): "
 TXT_PROMPT_IPSET_EN=" Select an Option (0-7): "
 TXT_PROMPT_IPSET_BASIC_TR=" Seciminizi Yapin (0-3, 6-7): "
-TXT_PROMPT_IPSET_BASIC_EN=" Select an Option (0-3, 6): "
+TXT_PROMPT_IPSET_BASIC_EN=" Select an Option (0-3, 6-7): "
 TXT_NOZAPRET_TITLE_TR="No Zapret2 (Muafiyet) Yonetimi"
 TXT_NOZAPRET_TITLE_EN="No Zapret2 (Exemption) Management"
 TXT_NOZAPRET_DESC_TR="Bu listedeki IP'ler Zapret2 isleminden MUAF tutulur (ornegin IPTV kutulari)"
@@ -2735,7 +2739,7 @@ get_dpi_profile() {
     local p="tt_default"
     [ -f "$DPI_PROFILE_FILE" ] && p="$(cat "$DPI_PROFILE_FILE" 2>/dev/null | tr -d '\r\n')"
     case "$p" in
-        tt_default|tt_fiber|blockcheck_auto|custom|none) echo "$p" ;;
+        tt_default|tt_fiber|superonline_fiber|blockcheck_auto|custom|none) echo "$p" ;;
         # Legacy KZM1-derived profiles are intentionally not exposed/applied in KZM2.
         # They require explicit Zapret2/nfqws2 conversion and field testing.
         tt_alt|sol|sol_alt|sol_fiber|turkcell_mob|vodafone_mob) echo "tt_default" ;;
@@ -2748,22 +2752,24 @@ set_dpi_profile() {
 }
 dpi_profile_name_tr() {
     case "$1" in
-        tt_default) echo "Varsayilan Zapret2 (TTL2 fake)";;
-        tt_fiber) echo "Turk Telekom Fiber (TTL2 fake)";;
-        blockcheck_auto) echo "Blockcheck Otomatik (Auto)";;
-        none) echo "Gecis Modu (Bypass Yok)";;
-        custom) echo "Ozel NFQWS2_OPT";;
+        tt_default)        echo "Varsayilan Zapret2 (TTL2 fake)";;
+        tt_fiber)          echo "Turk Telekom Fiber (TTL2 fake)";;
+        superonline_fiber) echo "Superonline Fiber (TTL6 hostcase)";;
+        blockcheck_auto)   echo "Blockcheck Otomatik (Auto)";;
+        none)              echo "Gecis Modu (Bypass Yok)";;
+        custom)            echo "Ozel NFQWS2_OPT";;
         tt_alt|sol|sol_alt|sol_fiber|turkcell_mob|vodafone_mob) echo "Eski KZM profili (devre disi)";;
         *) echo "$1";;
     esac
 }
 dpi_profile_name_en() {
     case "$1" in
-        tt_default) echo "Default Zapret2 (TTL2 fake)";;
-        tt_fiber) echo "Turk Telekom Fiber (TTL2 fake)";;
-        blockcheck_auto) echo "Blockcheck Auto";;
-        none) echo "Passthrough (No Bypass)";;
-        custom) echo "Custom NFQWS2_OPT";;
+        tt_default)        echo "Default Zapret2 (TTL2 fake)";;
+        tt_fiber)          echo "Turk Telekom Fiber (TTL2 fake)";;
+        superonline_fiber) echo "Superonline Fiber (TTL6 hostcase)";;
+        blockcheck_auto)   echo "Blockcheck Auto";;
+        none)              echo "Passthrough (No Bypass)";;
+        custom)            echo "Custom NFQWS2_OPT";;
         tt_alt|sol|sol_alt|sol_fiber|turkcell_mob|vodafone_mob) echo "Legacy KZM profile (disabled)";;
         *) echo "$1";;
     esac
@@ -2871,13 +2877,14 @@ select_dpi_profile() {
         # Menu satirlarinda:
     # - Varsayilan profil (tt_default) her zaman "Default/Varsayilan" olarak isaretlenir
     # - Kullanilan profil "ACTIVE/AKTIF" olarak isaretlenir
-    for _id in tt_default tt_fiber blockcheck_auto none; do
+    for _id in tt_default tt_fiber superonline_fiber blockcheck_auto none; do
         _num=""
         case "$_id" in
-            tt_default) _num="1" ;;
-            tt_fiber) _num="2" ;;
-            blockcheck_auto) _num="3" ;;
-            none) _num="4" ;;
+            tt_default)        _num="1" ;;
+            tt_fiber)          _num="2" ;;
+            superonline_fiber) _num="3" ;;
+            blockcheck_auto)   _num="4" ;;
+            none)              _num="5" ;;
         esac
         _name_tr="$(dpi_profile_name_tr "$_id")"
         _name_en="$(dpi_profile_name_en "$_id")"
@@ -2912,14 +2919,14 @@ fi
     done
     printf ' %b0.%b %s\n' "${CLR_GREEN}${CLR_BOLD}" "${CLR_RESET}" "$(T back_main 'Ana Menuye Don' 'Back')"
     print_line "-"
-    printf '%s' "$(T dpi_prompt "Seciminizi yapin (0-4): " "Select an option (0-4): ")"; read -r sel || return 1
+    printf '%s' "$(T dpi_prompt "Seciminizi yapin (0-5): " "Select an option (0-5): ")"; read -r sel || return 1
     # sanitize selection (avoid "0 applies 1" edge cases)
     sel="$(echo "$sel" | tr -d '\r' | sed 's/^[[:space:]]*//;s/[[:space:]]*$//')"
     if [ -z "$sel" ] || [ "$sel" = "0" ]; then
         return 1
     fi
     # If auto profile is active, switching to a numbered profile disables auto (by user's choice)
-    if [ "$origin" = "auto" ] && echo "$sel" | grep -Eq '^[1-3]$'; then
+    if [ "$origin" = "auto" ] && echo "$sel" | grep -Eq '^[1-4]$'; then
         local _ans
         printf '%s' "$(T TXT_DPI_AUTO_DISABLE_PROMPT)"; read -r _ans
         local _def_yes="y"
@@ -2944,6 +2951,12 @@ fi
             rm -f "$BLOCKCHECK_AUTO_PARAMS_FILE" 2>/dev/null
             ;;
         3)
+            set_dpi_profile superonline_fiber
+            set_dpi_origin "manual"
+            : > "$DPI_PROFILE_PARAMS_FILE" 2>/dev/null
+            rm -f "$BLOCKCHECK_AUTO_PARAMS_FILE" 2>/dev/null
+            ;;
+        4)
             if [ -s "$BLOCKCHECK_AUTO_PARAMS_FILE" ]; then
                 set_dpi_profile blockcheck_auto
                 set_dpi_origin "auto"
@@ -2953,7 +2966,7 @@ fi
                 return 1
             fi
             ;;
-        4)
+        5)
             set_dpi_profile none
             set_dpi_origin "manual"
             ;;
@@ -3059,22 +3072,45 @@ add_ipset_nfqueue_rules() {
         echo "$_v" | grep -qE '^[0-9]+$' && udp_out="$_v"
     fi
 
+    local _nozapret_dst="" _nozapret_src="" _mark_excl=""
+    ipset list nozapret >/dev/null 2>&1 && \
+        _nozapret_dst="-m set ! --match-set nozapret dst" && \
+        _nozapret_src="-m set ! --match-set nozapret src"
+    _mark_excl="-m mark ! --mark 0x40000000/0x40000000"
+
     # Sadece secili istemciler icin; connbytes ile yalnizca ilk paketleri isle.
     iptables -t mangle -I POSTROUTING 1 ${WAN:+-o $WAN} -p udp -m multiport --dports 443 \
+        $_mark_excl \
         -m set --match-set "$IPSET_CLIENT_NAME" src \
-        -m connbytes --connbytes 0:$udp_out --connbytes-dir original --connbytes-mode packets \
+        -m connbytes --connbytes 1:$udp_out --connbytes-dir original --connbytes-mode packets \
+        $_nozapret_dst \
         -j NFQUEUE --queue-num "$Q" --queue-bypass >/dev/null 2>&1
     iptables -t mangle -I POSTROUTING 1 ${WAN:+-o $WAN} -p tcp -m multiport --dports 80,443 \
+        $_mark_excl \
         -m set --match-set "$IPSET_CLIENT_NAME" src \
-        -m connbytes --connbytes 0:$tcp_out --connbytes-dir original --connbytes-mode packets \
+        -m connbytes --connbytes 1:$tcp_out --connbytes-dir original --connbytes-mode packets \
+        $_nozapret_dst \
         -j NFQUEUE --queue-num "$Q" --queue-bypass >/dev/null 2>&1
     iptables -I INPUT 1 ${WAN:+-i $WAN} -p tcp -m multiport --sports 80,443 \
         -m set --match-set "$IPSET_CLIENT_NAME" dst \
-        -m connbytes --connbytes 0:$tcp_in --connbytes-dir reply --connbytes-mode packets \
+        -m connbytes --connbytes 1:$tcp_in --connbytes-dir reply --connbytes-mode packets \
+        $_nozapret_src \
         -j NFQUEUE --queue-num "$Q" --queue-bypass >/dev/null 2>&1
     iptables -I FORWARD 1 ${WAN:+-i $WAN} -p tcp -m multiport --sports 80,443 \
         -m set --match-set "$IPSET_CLIENT_NAME" dst \
-        -m connbytes --connbytes 0:$tcp_in --connbytes-dir reply --connbytes-mode packets \
+        -m connbytes --connbytes 1:$tcp_in --connbytes-dir reply --connbytes-mode packets \
+        $_nozapret_src \
+        -j NFQUEUE --queue-num "$Q" --queue-bypass >/dev/null 2>&1
+    # UDP incoming: zapret-auto.lua QUIC icin gelen yanitlara da bakmali
+    local udp_in="3"
+    [ -f /opt/zapret2/config ] && {
+        _v="$(grep '^NFQWS2_UDP_PKT_IN=' /opt/zapret2/config 2>/dev/null | cut -d= -f2 | tr -d '"[:space:]')"
+        echo "$_v" | grep -qE '^[0-9]+$' && udp_in="$_v"
+    }
+    iptables -I FORWARD 1 ${WAN:+-i $WAN} -p udp -m multiport --sports 443 \
+        -m set --match-set "$IPSET_CLIENT_NAME" dst \
+        -m connbytes --connbytes 1:$udp_in --connbytes-dir reply --connbytes-mode packets \
+        $_nozapret_src \
         -j NFQUEUE --queue-num "$Q" --queue-bypass >/dev/null 2>&1
 }
 del_ipset_nfqueue_rules() {
@@ -3313,15 +3349,16 @@ update_nfqws_parameters() {
     fi
 
     case "$profile" in
-        tt_default)    TTL="2" ;;
-        tt_fiber)     TTL="2" ;;
+        tt_default)         TTL="2" ;;
+        tt_fiber)           TTL="2" ;;
+        superonline_fiber)  TTL="6"; TCP_DESYNC="hostcase"; NO_UDP="1" ;;
         blockcheck_auto) : ;;
-        custom)        : ;;
-        none)          : ;;
+        custom)          : ;;
+        none)            : ;;
         # Legacy KZM1 profiles are disabled until explicitly converted/tested for Zapret2.
         tt_alt|sol|sol_alt|sol_fiber|turkcell_mob|vodafone_mob)
-                       TTL="2"; profile="tt_default" ;;
-        *)             TTL="2"; profile="tt_default" ;;
+                           TTL="2"; profile="tt_default" ;;
+        *)                 TTL="2"; profile="tt_default" ;;
     esac
 
     # Fresh install / legacy migration guard:
@@ -3330,7 +3367,7 @@ update_nfqws_parameters() {
     local _raw_profile=""
     _raw_profile="$(cat "$DPI_PROFILE_FILE" 2>/dev/null | tr -d '\r\n')"
     case "$_raw_profile" in
-        tt_default|tt_fiber|blockcheck_auto|custom) : ;;
+        tt_default|tt_fiber|superonline_fiber|blockcheck_auto|custom) : ;;
         *) set_dpi_profile "$profile" ;;
     esac
     if [ ! -s "$DPI_PROFILE_ORIGIN_FILE" ]; then
@@ -3347,11 +3384,11 @@ update_nfqws_parameters() {
     }
 
     _kzm2_desync_http() {
-        if [ "$TCP_DESYNC" = "multisplit" ]; then
-            printf '%s' "multisplit${SPLITPOS}$(_kzm2_ttl_args "$TTL")${TCP_EXTRA}"
-        else
-            printf '%s' "fake:blob=fake_default_http$(_kzm2_ttl_args "$TTL"):repeats=${TCP_REPEATS}${TCP_EXTRA}"
-        fi
+        case "$TCP_DESYNC" in
+            multisplit) printf '%s' "multisplit${SPLITPOS}$(_kzm2_ttl_args "$TTL")${TCP_EXTRA}" ;;
+            hostcase)   printf '%s' "http_hostcase:spell=hoSt" ;;
+            *)          printf '%s' "fake:blob=fake_default_http$(_kzm2_ttl_args "$TTL"):repeats=${TCP_REPEATS}${TCP_EXTRA}" ;;
+        esac
     }
 
     _kzm2_desync_tls() {
@@ -3385,6 +3422,9 @@ update_nfqws_parameters() {
 
     local L1 L2 L3 AUTO_FULL
     AUTO_FULL=""
+    # NO_UDP profillerde (superonline_fiber vb) UDP satiri eklenmez, L2 --new almaz
+    local _l2_end="--new"
+    [ "${NO_UDP:-0}" = "1" ] && _l2_end=""
     if [ "$profile" = "none" ]; then
         # Gecis modu: fake paket yok, trafik dogrudan gecsin
         NFQWS_BLOCK="NFQWS2_OPT=\"\""
@@ -3411,8 +3451,12 @@ update_nfqws_parameters() {
     fi
     if [ "$profile" != "none" ]; then
     L1="$(build_line tcp 80  http http_req          "$(_kzm2_desync_http)" "--new")"
-    L2="$(build_line tcp 443 tls  tls_client_hello "$(_kzm2_desync_tls)"  "--new")"
-    L3="$(build_line udp 443 quic quic_initial     "$(_kzm2_desync_quic)" "")"
+    L2="$(build_line tcp 443 tls  tls_client_hello "$(_kzm2_desync_tls)"  "$_l2_end")"
+    if [ "${NO_UDP:-0}" = "1" ]; then
+        L3=""
+    else
+        L3="$(build_line udp 443 quic quic_initial     "$(_kzm2_desync_quic)" "")"
+    fi
     if [ -n "$AUTO_FULL" ]; then
         # AUTO_FULL already contains complete HTTP + TLS + QUIC filter chain.
         # It must be written as a single quoted NFQWS2_OPT value.  Older
@@ -3571,13 +3615,25 @@ check_keenetic_components() {
     
     # 5. curl or wget - CRITICAL
     if command -v curl >/dev/null 2>&1; then
-        print_status PASS "$(T TXT_COMP_CURL)"
+        if curl --version >/dev/null 2>&1; then
+            print_status PASS "$(T TXT_COMP_CURL)"
+        else
+            print_status WARN "$(T _ 'curl binary var ama calismiyor - libnghttp2 eksik olabilir.' 'curl binary exists but fails - libnghttp2 may be missing.')"
+            opkg install libnghttp2 >/dev/null 2>&1
+            if curl --version >/dev/null 2>&1; then
+                print_status PASS "$(T TXT_COMP_CURL)"
+            else
+                print_status FAIL "$(T _ 'curl calismiyor! opkg install libnghttp2 calistiriniz.' 'curl not working! Run: opkg install libnghttp2')"
+                missing_critical=1
+                all_components="${all_components}  - libnghttp2\n"
+            fi
+        fi
     elif command -v wget >/dev/null 2>&1; then
         print_status PASS "$(T TXT_COMP_WGET)"
     else
         print_status INFO "$(T _ 'curl/wget bulunamadi, opkg ile kuruluyor...' 'curl/wget not found, installing via opkg...')"
         opkg install curl >/dev/null 2>&1
-        if command -v curl >/dev/null 2>&1; then
+        if command -v curl >/dev/null 2>&1 && curl --version >/dev/null 2>&1; then
             print_status PASS "$(T TXT_COMP_CURL)"
         elif command -v wget >/dev/null 2>&1; then
             print_status PASS "$(T TXT_COMP_WGET)"
@@ -3661,7 +3717,18 @@ check_keenetic_components() {
     fi
     # 11. grep
     if command -v grep >/dev/null 2>&1; then
-        print_status PASS "$(T _ 'grep' 'grep')"
+        if grep --version >/dev/null 2>&1; then
+            print_status PASS "$(T _ 'grep' 'grep')"
+        else
+            print_status WARN "$(T _ 'grep binary var ama calismiyor - libpcre2 eksik olabilir (opkg install libpcre2).' 'grep binary exists but fails - libpcre2 may be missing (opkg install libpcre2).')"
+            opkg install libpcre2 >/dev/null 2>&1
+            if grep --version >/dev/null 2>&1; then
+                print_status PASS "$(T _ 'grep (libpcre2 guncellendi)' 'grep (libpcre2 updated)')"
+            else
+                print_status WARN "$(T _ 'grep hala calismiyor - opkg install libpcre2 deneyin.' 'grep still failing - try: opkg install libpcre2.')"
+                missing_optional=1
+            fi
+        fi
     else
         print_status WARN "$(T _ 'grep bulunamadi' 'grep not found')"
         missing_optional=1
@@ -3953,29 +4020,25 @@ flush_nfqueue_by_linenum() {
     done
 }
 flush_all_nfqueue_rules() {
-    # En saglam temizlik: iptables -S uzerinden -A -> -D cevirip sil
+    # Sadece queue 300 (zapret2) kurallarini temizle.
+    # Keenetic'in kendi ndmmark/queue-64511 kurallarina DOKUNMA.
     command -v iptables >/dev/null 2>&1 || return 0
-    # mangle: POSTROUTING/PREROUTING/OUTPUT/INPUT/FORWARD (varsa)
-    for ch in POSTROUTING PREROUTING OUTPUT INPUT FORWARD; do
-        iptables -t mangle -S "$ch" 2>/dev/null | grep -F -- "-j NFQUEUE" | while read -r r; do
-            iptables -t mangle $(echo "$r" | sed "s/^-A /-D /") >/dev/null 2>&1
+    local _tables="mangle filter"
+    local _chains_mangle="POSTROUTING PREROUTING OUTPUT INPUT FORWARD"
+    local _chains_filter="INPUT FORWARD OUTPUT"
+    local _r _del
+    for _pass in 1 2; do
+        for ch in $_chains_mangle; do
+            iptables -t mangle -S "$ch" 2>/dev/null | grep -F -- "--queue-num 300" | grep -F -- "-j NFQUEUE" | while IFS= read -r _r; do
+                _del="$(echo "$_r" | sed 's/^-A /-D /')"
+                iptables -t mangle $_del >/dev/null 2>&1
+            done
         done
-    done
-    # filter: INPUT/FORWARD/OUTPUT (bazi kurulumlarda burada da NFQUEUE olabiliyor)
-    for ch in INPUT FORWARD OUTPUT; do
-        iptables -S "$ch" 2>/dev/null | grep -F -- "-j NFQUEUE" | while read -r r; do
-            iptables $(echo "$r" | sed "s/^-A /-D /") >/dev/null 2>&1
-        done
-    done
-    # 2. tur: bazen ilk turde hepsi kalkmayabiliyor
-    for ch in POSTROUTING PREROUTING OUTPUT INPUT FORWARD; do
-        iptables -t mangle -S "$ch" 2>/dev/null | grep -F -- "-j NFQUEUE" | while read -r r; do
-            iptables -t mangle $(echo "$r" | sed "s/^-A /-D /") >/dev/null 2>&1
-        done
-    done
-    for ch in INPUT FORWARD OUTPUT; do
-        iptables -S "$ch" 2>/dev/null | grep -F -- "-j NFQUEUE" | while read -r r; do
-            iptables $(echo "$r" | sed "s/^-A /-D /") >/dev/null 2>&1
+        for ch in $_chains_filter; do
+            iptables -S "$ch" 2>/dev/null | grep -F -- "--queue-num 300" | grep -F -- "-j NFQUEUE" | while IFS= read -r _r; do
+                _del="$(echo "$_r" | sed 's/^-A /-D /')"
+                iptables $_del >/dev/null 2>&1
+            done
         done
     done
 }
@@ -4697,20 +4760,25 @@ manage_ipset_clients() {
         echo ""
         echo "$(T TXT_IPSET_1)"
         echo "$(T TXT_IPSET_2)"
-        echo "$(T TXT_IPSET_3)"
-        if [ "$MODE" = "list" ]; then
+        # Option 3: dosya doluysa farkli etiket goster
+        if [ -f "$IPSET_CLIENT_FILE" ] && [ -s "$IPSET_CLIENT_FILE" ]; then
+            echo "$(T _ ' 3. Secili IPlere Uygula (mevcut liste kullanilir)' ' 3. Apply to Selected IPs (use existing list)')"
+        else
+            echo "$(T TXT_IPSET_3)"
+        fi
+        if [ "$MODE" = "list" ] || { [ -f "$IPSET_CLIENT_FILE" ] && [ -s "$IPSET_CLIENT_FILE" ]; }; then
             echo "$(T TXT_IPSET_4)"
             echo "$(T TXT_IPSET_5)"
-            echo "$(T TXT_IPSET_6)"
-            echo "$(T TXT_IPSET_7)"
-            echo "$(T TXT_IPSET_0)"
-            print_line "-"
+        fi
+        echo "$(T TXT_IPSET_6)"
+        echo "$(T TXT_IPSET_7)"
+        echo "$(T TXT_IPSET_0)"
+        print_line "-"
+        if [ "$MODE" = "list" ]; then
+            printf "$(T TXT_PROMPT_IPSET)"
+        elif [ -f "$IPSET_CLIENT_FILE" ] && [ -s "$IPSET_CLIENT_FILE" ]; then
             printf "$(T TXT_PROMPT_IPSET)"
         else
-            echo "$(T TXT_IPSET_6)"
-            echo "$(T TXT_IPSET_7)"
-            echo "$(T TXT_IPSET_0)"
-            print_line "-"
             printf "$(T TXT_PROMPT_IPSET_BASIC)"
         fi
         read -r ipset_choice || return 0
@@ -4718,19 +4786,26 @@ manage_ipset_clients() {
         case "$ipset_choice" in
             2)
                 echo "all" > "$IPSET_CLIENT_MODE_FILE"
-                rm -f "$IPSET_CLIENT_FILE" 2>/dev/null
                 apply_ipset_client_settings
-                echo "Tamam: Zapret2 tum ag icin calisacak."
+                echo "$(T _ 'Tamam: Zapret2 tum ag icin calisacak.' 'Done: Zapret2 will apply to the whole network.')"
                 press_enter_to_continue
                 clear
                 ;;
             3)
-                # Mevcut listeyi goster
+                # Dosya zaten doluysa direkt list modunu aktifle
                 if [ -f "$IPSET_CLIENT_FILE" ] && [ -s "$IPSET_CLIENT_FILE" ]; then
-                    echo "$(T ipset_current_list 'Mevcut liste (bu islem listeyi KOMPLE degistirecek):' 'Current list (this will REPLACE the entire list):')"
-                    awk '{printf "  %d. %s\n", NR, $0}' "$IPSET_CLIENT_FILE"
-                    echo ""
+                    local _cnt="$(grep -c '[0-9]' "$IPSET_CLIENT_FILE" 2>/dev/null | tr -d ' ')"
+                    local _msg_tr="Mevcut liste kullaniliyor: $_cnt IP. Tekli IP eklemek icin menu 4'u kullanin."
+                    local _msg_en="Using existing list: $_cnt IPs. Use option 4 to add a single IP."
+                    echo "$(T _ "$_msg_tr" "$_msg_en")"
+                    echo "list" > "$IPSET_CLIENT_MODE_FILE" 2>/dev/null
+                    apply_ipset_client_settings
+                    echo "$(T _ 'Tamam: Zapret2 sadece listeli IPlere uygulanacak.' 'Done: Zapret2 will apply only to listed IPs.')"
+                    press_enter_to_continue
+                    clear
+                    continue
                 fi
+                # Dosya bos veya yok — IP iste
                 echo "$(T ipset_bulk_hint 'Not: Tek IP eklemek icin menu 4u kullanin.' 'Note: To add a single IP, use option 4.')"
                 echo "Ornek: 192.168.1.10 192.168.1.20 (bosluk/virgul ile ayirabilirsiniz)"
                 printf '%s' "IP'leri girin (Enter=iptal): "; read -r ips
@@ -4808,22 +4883,19 @@ manage_ipset_clients() {
                 MODE="$(cat "$IPSET_CLIENT_MODE_FILE" 2>/dev/null)"
                 [ -z "$MODE" ] && MODE="all"
                 if [ "$MODE" != "list" ]; then
-                    echo "Bu menu sadece \"Secili IP'lere Uygula\" (mod=list) acikken kullanilabilir. Once 3'u secin."
+                    echo "$(T _ 'Bu menu sadece Secili IP modunda kullanilabilir. Once 3u secin.' 'This option is only available in Selected IPs mode. Select option 3 first.')"
                 else
                 printf '%s' "$(T add_ip_prompt "$TXT_ADD_IP_TR" "$TXT_ADD_IP_EN")"; read -r oneip
                 if [ -z "$oneip" ]; then
-                    echo "$(T cancelled "Islem iptal edildi." "Cancelled.")"
+                    echo "$(T cancelled 'Islem iptal edildi.' 'Cancelled.')"
                     press_enter_to_continue
                     clear
                     continue
                 fi
-                # Basit IPv4 / CIDR dogrulama
-                echo "$oneip" | grep -Eq '^([0-9]{1,3}\.){3}[0-9]{1,3}(/([0-9]|[1-2][0-9]|3[0-2]))?$' || { echo "Gecersiz IP!"; }
                 if echo "$oneip" | grep -Eq '^([0-9]{1,3}\.){3}[0-9]{1,3}(/([0-9]|[1-2][0-9]|3[0-2]))?$'; then
                     touch "$IPSET_CLIENT_FILE" 2>/dev/null
                     kzm_append_unique_line "$IPSET_CLIENT_FILE" "$oneip"
                     apply_ipset_client_settings
-                    # Ayni IP nozapret listesinde varsa cikar (catisma onleme)
                     if [ -f "$NOZAPRET_FILE" ] && grep -Fqx "$oneip" "$NOZAPRET_FILE" 2>/dev/null; then
                         tmpf="/tmp/nozapret_clash.$$"
                         grep -Fvx "$oneip" "$NOZAPRET_FILE" > "$tmpf" 2>/dev/null
@@ -4831,10 +4903,12 @@ manage_ipset_clients() {
                         rm -f "$tmpf"
                         ipset del "$NOZAPRET_IPSET_NAME" "$oneip" 2>/dev/null
                         nozapret_apply_rules
-                        echo "Tamam: IP eklendi. Not: IP, No Zapret2 listesinden de cikarildi."
+                        echo "$(T _ 'Tamam: IP eklendi. No Zapret2 listesinden cikarildi.' 'Done: IP added. Removed from No Zapret2 list.')"
                     else
-                        echo "Tamam: IP eklendi."
+                        echo "$(T _ 'Tamam: IP eklendi.' 'Done: IP added.')"
                     fi
+                else
+                    echo "$(T _ 'Gecersiz IP!' 'Invalid IP!')"
                 fi
                 fi
                 press_enter_to_continue
@@ -4844,11 +4918,11 @@ manage_ipset_clients() {
                 MODE="$(cat "$IPSET_CLIENT_MODE_FILE" 2>/dev/null)"
                 [ -z "$MODE" ] && MODE="all"
                 if [ "$MODE" != "list" ]; then
-                    echo "Bu menu sadece \"Secili IP'lere Uygula\" (mod=list) acikken kullanilabilir. Once 3'u secin."
+                    echo "$(T _ 'Bu menu sadece Secili IP modunda kullanilabilir. Once 3u secin.' 'This option is only available in Selected IPs mode. Select option 3 first.')"
                 else
                 printf '%s' "$(T del_ip_prompt "$TXT_DEL_IP_TR" "$TXT_DEL_IP_EN")"; read -r oneip
                 if [ -z "$oneip" ]; then
-                    echo "$(T cancelled "Islem iptal edildi." "Cancelled.")"
+                    echo "$(T cancelled 'Islem iptal edildi.' 'Cancelled.')"
                     press_enter_to_continue
                     clear
                     continue
@@ -4858,9 +4932,9 @@ manage_ipset_clients() {
                     grep -Fvx "$oneip" "$IPSET_CLIENT_FILE" > "$tmpf" 2>/dev/null
                     cp "$tmpf" "$IPSET_CLIENT_FILE" 2>/dev/null; rm -f "$tmpf"
                     apply_ipset_client_settings
-                    echo "Tamam: IP silindi."
+                    echo "$(T _ 'Tamam: IP silindi.' 'Done: IP removed.')"
                 else
-                    echo "IP listesi dosyasi yok."
+                    echo "$(T _ 'IP listesi dosyasi yok.' 'IP list file not found.')"
                 fi
                 fi
                 press_enter_to_continue
@@ -5461,6 +5535,7 @@ install_zapret2() {
     healthmon_load_config 2>/dev/null
     if [ "${HM_ENABLE:-0}" != "1" ]; then
         HM_ENABLE="1"
+        HM_ZAPRET_AUTORESTART="1"
         healthmon_write_config 2>/dev/null
         healthmon_autostart_install 2>/dev/null
         healthmon_start 2>/dev/null
@@ -5850,8 +5925,8 @@ get_scope_mode() {
 pretty_scope_mode() {
     # UI helper: keep stored values (global/smart) but show localized label
     case "$(get_scope_mode)" in
-        global) echo "$(T TXT_SCOPE_GLOBAL)" ;;
-        smart)  echo "$(T TXT_SCOPE_SMART)" ;;
+        global) printf '%b' "${CLR_CYAN}$(T TXT_SCOPE_GLOBAL)${CLR_RESET}" ;;
+        smart)  printf '%b' "${CLR_GREEN}$(T TXT_SCOPE_SMART)${CLR_RESET}" ;;
         *)      echo "$(get_scope_mode)" ;;
     esac
 }
@@ -6104,6 +6179,7 @@ manage_hostlist_menu() {
         echo "$(T TXT_HL_TITLE)"
         print_line "=" 
         printf '%b\n' "$(T TXT_HL_CURRENT_MODE)$(color_mode_name "$cur")"
+        printf '%b\n' "$(T TXT_HL_SCOPE_MODE)$(pretty_scope_mode)"
         echo "$(T TXT_HL_COUNTS)${ucnt}/${ecnt}/${acnt}"
         print_line "-"
         echo " 1. $(T TXT_HL_OPT_6)"
@@ -6847,6 +6923,20 @@ display_menu() {
         *)      _sm_clr="${CLR_DIM}"    ;;
     esac
     printf "  %b%-*s%b : %b%s%b\n" "${CLR_BOLD}" "$_lw" "$(T _ 'Kapsam Modu' 'Scope Mode')" "${CLR_RESET}" "$_sm_clr" "$(pretty_scope_mode)" "${CLR_RESET}"
+    # IPSET Modu
+    local _ipset_mode _ipset_label _ipset_clr
+    _ipset_mode="$(cat "$IPSET_CLIENT_MODE_FILE" 2>/dev/null | tr -d '[:space:]')"
+    [ -z "$_ipset_mode" ] && _ipset_mode="all"
+    if [ "$_ipset_mode" = "list" ]; then
+        local _ipset_cnt="$(grep -c '[0-9]' "$IPSET_CLIENT_FILE" 2>/dev/null | tr -d ' ')"
+        [ -z "$_ipset_cnt" ] && _ipset_cnt="0"
+        _ipset_label="$(T _ "Secili IP ($_ipset_cnt)" "Selected IPs ($_ipset_cnt)")"
+        _ipset_clr="${CLR_CYAN}"
+    else
+        _ipset_label="$(T _ 'Tum Ag' 'Whole Network')"
+        _ipset_clr="${CLR_GREEN}"
+    fi
+    printf "  %b%-*s%b : %b%s%b\n" "${CLR_BOLD}" "$_lw" "$(T _ 'IPSET Modu' 'IPSET Mode')" "${CLR_RESET}" "$_ipset_clr" "$_ipset_label" "${CLR_RESET}"
     printf "  %b%-*s%b : %b%s%b\n"      "${CLR_BOLD}" "$_lw" "$(T _ 'GitHub'       'GitHub'          )"       "${CLR_RESET}" "${CLR_DIM}"   "github.com/RevolutionTR/keenetic-zapret2-manager"  "${CLR_RESET}"
     print_line "="
     # Aciklama satirlari — her biri ayri satirda, kisa
@@ -7805,7 +7895,12 @@ run_health_check() {
     # curl
     local curl_ok="PASS" curl_msg
     if command -v curl >/dev/null 2>&1; then
-        curl_msg="$(T _ 'Kurulu' 'Installed') ($(command -v curl))"
+        if curl --version >/dev/null 2>&1; then
+            curl_msg="$(T _ 'Kurulu' 'Installed') ($(command -v curl))"
+        else
+            curl_ok="FAIL"
+            curl_msg="$(T _ 'Binary var ama calismiyor - eksik kutuphane olabilir (opkg install libnghttp2)' 'Binary exists but fails to run - missing library (opkg install libnghttp2)')"
+        fi
     else
         curl_ok="WARN"
         curl_msg="$(T _ 'Bulunamadi' 'Not found')"
@@ -8082,6 +8177,7 @@ run_blockcheck() {
         [ -f /opt/zapret2/blockcheck2.d/standard/10-http-basic.sh ] && cp -f /opt/zapret2/blockcheck2.d/standard/10-http-basic.sh "$_kzm_bc_dir/10-http-basic.sh" 2>/dev/null
         [ -f /opt/zapret2/blockcheck2.d/standard/20-multi.sh ] && cp -f /opt/zapret2/blockcheck2.d/standard/20-multi.sh "$_kzm_bc_dir/20-multi.sh" 2>/dev/null
         [ -f /opt/zapret2/blockcheck2.d/standard/25-fake.sh ] && cp -f /opt/zapret2/blockcheck2.d/standard/25-fake.sh "$_kzm_bc_dir/25-fake.sh" 2>/dev/null
+        [ -f /opt/zapret2/blockcheck2.d/standard/90-quic.sh ] && cp -f /opt/zapret2/blockcheck2.d/standard/90-quic.sh "$_kzm_bc_dir/90-quic.sh" 2>/dev/null
         export TEST="kzmquick"
         export TEST_DEFAULT="kzmquick"
         export SCANLEVEL="quick"
@@ -8160,8 +8256,14 @@ run_blockcheck() {
     if [ "$hm_pause_done" -eq 1 ]; then
         HM_ZAPRET_AUTORESTART="$hm_was_autorestart"
         healthmon_write_config 2>/dev/null
+        # Fallback: healthmon_write_config basarisizsa dogrudan sed ile duzelt
+        if grep -q 'HM_ZAPRET_AUTORESTART="0"' /opt/etc/healthmon.conf 2>/dev/null; then
+            sed -i 's/HM_ZAPRET_AUTORESTART="0"/HM_ZAPRET_AUTORESTART="1"/' /opt/etc/healthmon.conf 2>/dev/null
+        fi
         echo "$(T TXT_BLK_HM_AUTORESTART_RESTORED)"
     fi
+    # Pause flag her durumda kaldirilmali (HealthMon tekrar devreye girebilsin)
+    zapret_resume 2>/dev/null
     # Daha once calisiyorduysa ve biz durdurduysak geri ac
     if [ "$was_running" -eq 1 ] && [ "$stopped_by_us" -eq 1 ]; then
         echo "$(T blk_restarting 'Zapret2 tekrar baslatiliyor...' 'Starting Zapret2 again...')"
@@ -11657,6 +11759,7 @@ healthmon_loop() {
     local hb_ts="/tmp/healthmon_heartbeat.ts"
     while true; do
         healthmon_load_config
+        load_lang
         [ "$HM_ENABLE" = "1" ] || break
         local now cpu load disk ram
         now=$(healthmon_now)
@@ -11811,7 +11914,10 @@ healthmon_loop() {
                     # If still down here, notify only when cooldown allows
                     if [ "$restart_ok" != "1" ]; then
                         if healthmon_should_alert "zapret_down" "$HM_ZAPRET_COOLDOWN_SEC"; then
-                            telegram_send "$(tpl_render "$(T TXT_HM_ZAPRET_DOWN_MSG)" CPU "$cpu" LOAD "$load" RAM "$ram" DISK "$disk")" &
+                            local _ar_note=""
+                            [ "${HM_ZAPRET_AUTORESTART:-0}" != "1" ] && \
+                                _ar_note="$(printf '\n%s' "$(T _ '⚠️ Oto-restart KAPALI (Menu 16 > 4 > 5)' '⚠️ Auto-restart OFF (Menu 16 > 4 > 5)')")"
+                            telegram_send "$(tpl_render "$(T TXT_HM_ZAPRET_DOWN_MSG)" CPU "$cpu" LOAD "$load" RAM "$ram" DISK "$disk")${_ar_note}" &
                             healthmon_log "$now | zapret_down | reason=$_zap_reason cpu=$cpu load=$load ram=${ram}MB disk=${disk}%"
                             echo "1" >"$zapret_flag" 2>/dev/null
                         fi
@@ -12316,10 +12422,17 @@ DEOF
             command -v iptables >/dev/null 2>&1 && _ok "iptables" || _fail "iptables bulunamadi"
             command -v ip6tables >/dev/null 2>&1 && _ok "IPv6 deste&#287;i (ip6tables)" || _fail "IPv6 deste&#287;i (ip6tables) bulunamad&#305;"
             command -v ipset >/dev/null 2>&1 && _ok "ipset" || _fail "ipset bulunamadi"
-            command -v curl >/dev/null 2>&1 && _ok "curl (g&#252;ncelleme i&#231;in)" || { command -v wget >/dev/null 2>&1 && _ok "wget (g&#252;ncelleme i&#231;in)" || _fail "curl/wget bulunamad&#305;"; }
+            if command -v curl >/dev/null 2>&1; then
+                if curl --version >/dev/null 2>&1; then _ok "curl (g&#252;ncelleme i&#231;in)"
+                else _fail "curl - eksik k&#252;t&#252;phane (opkg install libnghttp2)"; fi
+            elif command -v wget >/dev/null 2>&1; then _ok "wget (g&#252;ncelleme i&#231;in)"
+            else _fail "curl/wget bulunamad&#305;"; fi
             opkg list-installed 2>/dev/null | grep -q '^wget-ssl' && _ok "wget-ssl" || _info "wget-ssl bulunamad&#305;"
             opkg list-installed 2>/dev/null | grep -q '^coreutils-sort' && _ok "coreutils-sort" || _info "coreutils-sort bulunamad&#305;"
-            command -v grep >/dev/null 2>&1 && _ok "grep" || _info "grep bulunamad&#305;"
+            if command -v grep >/dev/null 2>&1; then
+                if grep --version >/dev/null 2>&1; then _ok "grep"
+                else _fail "grep - eksik k&#252;t&#252;phane (opkg install libpcre2)"; fi
+            else _info "grep bulunamad&#305;"; fi
             command -v gzip >/dev/null 2>&1 && _ok "gzip" || _info "gzip bulunamad&#305;"
             { command -v crond >/dev/null 2>&1 || command -v cron >/dev/null 2>&1; } && _ok "cron" || _info "cron bulunamad&#305;"
             lsmod 2>/dev/null | grep -qE "^xt_multiport" && _ok "Netfilter Queue mod&#252;lleri" || { find /lib/modules -name "xt_multiport.ko" 2>/dev/null | grep -q . && _ok "Netfilter (xt_multiport)" || _fail "Netfilter Queue mod&#252;lleri bulunamad&#305;"; }
@@ -12398,7 +12511,7 @@ DEOF
                 ZAPRET_IPV6="y"
             fi
             case "$_cgi_p" in
-                tt_default|tt_fiber)
+                tt_default|tt_fiber|superonline_fiber)
                     set_dpi_profile "$_cgi_p"
                     set_dpi_origin "manual"
                     update_nfqws_parameters >/dev/null 2>&1
@@ -12647,7 +12760,12 @@ DEOF
             if [ -f /opt/bin/opkg ] || [ -d /opt/etc ]; then _add "svc" "$(T TXT_HEALTH_ENTWARE)" "$(T _ 'Kurulu' 'Installed') (/opt)" "PASS"
             else _add "svc" "$(T TXT_HEALTH_ENTWARE)" "$(T _ 'Bulunamadi' 'Not found')" "FAIL"; fi
             # curl
-            if command -v curl >/dev/null 2>&1; then _add "svc" "$(T TXT_HEALTH_CURL)" "$(T _ 'Kurulu' 'Installed') ($(command -v curl))" "PASS"
+            if command -v curl >/dev/null 2>&1; then
+                if curl --version >/dev/null 2>&1; then
+                    _add "svc" "$(T TXT_HEALTH_CURL)" "$(T _ 'Kurulu' 'Installed') ($(command -v curl))" "PASS"
+                else
+                    _add "svc" "$(T TXT_HEALTH_CURL)" "$(T _ 'Binary var ama calismiyor - eksik kutuphane (opkg install libnghttp2)' 'Binary exists but fails - missing library (opkg install libnghttp2)')" "FAIL"
+                fi
             else _add "svc" "$(T TXT_HEALTH_CURL)" "$(T _ 'Bulunamadi' 'Not found')" "WARN"; fi
             # lighttpd
             if pgrep lighttpd >/dev/null 2>&1; then _add "svc" "$(T TXT_HEALTH_LIGHTTPD)" "$(T _ 'Calisiyor' 'Running') ($(pgrep lighttpd | head -1))" "PASS"
@@ -13985,6 +14103,8 @@ kzm_gui_gen_status() {
   "dpi_origin": "$_dpi_origin",
   "filter_mode": "$(cat /opt/zapret2/hostlist_mode 2>/dev/null | tr -d '[:space:]')",
   "scope_mode": "$(cat /opt/zapret2/scope_mode 2>/dev/null | tr -d '[:space:]')",
+  "ipset_mode": "$(cat /opt/zapret2/ipset_clients_mode 2>/dev/null | tr -d '[:space:]')",
+  "ipset_count": $(grep -c '[0-9]' /opt/zapret2/ipset_clients.txt 2>/dev/null | tr -d ' ' || echo 0),
   "bc_score": $_bc_score,
   "bc_dns_ok": $_bc_dns_ok,
   "bc_tls12_ok": $_bc_tls12_ok,
@@ -14128,7 +14248,7 @@ fi
 # lighttpd
 _lighttpd=0; pgrep lighttpd >/dev/null 2>&1 && _lighttpd=1
 # curl
-_curl_ok=0; command -v curl >/dev/null 2>&1 && _curl_ok=1
+_curl_ok=0; if command -v curl >/dev/null 2>&1 && curl --version >/dev/null 2>&1; then _curl_ok=1; fi
 _wan="$(cat /opt/zapret2/wan_if 2>/dev/null | tr -d '\n')"
 if [ -f /opt/zapret2/wan_if ] && [ -z "$_wan" ]; then
     _wan_display="All Interfaces"
@@ -14207,8 +14327,12 @@ _dpi_origin="$(cat /opt/zapret2/dpi_profile_origin 2>/dev/null | tr -d '\n')"
 [ -z "$_dpi_origin"  ] && _dpi_origin="manual"
 _filter_mode="$(cat /opt/zapret2/hostlist_mode 2>/dev/null | tr -d '[:space:]')"
 _scope_mode="$(cat /opt/zapret2/scope_mode 2>/dev/null | tr -d '[:space:]')"
+_ipset_mode="$(cat /opt/zapret2/ipset_clients_mode 2>/dev/null | tr -d '[:space:]')"
+_ipset_count="$(grep -c '[0-9]' /opt/zapret2/ipset_clients.txt 2>/dev/null | tr -d ' ')"
 [ -z "$_filter_mode" ] && _filter_mode="none"
 [ -z "$_scope_mode"  ] && _scope_mode="global"
+[ -z "$_ipset_mode"  ] && _ipset_mode="all"
+[ -z "$_ipset_count" ] && _ipset_count="0"
 _sha_kzm="$(cat /opt/etc/kzm2_sha256_kzm.state 2>/dev/null | tr -d '[:space:]')"
 [ -z "$_sha_kzm" ] && _sha_kzm="unknown"
 _sha_zapret="$(cat /opt/etc/kzm2_sha256_zapret.state 2>/dev/null | tr -d '[:space:]')"
@@ -14238,7 +14362,7 @@ if [ -f /opt/zapret2/blockcheck_result.json ]; then
         fi
     fi
 fi
-printf '{\n  "ts": %s,\n  "lang": "%s",\n  "theme": "%s",\n  "kzm_version": "%s",\n  "model": "%s",\n  "firmware": "%s",\n  "wan_dev": "%s",\n  "wan_ip": "%s",\n  "lan_ip": "%s",\n  "keendns_fqdn": "%s",\n  "keendns_access": "%s",\n  "iss_name": "%s",\n  "isp_dns": "%s",\n  "zapret_running": %s,\n  "zapret_version": "%s",\n  "healthmon_running": %s,\n  "healthmon_enabled": %s,\n  "telegram_enabled": %s,\n  "telegram_running": %s,\n  "telegram_configured": %s,\n  "lighttpd_running": %s,\n  "curl_ok": %s,\n  "load1": "%s",\n  "load5": "%s",\n  "load15": "%s",\n  "ram_used_mb": %s,\n  "ram_free_mb": %s,\n  "ram_total_mb": %s,\n  "ram_buffer_mb": %s,\n  "swap_used_mb": %s,\n  "swap_total_mb": %s,\n  "disk_used_pct": %s,\n  "disk_used_mb": %s,\n  "disk_total_mb": %s,\n  "disk_tmp_pct": %s,\n  "disk_tmp_used_mb": %s,\n  "disk_tmp_total_mb": %s,\n  "storage_type": "%s",\n  "storage_label": "%s",\n  "disk_health_status": "%s",\n  "disk_health_msg": "%s",\n  "cpu_temp": %s,\n  "dpi_profile": "%s",\n  "dpi_origin": "%s",\n  "filter_mode": "%s",\n  "scope_mode": "%s",\n  "bc_score": %s,\n  "bc_dns_ok": %s,\n  "bc_tls12_ok": %s,\n  "bc_udp_weak": %s,\n  "bc_ts": %s,\n  "sha_kzm": "%s",\n  "sha_zapret": "%s"\n}\n' \
+printf '{\n  "ts": %s,\n  "lang": "%s",\n  "theme": "%s",\n  "kzm_version": "%s",\n  "model": "%s",\n  "firmware": "%s",\n  "wan_dev": "%s",\n  "wan_ip": "%s",\n  "lan_ip": "%s",\n  "keendns_fqdn": "%s",\n  "keendns_access": "%s",\n  "iss_name": "%s",\n  "isp_dns": "%s",\n  "zapret_running": %s,\n  "zapret_version": "%s",\n  "healthmon_running": %s,\n  "healthmon_enabled": %s,\n  "telegram_enabled": %s,\n  "telegram_running": %s,\n  "telegram_configured": %s,\n  "lighttpd_running": %s,\n  "curl_ok": %s,\n  "load1": "%s",\n  "load5": "%s",\n  "load15": "%s",\n  "ram_used_mb": %s,\n  "ram_free_mb": %s,\n  "ram_total_mb": %s,\n  "ram_buffer_mb": %s,\n  "swap_used_mb": %s,\n  "swap_total_mb": %s,\n  "disk_used_pct": %s,\n  "disk_used_mb": %s,\n  "disk_total_mb": %s,\n  "disk_tmp_pct": %s,\n  "disk_tmp_used_mb": %s,\n  "disk_tmp_total_mb": %s,\n  "storage_type": "%s",\n  "storage_label": "%s",\n  "disk_health_status": "%s",\n  "disk_health_msg": "%s",\n  "cpu_temp": %s,\n  "dpi_profile": "%s",\n  "dpi_origin": "%s",\n  "filter_mode": "%s",\n  "scope_mode": "%s",\n  "ipset_mode": "%s",\n  "ipset_count": %s,\n  "bc_score": %s,\n  "bc_dns_ok": %s,\n  "bc_tls12_ok": %s,\n  "bc_udp_weak": %s,\n  "bc_ts": %s,\n  "sha_kzm": "%s",\n  "sha_zapret": "%s"\n}\n' \
     "$_ts" "$(cat /opt/zapret2/lang 2>/dev/null | tr -d '[:space:]' | head -c2)" "$(cat /opt/zapret2/theme 2>/dev/null | tr -d '[:space:]' | head -c5)" "$_kzmver" "$_model" "$_fw" "$_wan_display" "$_wip" "$_lan_ip" \
     "$_kdns_fqdn" "$_kdns_access" "$_iss_name" "$_isp_dns_json" \
     "$_zap" "$_zver" "$_hm" "$_hm_en" "$_tg_en" "$_tg" "$_tg_configured" \
@@ -14249,7 +14373,7 @@ printf '{\n  "ts": %s,\n  "lang": "%s",\n  "theme": "%s",\n  "kzm_version": "%s"
     "$_tmp_pct" "$_tmp_used_mb" "$_tmp_total_mb" \
     "$_st_type" "$_st_label" "$_dh_status" "$_dh_msg" \
     "$_cpu_temp" \
-    "$_dpi_profile" "$_dpi_origin" "$_filter_mode" "$_scope_mode" \
+    "$_dpi_profile" "$_dpi_origin" "$_filter_mode" "$_scope_mode" "$_ipset_mode" "$_ipset_count" \
     "$_bc_score" "$_bc_dns_ok" "$_bc_tls12_ok" "$_bc_udp_weak" "$_bc_ts" \
     "$_sha_kzm" "$_sha_zapret" \
     > /tmp/kzm_status.json.tmp && mv -f /tmp/kzm_status.json.tmp /tmp/kzm_status.json
@@ -14312,7 +14436,7 @@ kzm_rebuild_profile_restart() {
     _kzm="/opt/lib/opkg/keenetic_zapret2_manager.sh"
     _p="$(cat /opt/zapret2/dpi_profile 2>/dev/null | tr -d '\r\n')"
     [ -z "$_p" ] && _p="tt_default"
-    case "$_p" in tt_default|tt_fiber|blockcheck_auto|custom) : ;; *) _p="tt_default"; echo "tt_default" > /opt/zapret2/dpi_profile 2>/dev/null ;; esac
+    case "$_p" in tt_default|tt_fiber|superonline_fiber|blockcheck_auto|custom) : ;; *) _p="tt_default"; echo "tt_default" > /opt/zapret2/dpi_profile 2>/dev/null ;; esac
     if [ -f "$_kzm" ]; then
         # NFQWS2_OPT yeniden yazilsin: hostlist/autohostlist modunda <HOSTLIST> marker'i korunur.
         KZM2_SKIP_LOCK=1 sh "$_kzm" --cgi-action dpi_set "$_p" >/dev/null 2>&1 &
@@ -14384,6 +14508,7 @@ kzm2_manual_dpi_export_web() {
     case "$_prof" in
         tt_default) _base="Varsayilan Zapret2 (TTL2 fake)" ;;
         tt_fiber) _base="Turk Telekom Fiber (TTL2 fake)" ;;
+        superonline_fiber) _base="Superonline Fiber (TTL6 hostcase)" ;;
         blockcheck_auto) _base="Blockcheck Otomatik (Auto)" ;;
         custom) _base="Ozel NFQWS2_OPT" ;;
         *) _base="$_prof" ;;
@@ -14791,8 +14916,10 @@ case "$ACTION" in
         SCRIPT="/opt/lib/opkg/keenetic_zapret2_manager.sh"
         if [ -f "$CONF" ]; then
             sed -i 's/^HM_ENABLE=.*/HM_ENABLE="1"/' "$CONF" 2>/dev/null
+            # Autorestart kapali kalmamali — "0" ise "1" yap
+            sed -i 's/^HM_ZAPRET_AUTORESTART="0"/HM_ZAPRET_AUTORESTART="1"/' "$CONF" 2>/dev/null
         else
-            printf 'HM_ENABLE="1"\n' > "$CONF"
+            printf 'HM_ENABLE="1"\nHM_ZAPRET_AUTORESTART="1"\n' > "$CONF"
         fi
         # Zaten calisiyor mu kontrol et
         _hmpid="$(cat /tmp/kzm2_healthmon.pid 2>/dev/null)"
@@ -15065,6 +15192,7 @@ case "$ACTION" in
         case "$_p" in
             tt_default)      _n="Varsayilan Zapret2 (TTL2 fake)" ;;
             tt_fiber)        _n="Turk Telekom Fiber (TTL2 fake)" ;;
+            superonline_fiber) _n="Superonline Fiber (TTL6 hostcase)" ;;
             blockcheck_auto) _n="Blockcheck Otomatik (Auto)" ;;
             custom)          _n="Ozel NFQWS2_OPT" ;;
             tt_alt|sol|sol_alt|sol_fiber|turkcell_mob|vodafone_mob) _n="Eski KZM profili (devre disi)" ;;
@@ -15075,7 +15203,7 @@ case "$ACTION" in
         _p=$(get_param profile)
         [ -z "$_p" ] && { fail "Profil belirtilmedi"; exit 0; }
         case "$_p" in
-            tt_default|tt_fiber|blockcheck_auto|none) ;;
+            tt_default|tt_fiber|superonline_fiber|blockcheck_auto|none) ;;
             *) fail "Gecersiz veya devre disi profil: $_p"; exit 0 ;;
         esac
         _kzm="/opt/lib/opkg/keenetic_zapret2_manager.sh"
@@ -16140,6 +16268,7 @@ function fmtBcCard(S){
   var profileNames={
     'tt_default':'Varsay&#305;lan Zapret2 (TTL2 fake)',
     'tt_fiber':'Turk Telekom Fiber (TTL2 fake)',
+    'superonline_fiber':'Superonline Fiber (TTL6 hostcase)',
     'blockcheck_auto':'Blockcheck Otomatik (Auto)',
     'custom':(L?'Custom NFQWS2_OPT':'&#214;zel NFQWS2_OPT'),
     'none':(L?'Passthrough (No Bypass)':'Ge&#231;i&#351; Modu (Bypass Yok)')
@@ -16234,6 +16363,7 @@ var V={
         ir(L?'DPI Profile':'Aktif Profil',(function(){var pn={'tt_default':'Varsay&#305;lan Zapret2 (TTL2 fake)','tt_fiber':'Turk Telekom Fiber (TTL2 fake)','blockcheck_auto':'Blockcheck Otomatik (Auto)','custom':(L?'Custom':'&#214;zel NFQWS2_OPT'),'none':(L?'Passthrough (No Bypass)':'Ge&#231;i&#351; Modu (Bypass Yok)')};var n=pn[S.dpi_profile]||S.dpi_profile||'—';var clr=S.dpi_profile==='none'?'var(--warn)':'var(--info)';return '<span style="color:'+clr+'">'+n+'</span>';})())+
         ir(L?'Filter Mode':'Filtreleme',(function(){var m=S.filter_mode||'';if(m==='autohostlist')return '<span style="color:var(--good)">'+(L?'Auto Hostlist':'Otomatik Liste')+'</span>';if(m==='hostlist')return '<span style="color:var(--info)">'+(L?'Hostlist':'Manuel Liste')+'</span>';if(m==='none')return '<span style="color:var(--warn)">'+(L?'No Filter':'Listesiz')+'</span>';return m||'—';})())+
         ir(L?'Scope':'Kapsam Modu',(function(){var m=S.scope_mode||'';if(m==='smart')return '<span style="color:var(--good)">'+(L?'Smart':'Ak&#305;ll&#305;')+'</span>';if(m==='global')return '<span style="color:var(--warn)">'+(L?'Global':'Global')+'</span>';return m||'—';})())+
+        ir(L?'IPSET Mode':'IPSET Modu',(function(){var m=S.ipset_mode||'all';var c=S.ipset_count||0;if(m==='list')return '<span style="color:var(--info)">'+(L?'Selected IPs':'Se&#231;ili IP')+' ('+c+')</span>';return '<span style="color:var(--good)">'+(L?'Whole Network':'T&#252;m A&#287;')+'</span>';})())+
         ir('Zapret2',bdg(S.zapret_running,L?'ACTIVE':'AKT&#304;F',L?'INACTIVE':'PAS&#304;F'))+
         ir(L?'Health Monitor':'Sa&#287;l&#305;k Mon.',bdg(S.healthmon_running,L?'ACTIVE':'AKT&#304;F',L?'INACTIVE':'PAS&#304;F'))+
         ir('Telegram Bot',bdgO(S.telegram_enabled&&S.telegram_running,L?'ACTIVE':'AKT&#304;F',L?'OFF':'KAPALI'))+
@@ -16267,6 +16397,7 @@ var V={
             var names={
               'tt_default':'Varsay&#305;lan Zapret2 (TTL2 fake)',
               'tt_fiber':'Turk Telekom Fiber (TTL2 fake)',
+              'superonline_fiber':'Superonline Fiber (TTL6 hostcase)',
               'blockcheck_auto':'Blockcheck Otomatik (Auto)',
               'custom':(L?'Custom NFQWS2_OPT':'&#214;zel NFQWS2_OPT'),
               'none':(L?'Passthrough (No Bypass)':'Ge&#231;i&#351; Modu (Bypass Yok)')
@@ -16280,6 +16411,7 @@ var V={
             var opts=[
               ['tt_default','Varsay&#305;lan Zapret2 (TTL2 fake)'],
               ['tt_fiber','Turk Telekom Fiber (TTL2 fake)'],
+              ['superonline_fiber','Superonline Fiber (TTL6 hostcase)'],
               ['blockcheck_auto','Blockcheck Otomatik (Auto)'],
               ['none',L?'Passthrough (No Bypass)':'Ge&#231;i&#351; Modu (Bypass Yok)']
             ];
