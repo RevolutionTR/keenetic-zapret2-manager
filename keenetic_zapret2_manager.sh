@@ -37,7 +37,7 @@
 # -------------------------------------------------------------------
 SCRIPT_NAME="keenetic_zapret2_manager.sh"
 # Version scheme: vYY.M.D[.N]  (YY=year, M=month, D=day, N=daily revision)
-SCRIPT_VERSION="v26.5.27"
+SCRIPT_VERSION="v26.5.28"
 SCRIPT_REPO="https://github.com/RevolutionTR/keenetic-zapret2-manager"
 KZM2_SCRIPT_PATH="/opt/lib/opkg/keenetic_zapret2_manager.sh"
 SCRIPT_AUTHOR="RevolutionTR"
@@ -441,7 +441,7 @@ kzm2_full_uninstall() {
     rm -f /tmp/kzm2_healthmon.log 2>/dev/null
     rm -f /tmp/healthmon_* /tmp/wanmon.* 2>/dev/null
     # Remove helper/wrapper commands created by this script
-    rm -f /opt/bin/keenetic-zapret2 /opt/bin/kzm2 /opt/bin/KZM2 2>/dev/null
+    rm -f /opt/bin/keenetic-zapret2 /opt/bin/kzm2 /opt/bin/KZM2 /opt/bin/keenetic-zapret /opt/bin/kzm /opt/bin/KZM 2>/dev/null
     # Remove KZM2 DPI profile exports if /opt/zapret2 cleanup was skipped for any reason
     rm -rf /opt/zapret2/dpi_profiles 2>/dev/null
     # Remove KZM backup files (script backups)
@@ -516,6 +516,12 @@ ensure_cli_shortcut() {
     WRAP1="/opt/bin/keenetic-zapret2"
     WRAP2="/opt/bin/kzm2"
     WRAP3="/opt/bin/KZM2"
+    WRAP4="/opt/bin/keenetic-zapret"
+    WRAP5="/opt/bin/kzm"
+    WRAP6="/opt/bin/KZM"
+    # Eski KZM1 kalintilari temizle (her calistirmada)
+    rm -f /opt/bin/kzm /opt/bin/KZM /opt/bin/keenetic-zapret 2>/dev/null
+    rm -f /opt/lib/opkg/keenetic_zapret_otomasyon_ipv6_ipset.sh 2>/dev/null
     # keenetic-zapret2: ana wrapper, her zaman guncelle
     cat > "$WRAP1" <<EOF
 #!/opt/bin/sh
@@ -531,6 +537,19 @@ EOF
     if [ ! -e "$WRAP3" ]; then
         ln -s "$WRAP1" "$WRAP3" 2>/dev/null || cp -a "$WRAP1" "$WRAP3"
         chmod +x "$WRAP3" 2>/dev/null
+    fi
+    # Eski aliskanlik kisayollari — KZM1 kalintisi silinince yeniden olustur
+    if [ ! -e "$WRAP4" ]; then
+        ln -s "$WRAP1" "$WRAP4" 2>/dev/null || cp -a "$WRAP1" "$WRAP4"
+        chmod +x "$WRAP4" 2>/dev/null
+    fi
+    if [ ! -e "$WRAP5" ]; then
+        ln -s "$WRAP1" "$WRAP5" 2>/dev/null || cp -a "$WRAP1" "$WRAP5"
+        chmod +x "$WRAP5" 2>/dev/null
+    fi
+    if [ ! -e "$WRAP6" ]; then
+        ln -s "$WRAP1" "$WRAP6" 2>/dev/null || cp -a "$WRAP1" "$WRAP6"
+        chmod +x "$WRAP6" 2>/dev/null
     fi
     return 0
 }
@@ -1290,10 +1309,10 @@ TXT_HM_DISK_WARN_MSG_TR="📌 HealthMon %TS%\n⚠️ Disk dolu: /opt %DISK%%%\n�
 TXT_HM_DISK_WARN_MSG_EN="📌 HealthMon %TS%\n⚠️ Disk high: /opt %DISK%%%\n🧠 CPU: %CPU%%\n📊 Load: %LOAD%\n🧮 RAM free: %RAM% MB"
 TXT_HM_RAM_WARN_MSG_TR="📌 HealthMon %TS%\n⚠️ RAM dusuk: %RAM% MB\n🧠 CPU: %CPU%%\n📊 Yuk: %LOAD%\n💾 Disk(/opt): %DISK%%"
 TXT_HM_RAM_WARN_MSG_EN="📌 HealthMon %TS%\n⚠️ Low RAM: %RAM% MB\n🧠 CPU: %CPU%%\n📊 Load: %LOAD%\n💾 Disk(/opt): %DISK%%"
-TXT_HM_ZAPRET_DOWN_MSG_TR="📌 HealthMon %TS%\n🚨 Zapret2 durmus olabilir!\n🧠 CPU: %CPU%%\n📊 Yuk: %LOAD%\n🧮 RAM bos: %RAM% MB\n💾 Disk(/opt): %DISK%%"
-TXT_HM_ZAPRET_DOWN_MSG_EN="📌 HealthMon %TS%\n🚨 Zapret2 may be down!\n🧠 CPU: %CPU%%\n📊 Load: %LOAD%\n🧮 RAM free: %RAM% MB\n💾 Disk(/opt): %DISK%%"
-TXT_HM_ZAPRET_UP_MSG_TR="📌 HealthMon %TS%\n✅ Zapret2 tekrar calisiyor.\n🧠 CPU: %CPU%%\n📊 Yuk: %LOAD%\n🧮 RAM bos: %RAM% MB\n💾 Disk(/opt): %DISK%%"
-TXT_HM_ZAPRET_UP_MSG_EN="📌 HealthMon %TS%\n✅ Zapret2 is running again.\n🧠 CPU: %CPU%%\n📊 Load: %LOAD%\n🧮 RAM free: %RAM% MB\n💾 Disk(/opt): %DISK%%"
+TXT_HM_ZAPRET_DOWN_MSG_TR="📌 HealthMon %TS%\n🚨 Zapret2 durmus olabilir!\n🧠 CPU: %CPU%%\n📊 Yuk: %LOAD%\n🧮 RAM bos: %RAM% MB\n💾 Disk(/opt): %DISK%%\n📡 DPI: %DPI%"
+TXT_HM_ZAPRET_DOWN_MSG_EN="📌 HealthMon %TS%\n🚨 Zapret2 may be down!\n🧠 CPU: %CPU%%\n📊 Load: %LOAD%\n🧮 RAM free: %RAM% MB\n💾 Disk(/opt): %DISK%%\n📡 DPI: %DPI%"
+TXT_HM_ZAPRET_UP_MSG_TR="📌 HealthMon %TS%\n✅ Zapret2 tekrar calisiyor.\n🧠 CPU: %CPU%%\n📊 Yuk: %LOAD%\n🧮 RAM bos: %RAM% MB\n💾 Disk(/opt): %DISK%%\n📡 DPI: %DPI%"
+TXT_HM_ZAPRET_UP_MSG_EN="📌 HealthMon %TS%\n✅ Zapret2 is running again.\n🧠 CPU: %CPU%%\n📊 Load: %LOAD%\n🧮 RAM free: %RAM% MB\n💾 Disk(/opt): %DISK%%\n📡 DPI: %DPI%"
 TXT_HM_DISK_HEALTH_DOWN_MSG_TR="📌 HealthMon %TS%\n⚠️ Disk bakimi gerekiyor: /opt\n💾 Durum: %REASON%\n🧠 CPU: %CPU%%\n📊 Yuk: %LOAD%\n🧮 RAM bos: %RAM% MB"
 TXT_HM_DISK_HEALTH_DOWN_MSG_EN="📌 HealthMon %TS%\n⚠️ Disk maintenance required: /opt\n💾 Status: %REASON%\n🧠 CPU: %CPU%%\n📊 Load: %LOAD%\n🧮 RAM free: %RAM% MB"
 TXT_HM_DISK_HEALTH_UP_MSG_TR="📌 HealthMon %TS%\n✅ Disk sagligi normale dondu: /opt\n🧠 CPU: %CPU%%\n📊 Yuk: %LOAD%\n🧮 RAM bos: %RAM% MB"
@@ -3079,27 +3098,32 @@ add_ipset_nfqueue_rules() {
     _mark_excl="-m mark ! --mark 0x40000000/0x40000000"
 
     # Sadece secili istemciler icin; connbytes ile yalnizca ilk paketleri isle.
+    # nozapret: hem hedef dis IP (site muafiyeti) hem kaynak LAN IP (cihaz muafiyeti) kontrol edilir
     iptables -t mangle -I POSTROUTING 1 ${WAN:+-o $WAN} -p udp -m multiport --dports 443 \
         $_mark_excl \
         -m set --match-set "$IPSET_CLIENT_NAME" src \
         -m connbytes --connbytes 1:$udp_out --connbytes-dir original --connbytes-mode packets \
         $_nozapret_dst \
+        $_nozapret_src \
         -j NFQUEUE --queue-num "$Q" --queue-bypass >/dev/null 2>&1
     iptables -t mangle -I POSTROUTING 1 ${WAN:+-o $WAN} -p tcp -m multiport --dports 80,443 \
         $_mark_excl \
         -m set --match-set "$IPSET_CLIENT_NAME" src \
         -m connbytes --connbytes 1:$tcp_out --connbytes-dir original --connbytes-mode packets \
         $_nozapret_dst \
+        $_nozapret_src \
         -j NFQUEUE --queue-num "$Q" --queue-bypass >/dev/null 2>&1
     iptables -I INPUT 1 ${WAN:+-i $WAN} -p tcp -m multiport --sports 80,443 \
         -m set --match-set "$IPSET_CLIENT_NAME" dst \
         -m connbytes --connbytes 1:$tcp_in --connbytes-dir reply --connbytes-mode packets \
         $_nozapret_src \
+        $_nozapret_dst \
         -j NFQUEUE --queue-num "$Q" --queue-bypass >/dev/null 2>&1
     iptables -I FORWARD 1 ${WAN:+-i $WAN} -p tcp -m multiport --sports 80,443 \
         -m set --match-set "$IPSET_CLIENT_NAME" dst \
         -m connbytes --connbytes 1:$tcp_in --connbytes-dir reply --connbytes-mode packets \
         $_nozapret_src \
+        $_nozapret_dst \
         -j NFQUEUE --queue-num "$Q" --queue-bypass >/dev/null 2>&1
     # UDP incoming: zapret-auto.lua QUIC icin gelen yanitlara da bakmali
     local udp_in="3"
@@ -3151,6 +3175,8 @@ enforce_client_mode_rules() {
         del_ipset_nfqueue_rules >/dev/null 2>&1
         healthmon_log "$(date '+%Y-%m-%d %H:%M:%S') | client_rules_applied | mode=all | ipset_rules_removed"
     fi
+    # Her modda nozapret RETURN kurali uygula (tum ag + list)
+    nozapret_apply_rules >/dev/null 2>&1
 }
 # Cekirdek modulu yapilandirmasini gunceller
 # TR/EN Dictionary (WAN Interface Selection & Cleanup)
@@ -3524,6 +3550,7 @@ allow_firewall() {
     echo '#!/bin/sh
 [ "$table" != "mangle" ] && [ "$table" != "nat" ] && exit 0
 /opt/zapret2/init.d/sysv/zapret2 restart-fw
+KZM2_SKIP_LOCK=1 sh /opt/lib/opkg/keenetic_zapret2_manager.sh --netfilter-hook >/dev/null 2>&1
 exit 0' > /opt/etc/ndm/netfilter.d/000-zapret2.sh || {
         echo "$(T TXT_FW_WRITE_FAIL)"
         return 1
@@ -5076,6 +5103,12 @@ nozapret_apply_rules() {
 }
 # iptables kurallarini temizler
 nozapret_remove_rules() {
+    local _wan="$(get_wan_if 2>/dev/null)"
+    # Interface ile eklenenmis kurallari temizle
+    [ -n "$_wan" ] && while iptables -t mangle -D POSTROUTING -o "$_wan" \
+        -m set --match-set "$NOZAPRET_IPSET_NAME" src \
+        -j RETURN 2>/dev/null; do :; done
+    # Interface olmadan eklenenmis kurallari temizle
     while iptables -t mangle -D POSTROUTING \
         -m set --match-set "$NOZAPRET_IPSET_NAME" src \
         -j RETURN 2>/dev/null; do :; done
@@ -9689,15 +9722,21 @@ tgbot_ack() {
 # Keyboards
 tgbot_kb_main() {
     local rid="${TG_ROUTER_ID:-default}"
-    printf '[[{"text":"📊 %s","callback_data":"%s:menu_status"},{"text":"⚙️ %s","callback_data":"%s:menu_sistem"}],[{"text":"🛠️ %s","callback_data":"%s:menu_kzm"},{"text":"🔧 %s","callback_data":"%s:menu_zapret"}],[{"text":"📋 %s","callback_data":"%s:menu_logs"}]]' \
+    printf '[[{"text":"📊 %s","callback_data":"%s:menu_status"},{"text":"⚙️ %s","callback_data":"%s:menu_sistem"}],[{"text":"🛠️ %s","callback_data":"%s:menu_kzm"},{"text":"🔧 %s","callback_data":"%s:menu_zapret"}],[{"text":"📡 %s","callback_data":"%s:menu_profil"},{"text":"📋 %s","callback_data":"%s:menu_logs"}]]' \
         "$(T TXT_TGBOT_BTN_STATUS)" "$rid" \
         "$(T TXT_TGBOT_BTN_SYSTEM)" "$rid" \
         "$(T TXT_TGBOT_BTN_KZM)" "$rid" \
         "$(T TXT_TGBOT_BTN_ZAPRET)" "$rid" \
+        "$(T _ 'Profil' 'Profile')" "$rid" \
         "$(T TXT_TGBOT_BTN_LOGS)" "$rid"
 }
-tgbot_kb_zapret() {
+tgbot_kb_profil() {
     local rid="${TG_ROUTER_ID:-default}"
+    printf '[[{"text":"📤 %s","callback_data":"%s:profil_share"}],[{"text":"◀ %s","callback_data":"%s:menu_main"}]]' \
+        "$(T _ 'Paylas' 'Share')" "$rid" \
+        "$(T _ 'Ana Menu' 'Main Menu')" "$rid"
+}
+tgbot_kb_zapret() {    local rid="${TG_ROUTER_ID:-default}"
     printf '[[{"text":"▶️ %s","callback_data":"%s:zap_start"},{"text":"⏹ %s","callback_data":"%s:zap_stop"}],[{"text":"🔄 %s","callback_data":"%s:zap_restart"}],[{"text":"⬆️ %s","callback_data":"%s:zap_update"}],[{"text":"⬅️ %s","callback_data":"%s:menu_main"}]]'         "$(T TXT_TGBOT_BTN_START)" "$rid"         "$(T TXT_TGBOT_BTN_STOP)" "$rid"         "$(T TXT_TGBOT_BTN_RESTART)" "$rid"         "$(T TXT_TGBOT_BTN_ZAP_UPDATE)" "$rid"         "$(T TXT_TGBOT_BTN_BACK)" "$rid"
 }
 tgbot_kb_zapret_force() {
@@ -10221,6 +10260,28 @@ tgbot_handle_callback() {
             tgbot_edit "$chat_id" "$msg_id" \
                 "$(tgbot_status_text)" "$(tgbot_kb_main)"
             ;;
+        menu_profil)
+            local _prof="$(get_dpi_profile)"
+            local _orig="$(cat /opt/zapret2/dpi_profile_origin 2>/dev/null | tr -d '[:space:]')"
+            local _prof_label="$(T dpi_pname2 "$(dpi_profile_name_tr "$_prof")" "$(dpi_profile_name_en "$_prof")")"
+            local _orig_label
+            [ "$_orig" = "auto" ] && _orig_label="$(T _ 'blockcheck otomatik' 'blockcheck auto')" || _orig_label="$(T _ 'manuel' 'manual')"
+            tgbot_edit "$chat_id" "$msg_id" \
+                "$(printf '%b' "$(T _ "📡 Aktif DPI Profili\n\n🎯 Profil: $_prof_label\n📌 Kaynak: $_orig_label" "📡 Active DPI Profile\n\n🎯 Profile: $_prof_label\n📌 Source: $_orig_label")")" \
+                "$(tgbot_kb_profil)"
+            ;;
+        profil_share)
+            local _prof="$(get_dpi_profile)"
+            local _orig="$(cat /opt/zapret2/dpi_profile_origin 2>/dev/null | tr -d '[:space:]')"
+            local _prof_label="$(T dpi_pname3 "$(dpi_profile_name_tr "$_prof")" "$(dpi_profile_name_en "$_prof")")"
+            local _orig_label
+            [ "$_orig" = "auto" ] && _orig_label="$(T _ 'blockcheck otomatik' 'blockcheck auto')" || _orig_label="$(T _ 'manuel' 'manual')"
+            local _nfqws_opt
+            _nfqws_opt="$(grep '^NFQWS2_OPT=' /opt/zapret2/config 2>/dev/null | cut -d'"' -f2)"
+            tgbot_send "$chat_id" \
+                "$(printf '%b' "$(T _ "📡 DPI Profil Raporu\n\n🎯 Profil: $_prof_label\n📌 Kaynak: $_orig_label\n\n📋 NFQWS2_OPT:\n$_nfqws_opt" "📡 DPI Profile Report\n\n🎯 Profile: $_prof_label\n📌 Source: $_orig_label\n\n📋 NFQWS2_OPT:\n$_nfqws_opt")")" \
+                "$(tgbot_kb_main)"
+            ;;
         menu_zapret)
             tgbot_edit "$chat_id" "$msg_id" \
                 "$(T TXT_TGBOT_MENU_ZAPRET_TITLE)" "$(tgbot_kb_zapret)"
@@ -10595,7 +10656,7 @@ tgbot_handle_callback() {
 tgbot_set_commands() {
     local _token="$1"
     local _cmds
-    _cmds='[{"command":"start","description":"Ana menuyu ac"},{"command":"durum","description":"Sistem durumunu goster"},{"command":"zapret2","description":"Zapret2 yonetimi"},{"command":"sistem","description":"Sistem ve router"},{"command":"kzm2","description":"KZM2 yonetimi"},{"command":"loglar","description":"Log goruntule"},{"command":"help","description":"Yardim"}]'
+    _cmds='[{"command":"start","description":"Ana menuyu ac"},{"command":"durum","description":"Sistem durumunu goster"},{"command":"profil","description":"Aktif DPI profilini goster"},{"command":"zapret2","description":"Zapret2 yonetimi"},{"command":"sistem","description":"Sistem ve router"},{"command":"kzm2","description":"KZM2 yonetimi"},{"command":"loglar","description":"Log goruntule"},{"command":"help","description":"Yardim"}]'
     local _sc_result
     _sc_result="$(curl -fsSL -X POST "https://api.telegram.org/bot${_token}/setMyCommands" \
         -H "Content-Type: application/json" \
@@ -10653,7 +10714,14 @@ telegram_bot_daemon() {
                 cb_msg_id="$(printf '%s' "$blk" | grep -o '"message_id":[0-9]*' | head -1 | sed 's/.*://')"
                 printf '%s\n' "$(date '+%Y-%m-%d %H:%M:%S') | tgbot | cb data=$cb_data chat=$cb_chat msg=$cb_msg_id" >> "$TG_BOT_LOG_FILE"
                 if [ -n "$cb_chat" ] && [ "$cb_chat" = "$TG_CHAT_ID" ] && [ -n "$cb_data" ]; then
-                    tgbot_handle_callback "$cb_data" "$cb_chat" "$cb_msg_id" "$cb_id"
+                    local _last_cb_file="/tmp/tgbot_last_cbid"
+                    local _last_cb="$(cat "$_last_cb_file" 2>/dev/null)"
+                    if [ "$cb_id" = "$_last_cb" ]; then
+                        printf '%s\n' "$(date '+%Y-%m-%d %H:%M:%S') | tgbot | duplicate cb_id=$cb_id skipped" >> "$TG_BOT_LOG_FILE"
+                    else
+                        printf '%s' "$cb_id" > "$_last_cb_file"
+                        tgbot_handle_callback "$cb_data" "$cb_chat" "$cb_msg_id" "$cb_id"
+                    fi
                 fi
             # Tip: message
             elif printf '%s' "$blk" | grep -q '"message"'; then
@@ -10739,6 +10807,16 @@ $(tgbot_client_detail_text "$_rn_mac")" \
                                 "$(tgbot_status_text)" \
                                 "$(tgbot_kb_main)"
                             ;;
+                        /profil|/profile)
+                            local _prof="$(get_dpi_profile)"
+                            local _orig="$(cat /opt/zapret2/dpi_profile_origin 2>/dev/null | tr -d '[:space:]')"
+                            local _prof_label="$(T dpi_prof_label "$(dpi_profile_name_tr "$_prof")" "$(dpi_profile_name_en "$_prof")")"
+                            local _orig_label
+                            [ "$_orig" = "auto" ] && _orig_label="$(T _ 'blockcheck otomatik' 'blockcheck auto')" || _orig_label="$(T _ 'manuel' 'manual')"
+                            tgbot_send "$msg_chat" \
+                                "$(printf '%b' "$(T _ "📡 Aktif DPI Profili\n\n🎯 Profil: $_prof_label\n📌 Kaynak: $_orig_label" "📡 Active DPI Profile\n\n🎯 Profile: $_prof_label\n📌 Source: $_orig_label")")" \
+                                "$(tgbot_kb_profil)"
+                            ;;
                         /zapret)
                             tgbot_send "$msg_chat" \
                                 "$(T TXT_TGBOT_BTN_ZAPRET)" \
@@ -10764,6 +10842,8 @@ $(tgbot_client_detail_text "$_rn_mac")" \
                                 "$(T _ '📖 KZM2 Yardim
 📊 /durum — Sistemin anlik durumu
   Zapret2, HealthMon, WAN, IP bilgilerini gosterir.
+📡 /profil — Aktif DPI profilini goster
+  Hangi DPI profilinin calistigini ve kaynagini gosterir.
 🔧 /zapret2 — Zapret2 yonetimi
   Zapret2i baslat, durdur, yeniden baslat veya guncelle.
   DPI tabanli internet kisitlamalarini asmak icin kullanilir.
@@ -10777,6 +10857,8 @@ $(tgbot_client_detail_text "$_rn_mac")" \
   Komutlar sadece hizli erisim icindir.' '📖 KZM2 Help
 📊 /durum — Live system status
   Shows Zapret2, HealthMon, WAN and IP info.
+📡 /profil — Show active DPI profile
+  Shows which DPI profile is active and its source.
 🔧 /zapret2 — Zapret2 management
   Start, stop, restart or update Zapret2.
   Used to bypass DPI-based internet restrictions.
@@ -11898,7 +11980,7 @@ healthmon_loop() {
                             # iptables_missing start-fw ile sessizce duzeltildi, Telegram gonderme
                             if [ "$_zap_reason" != "iptables_missing" ]; then
                                 if healthmon_should_alert "zapret_up" "$HM_ZAPRET_COOLDOWN_SEC"; then
-                                    telegram_send "$(tpl_render "$(T TXT_HM_ZAPRET_UP_MSG)" CPU "$cpu" LOAD "$load" RAM "$ram" DISK "$disk")" &
+                                    telegram_send "$(tpl_render "$(T TXT_HM_ZAPRET_UP_MSG)" CPU "$cpu" LOAD "$load" RAM "$ram" DISK "$disk" DPI "$(T dpi_pname "$(dpi_profile_name_tr "$(get_dpi_profile)")" "$(dpi_profile_name_en "$(get_dpi_profile)")")")" &
                                     healthmon_log "$now | zapret_autorestart_ok | reason=$_zap_reason cpu=$cpu load=$load ram=${ram}MB disk=${disk}%"
                                 fi
                             else
@@ -11917,7 +11999,7 @@ healthmon_loop() {
                             local _ar_note=""
                             [ "${HM_ZAPRET_AUTORESTART:-0}" != "1" ] && \
                                 _ar_note="$(printf '\n%s' "$(T _ '⚠️ Oto-restart KAPALI (Menu 16 > 4 > 5)' '⚠️ Auto-restart OFF (Menu 16 > 4 > 5)')")"
-                            telegram_send "$(tpl_render "$(T TXT_HM_ZAPRET_DOWN_MSG)" CPU "$cpu" LOAD "$load" RAM "$ram" DISK "$disk")${_ar_note}" &
+                            telegram_send "$(tpl_render "$(T TXT_HM_ZAPRET_DOWN_MSG)" CPU "$cpu" LOAD "$load" RAM "$ram" DISK "$disk" DPI "$(T dpi_pname "$(dpi_profile_name_tr "$(get_dpi_profile)")" "$(dpi_profile_name_en "$(get_dpi_profile)")")")${_ar_note}" &
                             healthmon_log "$now | zapret_down | reason=$_zap_reason cpu=$cpu load=$load ram=${ram}MB disk=${disk}%"
                             echo "1" >"$zapret_flag" 2>/dev/null
                         fi
@@ -11928,7 +12010,7 @@ healthmon_loop() {
                 # recovered
                 if [ -f "$zapret_flag" ] && is_zapret2_installed && is_zapret2_running; then
                     if healthmon_should_alert "zapret_up" "$HM_ZAPRET_COOLDOWN_SEC"; then
-                        telegram_send "$(tpl_render "$(T TXT_HM_ZAPRET_UP_MSG)" CPU "$cpu" LOAD "$load" RAM "$ram" DISK "$disk")" &
+                        telegram_send "$(tpl_render "$(T TXT_HM_ZAPRET_UP_MSG)" CPU "$cpu" LOAD "$load" RAM "$ram" DISK "$disk" DPI "$(T dpi_pname "$(dpi_profile_name_tr "$(get_dpi_profile)")" "$(dpi_profile_name_en "$(get_dpi_profile)")")")" &
                         healthmon_log "$now | zapret_up | cpu=$cpu load=$load ram=${ram}MB disk=${disk}%"
                     fi
                     rm -f "$zapret_flag" 2>/dev/null
@@ -11981,7 +12063,7 @@ healthmon_loop() {
                         # Hala yuksek: gercek stall, restart_zapret2
                         healthmon_log "$now | qlen_crit | qnum=300 qlen=$qlen_val cnt=$qlen_cnt triggers=restart_zapret2"
                         if healthmon_should_alert "qlen_crit" "${HM_ZAPRET_COOLDOWN_SEC:-120}"; then
-                            telegram_send "$(tpl_render "$(T TXT_HM_ZAPRET_DOWN_MSG)" CPU "$cpu" LOAD "$load" RAM "$ram" DISK "$disk") [qlen=$qlen_val]" &
+                            telegram_send "$(tpl_render "$(T TXT_HM_ZAPRET_DOWN_MSG)" CPU "$cpu" LOAD "$load" RAM "$ram" DISK "$disk" DPI "$(T dpi_pname "$(dpi_profile_name_tr "$(get_dpi_profile)")" "$(dpi_profile_name_en "$(get_dpi_profile)")")") [qlen=$qlen_val]" &
                         fi
                         restart_zapret2 >/dev/null 2>&1
                         sleep 2
@@ -11993,7 +12075,7 @@ healthmon_loop() {
                         if is_zapret2_running; then
                             healthmon_log "$now | qlen_restart_ok | qnum=300 zapret2 is running"
                             if healthmon_should_alert "qlen_restart_ok" "${HM_ZAPRET_COOLDOWN_SEC:-120}"; then
-                                telegram_send "$(tpl_render "$(T TXT_HM_ZAPRET_UP_MSG)" CPU "$cpu" LOAD "$load" RAM "$ram" DISK "$disk") [qlen watchdog ok]" &
+                                telegram_send "$(tpl_render "$(T TXT_HM_ZAPRET_UP_MSG)" CPU "$cpu" LOAD "$load" RAM "$ram" DISK "$disk" DPI "$(T dpi_pname "$(dpi_profile_name_tr "$(get_dpi_profile)")" "$(dpi_profile_name_en "$(get_dpi_profile)")")") [qlen watchdog ok]" &
                             fi
                         else
                             healthmon_log "$now | qlen_restart_fail | qnum=300 zapret2 still not running after restart"
@@ -17924,6 +18006,23 @@ R|r) scheduled_reboot_menu ;;
     done
 }
 # Internal: run health monitor loop as a detached daemon
+if [ "$1" = "--netfilter-hook" ]; then
+    # nozapret RETURN kurali — her modda calisir (tum ag + list)
+    nozapret_apply_rules 2>/dev/null
+    # List modda KZM2'nin ozel IPSET kurallarini uygula
+    _nfh_mode="$(cat /opt/zapret2/ipset_clients_mode 2>/dev/null | tr -d '[:space:]')"
+    if [ "$_nfh_mode" = "list" ]; then
+        flush_all_nfqueue_rules 2>/dev/null
+        ipset_ensure_and_load_clients 2>/dev/null
+        add_ipset_nfqueue_rules 2>/dev/null
+    fi
+    exit 0
+fi
+# Hook script guncelleme kontrolu — eski kurulumlar icin otomatik guncelle
+_hook_file="/opt/etc/ndm/netfilter.d/000-zapret2.sh"
+if [ -f "$_hook_file" ] && ! grep -q "netfilter-hook" "$_hook_file" 2>/dev/null; then
+    allow_firewall 2>/dev/null
+fi
 if [ "$1" = "--healthmon-daemon" ]; then
     # ignore hangup when parent shell exits
     trap '' HUP 2>/dev/null
