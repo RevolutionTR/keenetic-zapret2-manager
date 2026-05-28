@@ -12,7 +12,8 @@
 [![Sıfırdan Tam Kurulum](https://img.shields.io/badge/Sıfırdan%20Tam%20Kurulum-Anlatım-success?style=for-the-badge)](https://github.com/RevolutionTR/keenetic-zapret2-manager/blob/main/docs/sifirdan_kurulum_anlatimi.md)
 [![User Guide](https://img.shields.io/badge/Kullanim-Menu_Kilavuzu-blue?style=for-the-badge)](https://github.com/RevolutionTR/keenetic-zapret2-manager/blob/main/docs/kullanim_klavuzu.md)
 [![Telegram](https://img.shields.io/badge/Telegram-Kurulum-2CA5E0?style=for-the-badge)](https://github.com/RevolutionTR/keenetic-zapret2-manager/blob/main/docs/telegram.md)
-[![Platform](https://img.shields.io/badge/Platform-Keenetic-1f6feb?style=for-the-badge)](https://keenetic.com.tr)
+<br>
+[![Platform](https://img.shields.io/badge/Platform-Keenetic-1f6feb?style=for-the-badge)](https://keenetic.com.tr) [![Platform](https://img.shields.io/badge/Platform-Entware-orange?style=for-the-badge)](https://entware.net)
 <br>
 ![Languages](https://img.shields.io/badge/Languages-TR%20%7C%20EN-orange?style=for-the-badge)
 [![Open Source](https://img.shields.io/badge/Open%20Source-Yes-brightgreen?style=for-the-badge)](https://github.com/RevolutionTR/keenetic-zapret2-manager)
