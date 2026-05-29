@@ -89,7 +89,7 @@ bağlantısı dahili depolama veya USB sürücü üzerinde olabilir.
 
 **Keenetic router/modem'ler için Zapret2 yönetim ve otomasyon betiği**
 
-Bu proje, Zapret2'yin Keenetic cihazlarda **kolay kurulumu**, **DPI profili yönetimi**,  
+Bu proje, Zapret2'nin Keenetic cihazlarda **kolay kurulumu**, **DPI profili yönetimi**,  
 **IPSET ile istemci seçimi**, **menü tabanlı kullanım** ve  
 **GitHub üzerinden sürüm takibi** için hazırlanmıştır.
 
