@@ -37,7 +37,7 @@
 # -------------------------------------------------------------------
 SCRIPT_NAME="keenetic_zapret2_manager.sh"
 # Version scheme: vYY.M.D[.N]  (YY=year, M=month, D=day, N=daily revision)
-SCRIPT_VERSION="v26.5.29"
+SCRIPT_VERSION="v26.5.29.1"
 SCRIPT_REPO="https://github.com/RevolutionTR/keenetic-zapret2-manager"
 KZM2_SCRIPT_PATH="/opt/lib/opkg/keenetic_zapret2_manager.sh"
 SCRIPT_AUTHOR="RevolutionTR"
@@ -5134,11 +5134,6 @@ nozapret_show_status() {
             echo "  $(T TXT_NOZAPRET_EMPTY)"
         fi
     fi
-    echo ""
-    printf '%b%s%b\n' "${CLR_GREEN}${CLR_BOLD}" "$(T TXT_NOZAPRET_IPSET_ACTIVE)" "${CLR_RESET}"
-    ipset list "$NOZAPRET_IPSET_NAME" 2>/dev/null | grep -E '^[0-9]' | \
-        while read -r ip; do printf '    %s\n' "$ip"; done || \
-        echo "$(T TXT_NOZAPRET_IPSET_EMPTY)"
     print_line "-"
 }
 # nozapret alt-menusu
