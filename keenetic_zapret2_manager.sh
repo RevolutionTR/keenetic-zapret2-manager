@@ -37,7 +37,7 @@
 # -------------------------------------------------------------------
 SCRIPT_NAME="keenetic_zapret2_manager.sh"
 # Version scheme: vYY.M.D[.N]  (YY=year, M=month, D=day, N=daily revision)
-SCRIPT_VERSION="v26.5.29.1"
+SCRIPT_VERSION="v26.5.30"
 SCRIPT_REPO="https://github.com/RevolutionTR/keenetic-zapret2-manager"
 KZM2_SCRIPT_PATH="/opt/lib/opkg/keenetic_zapret2_manager.sh"
 SCRIPT_AUTHOR="RevolutionTR"
@@ -1312,6 +1312,8 @@ TXT_HM_RAM_WARN_MSG_TR="📌 HealthMon %TS%\n⚠️ RAM dusuk: %RAM% MB\n🧠 CP
 TXT_HM_RAM_WARN_MSG_EN="📌 HealthMon %TS%\n⚠️ Low RAM: %RAM% MB\n🧠 CPU: %CPU%%\n📊 Load: %LOAD%\n💾 Disk(/opt): %DISK%%"
 TXT_HM_ZAPRET_DOWN_MSG_TR="📌 HealthMon %TS%\n🚨 Zapret2 durmus olabilir!\n🧠 CPU: %CPU%%\n📊 Yuk: %LOAD%\n🧮 RAM bos: %RAM% MB\n💾 Disk(/opt): %DISK%%\n📡 DPI: %DPI%"
 TXT_HM_ZAPRET_DOWN_MSG_EN="📌 HealthMon %TS%\n🚨 Zapret2 may be down!\n🧠 CPU: %CPU%%\n📊 Load: %LOAD%\n🧮 RAM free: %RAM% MB\n💾 Disk(/opt): %DISK%%\n📡 DPI: %DPI%"
+TXT_HM_ZAPRET_FW_MISSING_MSG_TR="📌 HealthMon %TS%\n⚠️ NFQUEUE kurallari eksikti, yenilendi!\n🧠 CPU: %CPU%%\n📊 Yuk: %LOAD%\n🧮 RAM bos: %RAM% MB\n💾 Disk(/opt): %DISK%%\n📡 DPI: %DPI%"
+TXT_HM_ZAPRET_FW_MISSING_MSG_EN="📌 HealthMon %TS%\n⚠️ NFQUEUE rules were missing, renewed!\n🧠 CPU: %CPU%%\n📊 Load: %LOAD%\n🧮 RAM free: %RAM% MB\n💾 Disk(/opt): %DISK%%\n📡 DPI: %DPI%"
 TXT_HM_ZAPRET_UP_MSG_TR="📌 HealthMon %TS%\n✅ Zapret2 tekrar calisiyor.\n🧠 CPU: %CPU%%\n📊 Yuk: %LOAD%\n🧮 RAM bos: %RAM% MB\n💾 Disk(/opt): %DISK%%\n📡 DPI: %DPI%"
 TXT_HM_ZAPRET_UP_MSG_EN="📌 HealthMon %TS%\n✅ Zapret2 is running again.\n🧠 CPU: %CPU%%\n📊 Load: %LOAD%\n🧮 RAM free: %RAM% MB\n💾 Disk(/opt): %DISK%%\n📡 DPI: %DPI%"
 TXT_HM_DISK_HEALTH_DOWN_MSG_TR="📌 HealthMon %TS%\n⚠️ Disk bakimi gerekiyor: /opt\n💾 Durum: %REASON%\n🧠 CPU: %CPU%%\n📊 Yuk: %LOAD%\n🧮 RAM bos: %RAM% MB"
@@ -3550,7 +3552,6 @@ allow_firewall() {
     # Betik icerigini dosyaya yazar
     echo '#!/bin/sh
 [ "$table" != "mangle" ] && [ "$table" != "nat" ] && exit 0
-/opt/zapret2/init.d/sysv/zapret2 restart-fw
 KZM2_SKIP_LOCK=1 sh /opt/lib/opkg/keenetic_zapret2_manager.sh --netfilter-hook >/dev/null 2>&1
 exit 0' > /opt/etc/ndm/netfilter.d/000-zapret2.sh || {
         echo "$(T TXT_FW_WRITE_FAIL)"
@@ -4156,6 +4157,11 @@ start_zapret2() {
     # Tum runtime izinlerini duzelt (nfqws2 nobody user ile calisir)
     fix_zapret2_runtime_permissions
     if is_zapret2_running; then
+        # Process calisiyor ama kurallar eksik olabilir — tamir et
+        /opt/zapret2/init.d/sysv/zapret2 start-fw >/dev/null 2>&1
+        enforce_client_mode_rules >/dev/null 2>&1
+        enforce_wan_if_nfqueue_rules >/dev/null 2>&1
+        kzm2_apply_ip_exclude_rules >/dev/null 2>&1
         echo "$(T TXT_START_ALREADY)"
         return 0
     fi
@@ -4486,8 +4492,7 @@ echo "$(tpl_render "$(T TXT_IPV6_WIZARD_START)" VAL "$IPV6_ANSWER")"
     fix_zapret2_runtime_permissions
     # Eski keenetic_fw_post_up hook'u temizle (etki etmiyordu, zapret2.real patch'i riskli)
     _cleanup_post_up_hook
-    # FW kurallarini ve servisi tazele
-    /opt/zapret2/init.d/sysv/zapret2 restart-fw &> /dev/null
+    # Servisi tazele
     restart_zapret2
     enforce_wan_if_nfqueue_rules >/dev/null 2>&1
     echo "IPv6 destegi ayari tamamlandi."
@@ -11894,7 +11899,6 @@ healthmon_loop() {
         # ---- DISK HEALTH (read-only + I/O error) ----
         local _dh_down=0 _dh_msg=""
         kzm2_disk_health_check
-        local _dh_down=0 _dh_msg=""
         case "$_dh_reason" in
             ro)             _dh_down=1; _dh_msg="$(T TXT_HM_DISK_HEALTH_RO)" ;;
             io_error)       _dh_down=1; _dh_msg="$(T TXT_HM_DISK_HEALTH_IO)" ;;
@@ -11992,11 +11996,16 @@ healthmon_loop() {
                     # If still down here, notify only when cooldown allows
                     if [ "$restart_ok" != "1" ]; then
                         if healthmon_should_alert "zapret_down" "$HM_ZAPRET_COOLDOWN_SEC"; then
-                            local _ar_note=""
-                            [ "${HM_ZAPRET_AUTORESTART:-0}" != "1" ] && \
-                                _ar_note="$(printf '\n%s' "$(T _ '⚠️ Oto-restart KAPALI (Menu 16 > 4 > 5)' '⚠️ Auto-restart OFF (Menu 16 > 4 > 5)')")"
-                            telegram_send "$(tpl_render "$(T TXT_HM_ZAPRET_DOWN_MSG)" CPU "$cpu" LOAD "$load" RAM "$ram" DISK "$disk" DPI "$(T dpi_pname "$(dpi_profile_name_tr "$(get_dpi_profile)")" "$(dpi_profile_name_en "$(get_dpi_profile)")")")${_ar_note}" &
-                            healthmon_log "$now | zapret_down | reason=$_zap_reason cpu=$cpu load=$load ram=${ram}MB disk=${disk}%"
+                            if [ "$_zap_reason" = "iptables_missing" ]; then
+                                telegram_send "$(tpl_render "$(T TXT_HM_ZAPRET_FW_MISSING_MSG)" CPU "$cpu" LOAD "$load" RAM "$ram" DISK "$disk" DPI "$(T dpi_pname "$(dpi_profile_name_tr "$(get_dpi_profile)")" "$(dpi_profile_name_en "$(get_dpi_profile)")")")" &
+                                healthmon_log "$now | zapret_fw_missing | reason=iptables_missing cpu=$cpu load=$load ram=${ram}MB disk=${disk}%"
+                            else
+                                local _ar_note=""
+                                [ "${HM_ZAPRET_AUTORESTART:-0}" != "1" ] && \
+                                    _ar_note="$(printf '\n%s' "$(T _ '⚠️ Oto-restart KAPALI (Menu 16 > 4 > 5)' '⚠️ Auto-restart OFF (Menu 16 > 4 > 5)')")"
+                                telegram_send "$(tpl_render "$(T TXT_HM_ZAPRET_DOWN_MSG)" CPU "$cpu" LOAD "$load" RAM "$ram" DISK "$disk" DPI "$(T dpi_pname "$(dpi_profile_name_tr "$(get_dpi_profile)")" "$(dpi_profile_name_en "$(get_dpi_profile)")")")${_ar_note}" &
+                                healthmon_log "$now | zapret_down | reason=$_zap_reason cpu=$cpu load=$load ram=${ram}MB disk=${disk}%"
+                            fi
                             echo "1" >"$zapret_flag" 2>/dev/null
                         fi
                         rm -f "$zapret_start" 2>/dev/null
@@ -18005,7 +18014,11 @@ R|r) scheduled_reboot_menu ;;
 if [ "$1" = "--netfilter-hook" ]; then
     # Zapret2 manuel durdurulduysa hook kurallari yeniden uygulamamali
     [ -f /tmp/.zapret2_paused ] && exit 0
-    # nozapret RETURN kurali — her modda calisir (tum ag + list)
+    # Zapret2 native kurallarini geri yukle (tum ag modu dahil)
+    if [ -x /opt/zapret2/init.d/sysv/zapret2 ]; then
+        /opt/zapret2/init.d/sysv/zapret2 start-fw >/dev/null 2>&1
+    fi
+    # nozapret RETURN kurali — her modda calisir
     nozapret_apply_rules 2>/dev/null
     # List modda KZM2'nin ozel IPSET kurallarini uygula
     _nfh_mode="$(cat /opt/zapret2/ipset_clients_mode 2>/dev/null | tr -d '[:space:]')"
@@ -18014,12 +18027,17 @@ if [ "$1" = "--netfilter-hook" ]; then
         ipset_ensure_and_load_clients 2>/dev/null
         add_ipset_nfqueue_rules 2>/dev/null
     fi
+    enforce_wan_if_nfqueue_rules 2>/dev/null
+    kzm2_apply_ip_exclude_rules 2>/dev/null
     exit 0
 fi
 # Hook script guncelleme kontrolu — eski kurulumlar icin otomatik guncelle
 _hook_file="/opt/etc/ndm/netfilter.d/000-zapret2.sh"
-if [ -f "$_hook_file" ] && ! grep -q "netfilter-hook" "$_hook_file" 2>/dev/null; then
-    allow_firewall 2>/dev/null
+if [ -f "$_hook_file" ]; then
+    if ! grep -q "netfilter-hook" "$_hook_file" 2>/dev/null || \
+       grep -q "restart-fw" "$_hook_file" 2>/dev/null; then
+        allow_firewall 2>/dev/null
+    fi
 fi
 if [ "$1" = "--healthmon-daemon" ]; then
     # ignore hangup when parent shell exits
