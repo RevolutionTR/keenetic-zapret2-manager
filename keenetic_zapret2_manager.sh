@@ -37,7 +37,7 @@
 # -------------------------------------------------------------------
 SCRIPT_NAME="keenetic_zapret2_manager.sh"
 # Version scheme: vYY.M.D[.N]  (YY=year, M=month, D=day, N=daily revision)
-SCRIPT_VERSION="v26.5.28"
+SCRIPT_VERSION="v26.5.29"
 SCRIPT_REPO="https://github.com/RevolutionTR/keenetic-zapret2-manager"
 KZM2_SCRIPT_PATH="/opt/lib/opkg/keenetic_zapret2_manager.sh"
 SCRIPT_AUTHOR="RevolutionTR"
@@ -90,6 +90,7 @@ case "$1" in
     --update-gui)       KZM2_SKIP_LOCK="1" ;;
     --gui-status)      KZM2_SKIP_LOCK="1" ; KZM2_GUI_STATUS_GEN="1" ;;
     --cgi-action)      KZM2_SKIP_LOCK="1" ;;
+    --netfilter-hook)  KZM2_SKIP_LOCK="1" ;;
     --dev|--developer)  KZM2_DEV_CHECK="1" ;;
 esac
 # Developer / Self-test flags
@@ -2885,7 +2886,7 @@ select_dpi_profile() {
     if [ "$origin" = "auto" ]; then
         # Auto: show current as Blockcheck, and show base profile separately
         printf '%b%-16s%b : %b%s%b\n' "${CLR_GREEN}${CLR_BOLD}" "$(T dpi_current "$_cur_label_tr" "$_cur_label_en")" "${CLR_RESET}" "${CLR_GREEN}${CLR_BOLD}" "$(T TXT_ACTIVE_DPI_AUTO)" "${CLR_RESET}"
-        printf '%-16s : %s\n' "$(T TXT_DPI_BASE_PROFILE)" "$_cur_name"
+        printf '%-16s :  %s\n' "$(T TXT_DPI_BASE_PROFILE)" "$_cur_name"
     else
         printf '%b%-16s%b : %b%s%b\n' "${CLR_GREEN}${CLR_BOLD}" "$(T dpi_current "$_cur_label_tr" "$_cur_label_en")" "${CLR_RESET}" "${CLR_GREEN}${CLR_BOLD}" "$_cur_name" "${CLR_RESET}"
     fi
@@ -2934,9 +2935,9 @@ else
         fi
     fi
 fi
-        printf ' %b%s.%b %s\n' "${CLR_GREEN}${CLR_BOLD}" "$_num" "${CLR_RESET}" "$(T dpi_prof_${_id} "${_name_tr}${_suf_tr}" "${_name_en}${_suf_en}")"
+        printf ' %s. %s\n' "$_num" "$(T dpi_prof_${_id} "${_name_tr}${_suf_tr}" "${_name_en}${_suf_en}")"
     done
-    printf ' %b0.%b %s\n' "${CLR_GREEN}${CLR_BOLD}" "${CLR_RESET}" "$(T back_main 'Ana Menuye Don' 'Back')"
+    printf ' 0. %s\n' "$(T back_main 'Ana Menuye Don' 'Back')"
     print_line "-"
     printf '%s' "$(T dpi_prompt "Seciminizi yapin (0-5): " "Select an option (0-5): ")"; read -r sel || return 1
     # sanitize selection (avoid "0 applies 1" edge cases)
@@ -13673,11 +13674,11 @@ scheduled_reboot_menu() {
         print_status WARN "$(T TXT_SCHED_TIME_WARN)"
         echo
         print_line "-"
-        printf "  %b%s%b\n" "${CLR_BOLD}" "$(T TXT_SCHED_MENU_1)" "${CLR_RESET}"
-        printf "  %b%s%b\n" "${CLR_BOLD}" "$(T TXT_SCHED_MENU_2)" "${CLR_RESET}"
-        printf "  %b%s%b\n" "${CLR_BOLD}" "$(T TXT_SCHED_MENU_3)" "${CLR_RESET}"
-        printf "  %b%s%b\n" "${CLR_BOLD}" "$(T TXT_SCHED_MENU_4)" "${CLR_RESET}"
-        printf "  %b%s%b\n" "${CLR_BOLD}" "$(T TXT_SCHED_MENU_0)" "${CLR_RESET}"
+        printf "  %s\n" "$(T TXT_SCHED_MENU_1)"
+        printf "  %s\n" "$(T TXT_SCHED_MENU_2)"
+        printf "  %s\n" "$(T TXT_SCHED_MENU_3)"
+        printf "  %s\n" "$(T TXT_SCHED_MENU_4)"
+        printf "  %s\n" "$(T TXT_SCHED_MENU_0)"
         print_line "-"
         echo
         printf "%s" "$(T TXT_SCHED_PROMPT)"
@@ -17853,13 +17854,13 @@ kzm_gui_menu() {
         printf "%b%s%b\\n" "${CLR_ORANGE}" "$(T TXT_GUI_SECURITY_WARN)" "${CLR_RESET}"
         echo
         print_line "-"
-        printf " %b%s%b\n" "${CLR_BOLD}" "$(T TXT_GUI_OPT_1)" "${CLR_RESET}"
-        printf " %b%s%b\n" "${CLR_BOLD}" "$(T TXT_GUI_OPT_2)" "${CLR_RESET}"
-        printf " %b%s%b\n" "${CLR_BOLD}" "$(T TXT_GUI_OPT_3)" "${CLR_RESET}"
-        printf " %b%s%b\n" "${CLR_BOLD}" "$(T TXT_GUI_OPT_4)" "${CLR_RESET}"
-        printf " %b%s%b%s%b\n" "${CLR_BOLD}" "$(T _ '5) Port Degistir (Mevcut: ' '5) Change Port (Current: ')" "${CLR_CYAN}${CLR_BOLD}" "${KZM2_GUI_PORT})" "${CLR_RESET}"
-        printf " %b%s%b\n" "${CLR_BOLD}" "$(T TXT_GUI_OPT_6)" "${CLR_RESET}"
-        printf " %b%s%b\n" "${CLR_DIM}"  "$(T TXT_GUI_OPT_0)" "${CLR_RESET}"
+        printf " %s\n" "$(T TXT_GUI_OPT_1)"
+        printf " %s\n" "$(T TXT_GUI_OPT_2)"
+        printf " %s\n" "$(T TXT_GUI_OPT_3)"
+        printf " %s\n" "$(T TXT_GUI_OPT_4)"
+        printf " %s%b%s%b\n" "$(T _ '5) Port Degistir (Mevcut: ' '5) Change Port (Current: ')" "${CLR_CYAN}${CLR_BOLD}" "${KZM2_GUI_PORT})" "${CLR_RESET}"
+        printf " %s\n" "$(T TXT_GUI_OPT_6)"
+        printf " %s\n" "$(T TXT_GUI_OPT_0)"
         print_line "-"
         printf "$(T _ 'Seciminiz: ' 'Your choice: ')"
         read -r _gchoice
@@ -17906,9 +17907,9 @@ main_menu_loop() {
                 print_line "="
                 printf " %b%s%b\n" "${CLR_CYAN}" "$(T _ '9. DPI Profili / WAN Arayuzu' '9. DPI Profile / WAN Interface')" "${CLR_RESET}"
                 print_line "="
-                printf " %b 1.%b %s\n" "${CLR_BOLD}" "${CLR_RESET}" "$(T _ 'DPI Profilini Degistir' 'Change DPI Profile')"
-                printf " %b 2.%b %s  %b[$(T _ 'Mevcut' 'Current'): $([ -z "$(get_wan_if)" ] && printf "%b%s%b" "${CLR_CYAN}" "$(T _ 'Tum Arayuzler' 'All Interfaces')" "${CLR_DIM}" || printf "%b%s%b" "${CLR_GREEN}${CLR_BOLD}" "$(get_wan_if)" "${CLR_RESET}${CLR_DIM}")]%b\n" "${CLR_BOLD}" "${CLR_RESET}" "$(T _ 'WAN Arayuzunu Degistir' 'Change WAN Interface')" "${CLR_DIM}" "${CLR_RESET}"
-                printf " %b 0.%b %s\n" "${CLR_BOLD}" "${CLR_RESET}" "$(T _ 'Geri' 'Back')"
+                printf " 1. %s\n" "$(T _ 'DPI Profilini Degistir' 'Change DPI Profile')"
+                printf " 2. %s  %b[$(T _ 'Mevcut' 'Current'): $([ -z "$(get_wan_if)" ] && printf "%b%s%b" "${CLR_CYAN}" "$(T _ 'Tum Arayuzler' 'All Interfaces')" "${CLR_RESET}" || printf "%b%s%b" "${CLR_GREEN}" "$(get_wan_if)" "${CLR_RESET}")]%b\n" "$(T _ 'WAN Arayuzunu Degistir' 'Change WAN Interface')" "${CLR_RESET}"
+                printf " 0. %s\n" "$(T _ 'Geri' 'Back')"
                 print_line "-"
                 printf "%s" "$(T _ 'Secim: ' 'Choice: ')"
                 read -r _m9
@@ -18007,6 +18008,8 @@ R|r) scheduled_reboot_menu ;;
 }
 # Internal: run health monitor loop as a detached daemon
 if [ "$1" = "--netfilter-hook" ]; then
+    # Zapret2 manuel durdurulduysa hook kurallari yeniden uygulamamali
+    [ -f /tmp/.zapret2_paused ] && exit 0
     # nozapret RETURN kurali — her modda calisir (tum ag + list)
     nozapret_apply_rules 2>/dev/null
     # List modda KZM2'nin ozel IPSET kurallarini uygula
