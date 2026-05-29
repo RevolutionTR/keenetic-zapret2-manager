@@ -37,7 +37,7 @@
 # -------------------------------------------------------------------
 SCRIPT_NAME="keenetic_zapret2_manager.sh"
 # Version scheme: vYY.M.D[.N]  (YY=year, M=month, D=day, N=daily revision)
-SCRIPT_VERSION="v26.5.30"
+SCRIPT_VERSION="v26.5.30.1"
 SCRIPT_REPO="https://github.com/RevolutionTR/keenetic-zapret2-manager"
 KZM2_SCRIPT_PATH="/opt/lib/opkg/keenetic_zapret2_manager.sh"
 SCRIPT_AUTHOR="RevolutionTR"
@@ -3276,7 +3276,44 @@ TXT_INSTALL_CFG_RUNNING_TR="Zapret2 yapilandirma betigi calistiriliyor..."
 TXT_INSTALL_CFG_RUNNING_EN="Running Zapret2 configuration script..."
 TXT_INSTALL_KEENETIC_CFG_TR="Zapret2'yin Keenetic cihazlarda calisabilmesi icin gerekli yapilandirmalar yapiliyor..."
 TXT_INSTALL_KEENETIC_CFG_EN="Applying required configurations for Zapret2 to run on Keenetic devices..."
+# Zapret2 icin gerekli kernel modullerini yukler
+# Bazi cihazlarda OPKG yeniden kurulumundan sonra modprobe yolu bozuk olabilir
+# Bu fonksiyon /lib/modules/ altindan insmod ile yuklemeyi dener
+kzm2_load_zapret2_kmods() {
+    local _kver _dir _m
+    _kver="$(uname -r)"
+    _dir="/lib/modules/${_kver}"
+    for _m in \
+        ip_set \
+        ip_set_hash_ip \
+        ip_set_hash_net \
+        ip_set_bitmap_port \
+        nfnetlink \
+        nfnetlink_queue \
+        xt_set \
+        xt_multiport \
+        xt_connbytes \
+        xt_mark \
+        xt_NFQUEUE
+    do
+        lsmod 2>/dev/null | awk '{print $1}' | grep -qx "$_m" && continue
+        insmod "${_dir}/${_m}.ko" >/dev/null 2>&1 || modprobe "$_m" >/dev/null 2>&1
+    done
+    # bitmap:port testi — temel kontrol
+    ipset destroy _kzm2_bmp_test 2>/dev/null
+    if ! ipset create _kzm2_bmp_test bitmap:port range 0-65535 2>/dev/null; then
+        ipset destroy _kzm2_bmp_test 2>/dev/null
+        return 1
+    fi
+    ipset destroy _kzm2_bmp_test 2>/dev/null
+    return 0
+}
 update_kernel_module_config() {
+    # Idempotent kontrol — zaten eklenmisse tekrar ekleme
+    if grep -q "KZM2_KERNEL_MODULES_BEGIN" /opt/zapret2/init.d/sysv/zapret2 2>/dev/null; then
+        echo "$(T TXT_KERN_MOD_OK)"
+        return 0
+    fi
     awk '
       BEGIN { inserted=0 }
       {
@@ -3284,27 +3321,11 @@ update_kernel_module_config() {
         if (!inserted && $0 == "{") {
           getline nextline
           if (prev_line == "do_start()") {
-            print "    if lsmod | grep \"xt_multiport \" &> /dev/null ;  then"
-            print "        echo \"xt_multiport.ko is already loaded\""
-            print "    else"
-            print "        if insmod /lib/modules/$(uname -r)/xt_multiport.ko &> /dev/null; then"
-            print "            echo \"iptable_raw.ko loaded\""
-            print "        else"
-            print "            echo \"Cannot find xt_multiport.ko kernel module, aborting\""
-            print "            exit 1"
-            print "        fi"
-            print "    fi"
-            print ""
-            print "    if lsmod | grep \"xt_connbytes \" &> /dev/null ;  then"
-            print "        echo \"xt_connbytes.ko is already loaded\""
-            print "    else"
-            print "        if insmod /lib/modules/$(uname -r)/xt_connbytes.ko &> /dev/null; then"
-            print "            echo \"xt_connbytes.ko loaded\""
-            print "        else"
-            print "            echo \"Cannot find xt_connbytes.ko kernel module, aborting\""
-            print "            exit 1"
-            print "        fi"
-            print "    fi"
+            print "    # KZM2_KERNEL_MODULES_BEGIN"
+            print "    for _m in ip_set ip_set_hash_ip ip_set_hash_net ip_set_bitmap_port nfnetlink nfnetlink_queue xt_set xt_multiport xt_connbytes xt_mark; do"
+            print "        lsmod | awk '{print $1}' | grep -qx \"${_m}\" && continue"
+            print "        insmod /lib/modules/$(uname -r)/${_m}.ko &> /dev/null || true"
+            print "    done"
             print ""
             print "    if lsmod | grep \"xt_NFQUEUE \" &> /dev/null ;  then"
             print "        echo \"xt_NFQUEUE.ko is already loaded\""
@@ -3317,6 +3338,7 @@ update_kernel_module_config() {
             print "        fi"
             print "    fi"
             print ""
+            print "    # KZM2_KERNEL_MODULES_END"
             inserted=1
           }
           print nextline
@@ -3850,8 +3872,26 @@ check_keenetic_components() {
         fi
     fi
     
+    # ipset bitmap:port kernel modulu kontrolu
+    if ipset create _kzm2_bmp_chk bitmap:port range 0-65535 2>/dev/null; then
+        ipset destroy _kzm2_bmp_chk 2>/dev/null
+        print_status PASS "$(T _ 'ipset bitmap:port kernel modulu' 'ipset bitmap:port kernel module')"
+    else
+        ipset destroy _kzm2_bmp_chk 2>/dev/null
+        print_status WARN "$(T _ 'ipset bitmap:port modulu yuklu degil — kzm2_load_zapret2_kmods ile yukleniyor' 'ipset bitmap:port module not loaded — loading via kzm2_load_zapret2_kmods')"
+        kzm2_load_zapret2_kmods 2>/dev/null
+        if ipset create _kzm2_bmp_chk2 bitmap:port range 0-65535 2>/dev/null; then
+            ipset destroy _kzm2_bmp_chk2 2>/dev/null
+            print_status PASS "$(T _ 'ipset bitmap:port yuklendi' 'ipset bitmap:port loaded')"
+        else
+            ipset destroy _kzm2_bmp_chk2 2>/dev/null
+            print_status FAIL "$(T _ 'ipset bitmap:port yuklenemedi — Zapret2 port kurallari eklenemeyebilir' 'ipset bitmap:port failed to load — Zapret2 port rules may not apply')"
+            missing_critical=1
+        fi
+    fi
+
     print_line "-"
-    
+
     if [ "$missing_critical" -eq 1 ]; then
         echo ""
         print_status FAIL "$(T TXT_COMP_CRIT_FAIL)"
@@ -4156,6 +4196,8 @@ start_zapret2() {
     install_zapret_pause_guard
     # Tum runtime izinlerini duzelt (nfqws2 nobody user ile calisir)
     fix_zapret2_runtime_permissions
+    # Zapret2 icin gerekli kernel modullerini yukle (bitmap:port dahil)
+    kzm2_load_zapret2_kmods >/dev/null 2>&1
     if is_zapret2_running; then
         # Process calisiyor ama kurallar eksik olabilir — tamir et
         /opt/zapret2/init.d/sysv/zapret2 start-fw >/dev/null 2>&1
@@ -5561,6 +5603,7 @@ install_zapret2() {
     allow_firewall
     add_auto_start_zapret2
     fix_zapret2_runtime_permissions
+    kzm2_load_zapret2_kmods >/dev/null 2>&1
     echo "$(T TXT_INSTALL_DONE)"
     sync_zapret_iface_wan_config
     restart_zapret2
@@ -12526,6 +12569,14 @@ DEOF
             { opkg list-installed 2>/dev/null | grep -qE "^xtables-addons|^kmod-ipt-xtables" || lsmod 2>/dev/null | grep -qE "^xt_condition|^xt_fuzzy"; } && _ok "Netfilter Xtables-addons geni&#351;letme paketleri" || _fail "Netfilter Xtables-addons bulunamad&#305;"
             { lsmod 2>/dev/null | grep -qi "sch_\|ntc\|^cls_" || grep -qi "SCH_INGRESS\|SCH_HTB\|SCH_HFSC" /proc/net/psched 2>/dev/null || grep -rqi "sch_ingress\|sch_htb\|CONFIG_NET_SCH" /proc/config.gz 2>/dev/null || ls /sys/kernel/debug/tracing 2>/dev/null | grep -q . || find /lib/modules -name "sch_*.ko" 2>/dev/null | grep -q .; } && _ok "Trafik Kontrol (tc) kernel mod&#252;lleri" || _info "Trafik Kontrol (tc) bulunamad&#305;"
             [ -x "/opt/zapret2/nfq2/nfqws2" ] && _ok "nfqws2 binary" || _info "nfqws binary bulunamadi"
+            ipset destroy _kzm2_bmp_cgi 2>/dev/null
+            if ipset create _kzm2_bmp_cgi bitmap:port range 0-65535 2>/dev/null; then
+                ipset destroy _kzm2_bmp_cgi 2>/dev/null
+                _ok "ipset bitmap:port kernel mod&#252;l&#252;"
+            else
+                ipset destroy _kzm2_bmp_cgi 2>/dev/null
+                _fail "ipset bitmap:port mod&#252;l&#252; eksik - Zapret2 port kurallari eklenemez"
+            fi
 
             _opt_line="$(awk '$2=="/opt"{print; exit}' /proc/mounts 2>/dev/null)"
             _opt_dev=""
@@ -17346,7 +17397,17 @@ function ccRun(){
             .replace('Netfilter Xtables-addons geni&#351;letme paketleri','Netfilter Xtables-addons geni&#351;letme paketleri')
             .replace('Trafik Kontrol (tc) kernel mod&#252;lleri','Trafik Kontrol (tc) kernel mod&#252;lleri')
             .replace('Trafik Kontrol (tc) bulunamad&#305;','Trafik Kontrol (tc) bulunamad&#305;')
-            .replace('Harici depolama - USB (/opt ba&#287;l&#305;)','Harici depolama - USB (/opt ba&#287;l&#305;)');
+            .replace('Harici depolama - USB (/opt bagli)','Harici depolama - USB (/opt ba&#287;l&#305;)')
+            .replace('Dahili depolama - eMMC/NAND (/opt bagli)','Dahili depolama - eMMC/NAND (/opt ba&#287;l&#305;)')
+            .replace('Dahili depolama - eMMC/SD (/opt bagli)','Dahili depolama - eMMC/SD (/opt ba&#287;l&#305;)')
+            .replace('Dahili depolama - NVMe SSD (/opt bagli)','Dahili depolama - NVMe SSD (/opt ba&#287;l&#305;)')
+            .replace('Dahili flash (/opt bagli) - USB surucusu onerilir','Dahili flash (/opt ba&#287;l&#305;) - USB s&#252;r&#252;c&#252;s&#252; &#246;nerilir')
+            .replace('Dahili flash - USB surucusu onerilir','Dahili flash - USB s&#252;r&#252;c&#252;s&#252; &#246;nerilir')
+            .replace('/opt tmpfs - yeniden baslatmada kayip','/opt tmpfs - yeniden ba&#351;lat&#305;lmada kay&#305;p')
+            .replace('Depolama (/opt bagli)','Depolama (/opt ba&#287;l&#305;)')
+            .replace('Depolama - onerilir (USB/eMMC)','Depolama - &#246;nerilir (USB/eMMC)')
+            .replace('ipset bitmap:port kernel mod&#252;l&#252;','ipset bitmap:port kernel mod&#252;l&#252;')
+            .replace('ipset bitmap:port mod&#252;l&#252; eksik - Zapret2 port kurallari eklenemez','ipset bitmap:port mod&#252;l&#252; eksik - Zapret2 port kurallari eklenemez');
         } else {
           restLbl=restLbl
             .replace('IPv6 deste&#287;i (ip6tables)','IPv6 support (ip6tables)')
@@ -17360,7 +17421,17 @@ function ccRun(){
             .replace('Netfilter Xtables-addons bulunamad&#305;','Netfilter Xtables-addons not found')
             .replace('Trafik Kontrol (tc) kernel mod&#252;lleri','Traffic Control (tc) kernel modules')
             .replace('Trafik Kontrol (tc) bulunamad&#305;','Traffic Control (tc) not found')
-            .replace('Harici depolama - USB (/opt ba&#287;l&#305;)','External storage - USB (/opt mounted)');
+            .replace('Harici depolama - USB (/opt bagli)','External storage - USB (/opt mounted)')
+            .replace('Dahili depolama - eMMC/NAND (/opt bagli)','Internal storage - eMMC/NAND (/opt mounted)')
+            .replace('Dahili depolama - eMMC/SD (/opt bagli)','Internal storage - eMMC/SD (/opt mounted)')
+            .replace('Dahili depolama - NVMe SSD (/opt bagli)','Internal storage - NVMe SSD (/opt mounted)')
+            .replace('Dahili flash (/opt bagli) - USB surucusu onerilir','Internal flash (/opt mounted) - USB drive recommended')
+            .replace('Dahili flash - USB surucusu onerilir','Internal flash - USB drive recommended')
+            .replace('/opt tmpfs - yeniden baslatmada kayip','/opt tmpfs - lost on reboot')
+            .replace('Depolama (/opt bagli)','Storage (/opt mounted)')
+            .replace('Depolama - onerilir (USB/eMMC)','Storage - recommended (USB/eMMC)')
+            .replace('ipset bitmap:port kernel mod&#252;l&#252;','ipset bitmap:port kernel module')
+            .replace('ipset bitmap:port mod&#252;l&#252; eksik - Zapret2 port kurallari eklenemez','ipset bitmap:port module missing - Zapret2 port rules may not apply');
         }
         h+='<div>'+pfxHtml+'<span style="color:'+tc+'">'+restLbl+'</span></div>';
       }
