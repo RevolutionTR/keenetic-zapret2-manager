@@ -37,7 +37,7 @@
 # -------------------------------------------------------------------
 SCRIPT_NAME="keenetic_zapret2_manager.sh"
 # Version scheme: vYY.M.D[.N]  (YY=year, M=month, D=day, N=daily revision)
-SCRIPT_VERSION="v26.5.30.1"
+SCRIPT_VERSION="v26.5.31"
 SCRIPT_REPO="https://github.com/RevolutionTR/keenetic-zapret2-manager"
 KZM2_SCRIPT_PATH="/opt/lib/opkg/keenetic_zapret2_manager.sh"
 SCRIPT_AUTHOR="RevolutionTR"
@@ -274,9 +274,38 @@ kzm2_self_test() {
     else
         _warn "netfilter: 000-zapret2.sh missing (netfilter hook not installed)"
     fi
+    # iptables NFQUEUE kural kontrolu
+    _nfq_rules="$(iptables -t mangle -L POSTROUTING -n 2>/dev/null | grep -c NFQUEUE)"
+    if [ "${_nfq_rules:-0}" -gt 0 ]; then
+        _pass "iptables: ${_nfq_rules} NFQUEUE kural mevcut"
+    else
+        _warn "iptables: NFQUEUE kural yok (zapret2 calismiyor olabilir)"
+    fi
+    # bitmap:port kernel modulu kontrolu
+    if ipset create _kzm2_st_bmp bitmap:port range 0-65535 2>/dev/null; then
+        ipset destroy _kzm2_st_bmp 2>/dev/null
+        _pass "bitmap:port: kernel modulu kullanilabilir"
+    else
+        ipset destroy _kzm2_st_bmp 2>/dev/null
+        _warn "bitmap:port: kullanilabilir degil (zapret2 port kurallari eklenemeyebilir)"
+    fi
+    # zport_tcp ipset kontrolu (sadece ALL modunda kritik)
+    _client_mode="$(cat /opt/zapret2/ipset_clients_mode 2>/dev/null | tr -d '[:space:]')"
+    if ipset list zport_tcp >/dev/null 2>&1; then
+        _pass "zport_tcp: ipset mevcut"
+    elif [ "$_client_mode" = "list" ]; then
+        _pass "zport_tcp: ipset yok ama IPSET modunda kullanilmiyor"
+    else
+        _warn "zport_tcp: ipset yok (zapret2 henuz baslamadi veya bitmap:port eksik)"
+    fi
     # 12) Kullanilmayan TXT_* kontrolu kaldirildi - bilinen anahtarlar mevcut
     echo "=== Summary: FAIL=$fail WARN=$warn ==="
-    [ "$fail" -eq 0 ]
+    if [ "$fail" -gt 0 ]; then
+        return 1
+    elif [ "$warn" -gt 0 ]; then
+        return 2
+    fi
+    return 0
 }
 # Run self-test and exit
 if [ "$KZM2_SELF_TEST" = "1" ]; then
@@ -1472,6 +1501,12 @@ TXT_HM_SYSLOG_IKE_MSG_TR="📌 Keenetic Sistem Log Uyarisi\n🛡️ IKE baglanti
 TXT_HM_SYSLOG_IKE_MSG_EN="📌 Keenetic System Log Alert\n🛡️ IKE connection attempt: %CNT% new\n\n📎 Note: This message is not related to KZM2 or Zapret2. It is sent for informational purposes as an important event detected in the Keenetic system log."
 TXT_HM_SYSLOG_TLS_MSG_TR="⚠️ Zapret2 TLS Mudahalesi Uyarisi\n🔒 Son %MIN% dakikada %CNT% adet TLS baglanti hatasi tespit edildi.\n\nBu hata Zapret2 bypass'inin TLS baglantilarini bozdugunun isareti olabilir. ISS'inizde DPI olmayabilir veya TTL degeriniz cok yuksek olabilir.\n\nOneri: Blockcheck2 calistirin (Menu B) veya Zapret2'yi gecici olarak durdurun (Menu 4) ve baglantinizi test edin."
 TXT_HM_SYSLOG_TLS_MSG_EN="⚠️ Zapret2 TLS Interference Warning\n🔒 %CNT% TLS connection errors detected in the last %MIN% minutes.\n\nThis may indicate that Zapret2 bypass is interfering with TLS connections. Your ISP may not have DPI or your TTL value may be too high.\n\nSuggestion: Run Blockcheck2 (Menu B) or temporarily stop Zapret2 (Menu 4) and test your connection."
+TXT_HM_NFQWS_ALERT_MSG_TR="⚠️ nfqws2 Kuyruk Uyarisi\n📦 queue=%QL% drops=%DR%\n\nNFQUEUE kuyrugundan paket dusuyor veya kuyruk dolmaya basladi. Bu ag yavaslamasi veya DPI bypass sorununa isaret edebilir.\n\nDetay icin Menu 16 - 4 uzerinden Debug modunu acin."
+TXT_HM_NFQWS_ALERT_MSG_EN="⚠️ nfqws2 Queue Alert\n📦 queue=%QL% drops=%DR%\n\nPackets are being dropped or the NFQUEUE is starting to fill up. This may indicate network slowdown or DPI bypass issues.\n\nFor details enable Debug mode via Menu 16 - 4."
+TXT_HM_NFQWS_ALERT_OK_MSG_TR="✅ nfqws2 Kuyruk Normal\n📦 queue=0 drops=0\n\nNFQUEUE kuyrugu normale dondu."
+TXT_HM_NFQWS_ALERT_OK_MSG_EN="✅ nfqws2 Queue Normal\n📦 queue=0 drops=0\n\nNFQUEUE queue returned to normal."
+TXT_HM_NFQWS_ALERT_ITEM_TR="nfqws2 Kuyruk Alarmi"
+TXT_HM_NFQWS_ALERT_ITEM_EN="nfqws2 Queue Alert"
 TXT_HM_PROMPT_COOLDOWN_TR="Bildirim soguma (sn) [or: 600]:"
 TXT_HM_PROMPT_COOLDOWN_EN="Notification cooldown (sec) [e.g. 600]:"
 # Health check menu
@@ -1660,6 +1695,8 @@ TXT_TGBOT_SELFTEST_PASS_TR="PASS=0 - Tum testler basarili."
 TXT_TGBOT_SELFTEST_PASS_EN="PASS=0 - All tests passed."
 TXT_TGBOT_SELFTEST_FAIL_TR="Selftest hata buldu."
 TXT_TGBOT_SELFTEST_FAIL_EN="Selftest found errors."
+TXT_TGBOT_SELFTEST_WARN_TR="Selftest uyari buldu. Detaylar icin log dosyasini inceleyin."
+TXT_TGBOT_SELFTEST_WARN_EN="Selftest found warnings. Check the log file for details."
 TXT_TGBOT_MENU_LOGS_TITLE_TR="Son Loglar"
 TXT_TGBOT_MENU_LOGS_TITLE_EN="Recent Logs"
 TXT_TGBOT_BOT_ENABLE_TR="Bot aktif mi"
@@ -3101,32 +3138,27 @@ add_ipset_nfqueue_rules() {
     _mark_excl="-m mark ! --mark 0x40000000/0x40000000"
 
     # Sadece secili istemciler icin; connbytes ile yalnizca ilk paketleri isle.
-    # nozapret: hem hedef dis IP (site muafiyeti) hem kaynak LAN IP (cihaz muafiyeti) kontrol edilir
     iptables -t mangle -I POSTROUTING 1 ${WAN:+-o $WAN} -p udp -m multiport --dports 443 \
         $_mark_excl \
         -m set --match-set "$IPSET_CLIENT_NAME" src \
         -m connbytes --connbytes 1:$udp_out --connbytes-dir original --connbytes-mode packets \
         $_nozapret_dst \
-        $_nozapret_src \
         -j NFQUEUE --queue-num "$Q" --queue-bypass >/dev/null 2>&1
     iptables -t mangle -I POSTROUTING 1 ${WAN:+-o $WAN} -p tcp -m multiport --dports 80,443 \
         $_mark_excl \
         -m set --match-set "$IPSET_CLIENT_NAME" src \
         -m connbytes --connbytes 1:$tcp_out --connbytes-dir original --connbytes-mode packets \
         $_nozapret_dst \
-        $_nozapret_src \
         -j NFQUEUE --queue-num "$Q" --queue-bypass >/dev/null 2>&1
     iptables -I INPUT 1 ${WAN:+-i $WAN} -p tcp -m multiport --sports 80,443 \
         -m set --match-set "$IPSET_CLIENT_NAME" dst \
         -m connbytes --connbytes 1:$tcp_in --connbytes-dir reply --connbytes-mode packets \
         $_nozapret_src \
-        $_nozapret_dst \
         -j NFQUEUE --queue-num "$Q" --queue-bypass >/dev/null 2>&1
     iptables -I FORWARD 1 ${WAN:+-i $WAN} -p tcp -m multiport --sports 80,443 \
         -m set --match-set "$IPSET_CLIENT_NAME" dst \
         -m connbytes --connbytes 1:$tcp_in --connbytes-dir reply --connbytes-mode packets \
         $_nozapret_src \
-        $_nozapret_dst \
         -j NFQUEUE --queue-num "$Q" --queue-bypass >/dev/null 2>&1
     # UDP incoming: zapret-auto.lua QUIC icin gelen yanitlara da bakmali
     local udp_in="3"
@@ -3138,6 +3170,21 @@ add_ipset_nfqueue_rules() {
         -m set --match-set "$IPSET_CLIENT_NAME" dst \
         -m connbytes --connbytes 1:$udp_in --connbytes-dir reply --connbytes-mode packets \
         $_nozapret_src \
+        -j NFQUEUE --queue-num "$Q" --queue-bypass >/dev/null 2>&1
+    # FIN/RST giden: nfqws2 conntrack'in baglanti kapanisini bilmesi icin.
+    # NOT: Sunucudan gelen RST (FORWARD incoming) eklenmez — DPI RST ile karisip
+    # bypass'i bozabilir.
+    iptables -t mangle -I POSTROUTING 1 ${WAN:+-o $WAN} -p tcp -m multiport --dports 80,443 \
+        $_mark_excl \
+        -m set --match-set "$IPSET_CLIENT_NAME" src \
+        --tcp-flags FIN FIN \
+        $_nozapret_dst \
+        -j NFQUEUE --queue-num "$Q" --queue-bypass >/dev/null 2>&1
+    iptables -t mangle -I POSTROUTING 1 ${WAN:+-o $WAN} -p tcp -m multiport --dports 80,443 \
+        $_mark_excl \
+        -m set --match-set "$IPSET_CLIENT_NAME" src \
+        --tcp-flags RST RST \
+        $_nozapret_dst \
         -j NFQUEUE --queue-num "$Q" --queue-bypass >/dev/null 2>&1
 }
 del_ipset_nfqueue_rules() {
@@ -3178,8 +3225,7 @@ enforce_client_mode_rules() {
         del_ipset_nfqueue_rules >/dev/null 2>&1
         healthmon_log "$(date '+%Y-%m-%d %H:%M:%S') | client_rules_applied | mode=all | ipset_rules_removed"
     fi
-    # Her modda nozapret RETURN kurali uygula (tum ag + list)
-    nozapret_apply_rules >/dev/null 2>&1
+    # nozapret RETURN kurali --netfilter-hook handler ve start_zapret2 icinde uygulanir.
 }
 # Cekirdek modulu yapilandirmasini gunceller
 # TR/EN Dictionary (WAN Interface Selection & Cleanup)
@@ -3324,7 +3370,7 @@ update_kernel_module_config() {
             print "    # KZM2_KERNEL_MODULES_BEGIN"
             print "    for _m in ip_set ip_set_hash_ip ip_set_hash_net ip_set_bitmap_port nfnetlink nfnetlink_queue xt_set xt_multiport xt_connbytes xt_mark; do"
             print "        lsmod | awk '{print $1}' | grep -qx \"${_m}\" && continue"
-            print "        insmod /lib/modules/$(uname -r)/${_m}.ko &> /dev/null || true"
+            print "        insmod /lib/modules/$(uname -r)/${_m}.ko &> /dev/null || modprobe \"${_m}\" &> /dev/null || true"
             print "    done"
             print ""
             print "    if lsmod | grep \"xt_NFQUEUE \" &> /dev/null ;  then"
@@ -3353,6 +3399,11 @@ update_kernel_module_config() {
         echo "$(T TXT_KERN_MOD_CHMOD_FAIL)"
         return 1
     }
+    # Marker dogrulamasi — blok gercekten eklendi mi?
+    if ! grep -q "KZM2_KERNEL_MODULES_BEGIN" /opt/zapret2/init.d/sysv/zapret2 2>/dev/null; then
+        echo "$(T TXT_KERN_MOD_ADD_FAIL)"
+        return 1
+    fi
     echo "$(T TXT_KERN_MOD_OK)"
     return 0
 }
@@ -6898,7 +6949,7 @@ display_menu() {
     if [ -n "$_isp_dns" ]; then
         printf "  %b%-*s%b : %b%s%b\n" "${CLR_BOLD}" "$_lw" "ISP DNS" "${CLR_RESET}" "${CLR_ORANGE}" "$(tpl_render "$(T TXT_ISP_DNS_WARN)" DNS "$_isp_dns")" "${CLR_RESET}"
     fi
-    # Telegram Bot - sadece TG_BOT_ENABLE=1 ise goster
+    # Telegram Bot - her zaman goster
     if [ "$(grep -s '^TG_BOT_ENABLE=' /opt/etc/telegram.conf | cut -d= -f2 | tr -d '"')" = "1" ]; then
         if [ -f "/tmp/kzm2_telegram_bot.pid" ] && kill -0 "$(cat "/tmp/kzm2_telegram_bot.pid" 2>/dev/null)" 2>/dev/null; then
             printf "  %b%-*s%b : %b%s%b\n" "${CLR_BOLD}" "$_lw" "$(T TXT_TGBOT_BANNER_LABEL)" \
@@ -6907,8 +6958,11 @@ display_menu() {
             printf "  %b%-*s%b : %b%s%b\n" "${CLR_BOLD}" "$_lw" "$(T TXT_TGBOT_BANNER_LABEL)" \
                 "${CLR_RESET}" "${CLR_RED}"   "$(T TXT_TGBOT_BANNER_INACTIVE)" "${CLR_RESET}"
         fi
+    else
+        printf "  %b%-*s%b : %b%s%b\n" "${CLR_BOLD}" "$_lw" "$(T TXT_TGBOT_BANNER_LABEL)" \
+            "${CLR_RESET}" "${CLR_DIM}" "$(T TXT_TG_NOT_CONFIGURED)" "${CLR_RESET}"
     fi
-    # Web Panel - sadece GUI kuruluysa goster
+    # Web Panel - her zaman goster
     if kzm_gui_is_running 2>/dev/null; then
         kzm_gui_load_config 2>/dev/null
         local _gui_lan_ip
@@ -6920,6 +6974,9 @@ display_menu() {
     elif [ -f "/opt/etc/lighttpd/lighttpd.conf" ]; then
         printf "  %b%-*s%b : %b%s%b\n" "${CLR_BOLD}" "$_lw" "$(T TXT_GUI_BANNER_LABEL)" \
             "${CLR_RESET}" "${CLR_RED}" "$(T TXT_GUI_BANNER_INACTIVE)" "${CLR_RESET}"
+    else
+        printf "  %b%-*s%b : %b%s%b\n" "${CLR_BOLD}" "$_lw" "$(T TXT_GUI_BANNER_LABEL)" \
+            "${CLR_RESET}" "${CLR_DIM}" "$(T TXT_GUI_NOT_INSTALLED)" "${CLR_RESET}"
     fi
     local _kzm_sha_state _zap_sha_state _clr_kzm _clr_zap
     _kzm_sha_state="$(cat /opt/etc/kzm2_sha256_kzm.state 2>/dev/null)"
@@ -8026,7 +8083,30 @@ run_health_check() {
     # meta lines first (not counted)
     printf " %-35s : %s\n" "$(T TXT_HEALTH_DNS_MODE)" "$dns_mode" >> "$HC_NET"
     printf " %-35s : %s\n" "$(T TXT_HEALTH_DNS_SEC)" "$dns_sec" >> "$HC_NET"
-    printf " %-35s : %s\n" "$(T TXT_HEALTH_DNS_PROVIDERS)" "$dns_providers" >> "$HC_NET"
+    # DNS Saglayicilar: uzun olabilir, terminal genisligine gore sardir
+    {
+        _dns_lbl="$(T TXT_HEALTH_DNS_PROVIDERS)"
+        _dns_tw="$(tput cols 2>/dev/null)"
+        [ -z "$_dns_tw" ] || [ "$_dns_tw" -lt 40 ] 2>/dev/null && _dns_tw="${COLUMNS:-120}"
+        _dns_avail=$(( _dns_tw - 39 ))
+        [ "$_dns_avail" -lt 20 ] && _dns_avail=40
+        _dns_ind="$(printf '%*s' 39 '')"
+        printf '%s' "$dns_providers" | awk -v avail="$_dns_avail" -v lbl="$_dns_lbl" -v ind="$_dns_ind" '
+        BEGIN { RS=","; cur=""; first=1 }
+        { item=$0; gsub(/[[:space:]]/,"",item); if (!item) next
+          t=(cur==""?item:cur","item)
+          if (length(t)<=avail) { cur=t }
+          else {
+            if (cur!="") {
+              if (first) { printf " %-35s : %s\n",lbl,cur; first=0 }
+              else printf "%s%s\n",ind,cur
+            }
+            cur=item
+          }
+        }
+        END { if (cur!="") { if (first) printf " %-35s : %s\n",lbl,cur; else printf "%s%s\n",ind,cur } }
+        '
+    } >> "$HC_NET"
     add_line "$HC_NET" "$(T TXT_HEALTH_DNS_LOCAL)" "" "$dns_local_ok"
     add_line "$HC_NET" "$(T TXT_HEALTH_DNS_PUBLIC)" "" "$dns_8888_ok"
     add_line "$HC_NET" "$(T TXT_HEALTH_DNS_MATCH)" " $dns_cons_msg" "$dns_cons_ok"
@@ -10607,10 +10687,16 @@ tgbot_handle_callback() {
                 rm -f "$_st_tmp" 2>/dev/null
                 break
             fi
-            if sh "$_st_script" --self-test > "$_st_tmp" 2>&1; then
+            sh "$_st_script" --self-test > "$_st_tmp" 2>&1
+            _st_rc=$?
+            if [ "$_st_rc" -eq 0 ]; then
                 tgbot_send_document "$chat_id" "$_st_tmp" \
                     "✅ Selftest PASS | ${TG_ROUTER_ID:-router}"
                 tgbot_send "$chat_id" "$(T TXT_TGBOT_SELFTEST_PASS)" "$(tgbot_kb_device)"
+            elif [ "$_st_rc" -eq 2 ]; then
+                tgbot_send_document "$chat_id" "$_st_tmp" \
+                    "⚠️ Selftest WARN | ${TG_ROUTER_ID:-router}"
+                tgbot_send "$chat_id" "$(T TXT_TGBOT_SELFTEST_WARN)" "$(tgbot_kb_device)"
             else
                 tgbot_send_document "$chat_id" "$_st_tmp" \
                     "❌ Selftest FAIL | ${TG_ROUTER_ID:-router}"
@@ -11077,6 +11163,7 @@ HM_QLEN_CRIT_TURNS="1"        # kac ardisik tur ust uste yuksekse aksiyon alinir
 # KeenDNS curl throttle: her dongu degil, bu kadar saniyede bir curl cek
 HM_KEENDNS_CURL_SEC="120"     # 0 = her dongude (eski davranis)
 HM_DEBUG="0"                 # 0=disable, 1=enable — debug log modu
+HM_NFQWS_ALERT="1"          # 0=disable, 1=enable — nfqws2 kuyruk alarmi
 HM_SYSLOG_WATCH="0"          # 0=disable, 1=enable — sistem log izleme
 HM_SYSLOG_COOLDOWN_SEC="600" # kritik olaylar icin bekleme suresi (saniye)
 HM_SYSLOG_IKE_COOLDOWN_SEC="3600" # IKE bekleme suresi (saniye, varsayilan 1 saat)
@@ -11118,6 +11205,7 @@ healthmon_load_config() {
     HM_SYSLOG_WATCH="0"
     HM_SYSLOG_COOLDOWN_SEC="600"
     HM_SYSLOG_IKE_COOLDOWN_SEC="3600"
+    HM_NFQWS_ALERT="1"
     [ -f "$HM_CONF_FILE" ] && . "$HM_CONF_FILE" 2>/dev/null
     # Sayi gerektiren degerler icin float/bos sanitize
     _hm_int() { eval "_v=\$$1"; case "${_v:-}" in *[!0-9]*|'') eval "$1=${2}";; esac; }
@@ -11158,6 +11246,7 @@ HM_QLEN_WARN_TH="$HM_QLEN_WARN_TH"
 HM_QLEN_CRIT_TURNS="$HM_QLEN_CRIT_TURNS"
 HM_KEENDNS_CURL_SEC="$HM_KEENDNS_CURL_SEC"
 HM_DEBUG="$HM_DEBUG"
+HM_NFQWS_ALERT="$HM_NFQWS_ALERT"
 HM_SYSLOG_WATCH="$HM_SYSLOG_WATCH"
 HM_SYSLOG_COOLDOWN_SEC="$HM_SYSLOG_COOLDOWN_SEC"
 HM_SYSLOG_IKE_COOLDOWN_SEC="$HM_SYSLOG_IKE_COOLDOWN_SEC"
@@ -11732,6 +11821,38 @@ healthmon_wan_is_up() {
 healthmon_wan_tick() {
     hm_wanmon_tick
 }
+kzm2_nfqws_alert_check() {
+    [ "${HM_NFQWS_ALERT:-1}" = "1" ] || return 0
+    # Queue 300 yoksa (nfqws2 durmus) - yanlis recovery mesaji gonderme
+    grep -q '^ *300 ' /proc/net/netfilter/nfnetlink_queue 2>/dev/null || return 0
+    local _ql _dr _flag _now _last _diff _msg
+    _flag="/tmp/kzm2_nfqws_alert_active"
+    _ql="$(awk '/^ *300/{print $3}' /proc/net/netfilter/nfnetlink_queue 2>/dev/null)"
+    _dr="$(awk '/^ *300/{print $6}' /proc/net/netfilter/nfnetlink_queue 2>/dev/null)"
+    local _ql_th="${HM_QLEN_WARN_TH:-50}"
+    # drops kumulatif — artis var mi kontrol et
+    local _dr_prev_f="/tmp/kzm2_nfqws_drops.prev"
+    local _dr_prev
+    _dr_prev="$(cat "$_dr_prev_f" 2>/dev/null)"
+    case "${_dr_prev:-}" in ''|*[!0-9]*) _dr_prev=0 ;; esac
+    echo "${_dr:-0}" > "$_dr_prev_f" 2>/dev/null
+    local _dr_inc=0
+    [ "${_dr:-0}" -gt "$_dr_prev" ] 2>/dev/null && _dr_inc=1
+    if [ "${_ql:-0}" -gt "$_ql_th" ] || [ "$_dr_inc" = "1" ] 2>/dev/null; then
+        if [ ! -f "$_flag" ]; then
+            touch "$_flag" 2>/dev/null
+            healthmon_log "$(date '+%Y-%m-%d %H:%M:%S') | nfqws_alert | queue=${_ql:-0} drops=${_dr:-0}"
+            _msg="$(tpl_render "$(T TXT_HM_NFQWS_ALERT_MSG)" QL "${_ql:-0}" DR "${_dr:-0}")"
+            telegram_send "$_msg" &
+        fi
+    else
+        if [ -f "$_flag" ]; then
+            rm -f "$_flag" 2>/dev/null
+            healthmon_log "$(date '+%Y-%m-%d %H:%M:%S') | nfqws_alert | recovered"
+            telegram_send "$(tpl_render "$(T TXT_HM_NFQWS_ALERT_OK_MSG)")" &
+        fi
+    fi
+}
 hm_syslog_watch_tick() {
     [ "${HM_SYSLOG_WATCH:-0}" = "1" ] || return 0
     local _log _now _cd _ike_cd
@@ -11806,6 +11927,11 @@ healthmon_loop() {
     rm -f /tmp/healthmon_cpu_* /tmp/healthmon_disk* /tmp/healthmon_ram* /tmp/healthmon_zapret_* /tmp/healthmon_last_* 2>/dev/null
     rm -f /tmp/healthmon_qlen.cnt /tmp/healthmon_qlen.prev /tmp/healthmon_keendns_curl.ts 2>/dev/null
     rm -f /tmp/healthmon_updatecheck.ts 2>/dev/null
+    # nfqws monitor temizle — once oku, sonra sil
+    local _mon_pid
+    _mon_pid="$(cat /tmp/kzm2_nfqws_mon.pid 2>/dev/null)"
+    [ -n "$_mon_pid" ] && kill -9 "$_mon_pid" 2>/dev/null
+    rm -f /tmp/kzm2_nfqws_mon.pid 2>/dev/null
     # Syslog state: silme, mevcut sayiyi yaz — restart sonrasi eski olaylar "yeni" sayilmasin
     _sl_log="$(LD_LIBRARY_PATH= ndmc -c 'show log' 2>/dev/null)"
     printf '%s\n' "${_sl_log}" | grep -cE 'unexpectedly stopped|too many failed requests|AUTH_TOPEER_FAILED|invalid password|access to.*denied' > /tmp/healthmon_syslog_crit.prev 2>/dev/null
@@ -12153,7 +12279,6 @@ healthmon_loop() {
                 else
                     zst="not_installed"
                 fi
-                # Heartbeat: log at most once per HM_HEARTBEAT_SEC
                 if [ "${HM_HEARTBEAT_SEC:-0}" -gt 0 ]; then
                     last_hb="$(cat "$hb_ts" 2>/dev/null)"
                     case "$last_hb" in
@@ -12166,6 +12291,63 @@ healthmon_loop() {
                     fi
                 fi
             fi
+        fi
+        # nfqws2 monitor — ana dongude, heartbeat bagimsiz
+        local _mon_pid_f="/tmp/kzm2_nfqws_mon.pid"
+        local _mon_pid
+        if [ "${HM_DEBUG:-0}" = "1" ]; then
+            _mon_pid="$(cat "$_mon_pid_f" 2>/dev/null)"
+            if [ -z "$_mon_pid" ] || ! kill -0 "$_mon_pid" 2>/dev/null; then
+                (
+                    trap '' HUP TERM INT
+                    _dbg_log="/tmp/healthmon_debug.log"
+                    _ts_file="/tmp/kzm2_debug_started.ts"
+                    # Baslangic zamanini koru — HealthMon restart edince sifirlanmasin
+                    if [ -f "$_ts_file" ]; then
+                        _started="$(cat "$_ts_file" 2>/dev/null)"
+                        case "${_started:-}" in ''|*[!0-9]*) _started="$(date +%s)" ;; esac
+                    else
+                        _started="$(date +%s)"
+                        echo "$_started" > "$_ts_file" 2>/dev/null
+                    fi
+                    _mon_end=$(( _started + 86400 ))
+                    while [ "$(grep -s '^HM_DEBUG=' /opt/etc/healthmon.conf | cut -d= -f2 | tr -d '\"')" = "1" ]; do
+                        if [ "$(date +%s)" -ge "$_mon_end" ]; then
+                            sed -i 's/^HM_DEBUG="1"/HM_DEBUG="0"/' /opt/etc/healthmon.conf 2>/dev/null
+                            printf '%s\n' "$(date '+%Y-%m-%d %H:%M:%S') | nfqws_mon | 24h timeout - HM_DEBUG=0 yapildi" >> "$_dbg_log" 2>/dev/null
+                            break
+                        fi
+                        _ql="$(awk '/^ *300/{print $3}' /proc/net/netfilter/nfnetlink_queue 2>/dev/null)"
+                        _dr="$(awk '/^ *300/{print $6}' /proc/net/netfilter/nfnetlink_queue 2>/dev/null)"
+                        _cpu="$(top -bn1 2>/dev/null | awk '/nfqws2/{print $8; exit}')"
+                        _rules="$(iptables -t mangle -L POSTROUTING -n 2>/dev/null | grep -c NFQUEUE)"
+                        _ct="$(cat /proc/sys/net/netfilter/nf_conntrack_count 2>/dev/null)"
+                        _ctmax="$(cat /proc/sys/net/netfilter/nf_conntrack_max 2>/dev/null)"
+                        _zport="$(ipset list zport_tcp >/dev/null 2>&1 && echo 1 || echo 0)"
+                        _mem="$(ps 2>/dev/null | awk '/nfqws2/{print $3; exit}')"
+                        _lsmod="$(lsmod 2>/dev/null | awk '{print $1}' | tr '\n' ' ')"
+                        echo "$_lsmod" | grep -qw "ip_set_bitmap_port" && _bmp=1 || _bmp=0
+                        echo "$_lsmod" | grep -qw "xt_NFQUEUE" && _nfq=1 || _nfq=0
+                        echo "$_lsmod" | grep -qw "xt_set" && _xts=1 || _xts=0
+                        echo "$_lsmod" | grep -qw "nfnetlink_queue" && _nfnq=1 || _nfnq=0
+                        printf '%s\n' "$(date '+%Y-%m-%d %H:%M:%S') | nfqws_mon | queue=${_ql:-?} drops=${_dr:-?} cpu=${_cpu:--}% rules=${_rules:-?} ct=${_ct:-?}/${_ctmax:-?} zport=${_zport:-?} mem=${_mem:-?} mods=bmp:${_bmp},nfq:${_nfq},xts:${_xts},nfnq:${_nfnq}" >> "$_dbg_log" 2>/dev/null
+                        # Log boyutu siniri: 10.000 satiri asinca en son 8.000 satiri tut
+                        _lc="$(wc -l < "$_dbg_log" 2>/dev/null)"
+                        [ "${_lc:-0}" -gt 10000 ] && tail -8000 "$_dbg_log" > "${_dbg_log}.tmp" 2>/dev/null && mv "${_dbg_log}.tmp" "$_dbg_log" 2>/dev/null
+                        sleep 10
+                    done
+                    rm -f "$_mon_pid_f" 2>/dev/null
+                    rm -f "$_ts_file" 2>/dev/null
+                ) &
+                echo "$!" > "$_mon_pid_f" 2>/dev/null
+            fi
+        else
+            _mon_pid="$(cat "$_mon_pid_f" 2>/dev/null)"
+            if [ -n "$_mon_pid" ] && kill -0 "$_mon_pid" 2>/dev/null; then
+                kill "$_mon_pid" 2>/dev/null
+            fi
+            rm -f "$_mon_pid_f" 2>/dev/null
+            rm -f "/tmp/kzm2_debug_started.ts" 2>/dev/null
         fi
                 # WAN monitor (NDM-based, no ping)
 # periodic update check (GitHub)
@@ -12330,6 +12512,8 @@ healthmon_loop() {
         fi
         # ---- SYSLOG WATCH ----
         hm_syslog_watch_tick
+        # ---- NFQWS ALERT ----
+        kzm2_nfqws_alert_check
         sleep "$HM_INTERVAL"
     done
     rm -f "$HM_PID_FILE" 2>/dev/null
@@ -13260,6 +13444,7 @@ healthmon_status() {
     hm_kv "$(T TXT_HM_STATUS_ZAPRET_CD)" "${HM_ZAPRET_COOLDOWN_SEC}s"
     hm_kv "$(T TXT_HM_STATUS_ZAPRET_AR)" "$HM_ZAPRET_AUTORESTART"
     hm_kv "$(T _ 'NFQUEUE kuyruk denetimi' 'NFQUEUE qlen watchdog')" "$(T _ 'denetim' 'monitor')=${HM_QLEN_WATCHDOG} $(T _ 'esik' 'thresh')=${HM_QLEN_WARN_TH} $(T _ 'tur' 'turn')=${HM_QLEN_CRIT_TURNS}"
+    hm_kv "$(T TXT_HM_NFQWS_ALERT_ITEM)" "$(T _ 'alarm' 'alert')=${HM_NFQWS_ALERT:-1}"
     hm_kv "$(T _ 'WAN izleme' 'WAN monitoring')" "$(T _ 'acik' 'on')=${HM_WANMON_ENABLE:-0} $(T _ 'kesinti' 'fail')=${HM_WANMON_FAIL_TH:-3} $(T _ 'toparlanma' 'ok')=${HM_WANMON_OK_TH:-2} (${HM_WANMON_IFACE:-auto})"
     hm_kv "$(T _ 'KeenDNS curl araligi' 'KeenDNS curl interval')" "${HM_KEENDNS_CURL_SEC}s"
     hm_kv "$(T _ 'Sistem log izleme' 'System log watch')" "$(T _ "ac=${HM_SYSLOG_WATCH} cd=${HM_SYSLOG_COOLDOWN_SEC}s ike_cd=${HM_SYSLOG_IKE_COOLDOWN_SEC}s" "on=${HM_SYSLOG_WATCH} cd=${HM_SYSLOG_COOLDOWN_SEC}s ike_cd=${HM_SYSLOG_IKE_COOLDOWN_SEC}s")"
@@ -13423,8 +13608,9 @@ healthmon_config_menu() {
         printf " %2s) %-*s : %s\n" "12" "$_w" "$(T TXT_HM_CFG_ITEM12)" "$(T _ 'denetim' 'monitor')=${HM_QLEN_WATCHDOG} $(T _ 'esik' 'thresh')=${HM_QLEN_WARN_TH} $(T _ 'tur' 'turn')=${HM_QLEN_CRIT_TURNS} | keendns=${HM_KEENDNS_CURL_SEC}s"
         printf " %2s) %-*s : %s\n" "13" "$_w" "$(T _ 'Sistem log izleme' 'System log watch')" "$(T _ "ac=${HM_SYSLOG_WATCH} cd=${HM_SYSLOG_COOLDOWN_SEC}s ike_cd=${HM_SYSLOG_IKE_COOLDOWN_SEC}s" "on=${HM_SYSLOG_WATCH} cd=${HM_SYSLOG_COOLDOWN_SEC}s ike_cd=${HM_SYSLOG_IKE_COOLDOWN_SEC}s")"
         printf " %2s) %-*s : %s\n" "14" "$_w" "$(T TXT_HM_CFG_ITEM14)" "${HM_DEBUG:-0}"
+        printf " %2s) %-*s : %s\n" "15" "$_w" "$(T TXT_HM_NFQWS_ALERT_ITEM)" "${HM_NFQWS_ALERT:-1}"
         if [ -f "/opt/zapret2/wan_if" ]; then
-            printf " %2s) %b%s%b\n" "15" "${CLR_BOLD}" "$(T TXT_HM_CFG_ITEM15)" "${CLR_RESET}"
+            printf " %2s) %b%s%b\n" "16" "${CLR_BOLD}" "$(T TXT_HM_CFG_ITEM15)" "${CLR_RESET}"
         fi
 echo
         printf "  %s) %s\n" "S" "$(T _ 'Kaydet ve uygula' 'Save & apply')"
@@ -13522,6 +13708,9 @@ esac
                 hm_ask_01 "$(T _ 'Debug modu (0=kapat 1=ac)' 'Debug mode (0=off 1=on)')" HM_DEBUG
                 ;;
             15)
+                hm_ask_01 "$(T _ 'nfqws2 kuyruk alarmi (0=kapat 1=ac)' 'nfqws2 queue alert (0=off 1=on)')" HM_NFQWS_ALERT
+                ;;
+            16)
                 if [ ! -f "/opt/zapret2/wan_if" ]; then return 0; fi
                 _wan_if_rec="$(cat /opt/zapret2/wan_if 2>/dev/null | tr -d '[:space:]')"
                 print_line "-"
@@ -13557,6 +13746,7 @@ esac
                 HM_SYSLOG_COOLDOWN_SEC="600"
                 HM_SYSLOG_IKE_COOLDOWN_SEC="7200"
                 HM_DEBUG="0"
+                HM_NFQWS_ALERT="1"
                 healthmon_write_config
                 healthmon_stop 2>/dev/null
                 healthmon_start
@@ -13878,6 +14068,9 @@ health_monitor_menu() {
                 printf "%-22s| %b%s%b\n" "Telegram Bot" \
                     "${CLR_RED}" "$(T TXT_TGBOT_BANNER_INACTIVE)" "${CLR_RESET}"
             fi
+        else
+            printf "%-22s| %b%s%b\n" "Telegram Bot" \
+                "${CLR_DIM}" "$(T TXT_TG_NOT_CONFIGURED)" "${CLR_RESET}"
         fi
         echo
         print_line "-"
@@ -15119,6 +15312,7 @@ case "$ACTION" in
         HM_QLEN_CRIT_TURNS="${HM_QLEN_CRIT_TURNS:-1}"
         HM_KEENDNS_CURL_SEC="${HM_KEENDNS_CURL_SEC:-120}"
         HM_DEBUG="${HM_DEBUG:-0}"
+        HM_NFQWS_ALERT="${HM_NFQWS_ALERT:-1}"
         HM_SYSLOG_WATCH="${HM_SYSLOG_WATCH:-0}"
         HM_SYSLOG_COOLDOWN_SEC="${HM_SYSLOG_COOLDOWN_SEC:-600}"
         HM_SYSLOG_IKE_COOLDOWN_SEC="${HM_SYSLOG_IKE_COOLDOWN_SEC:-3600}"
@@ -15147,6 +15341,7 @@ case "$ACTION" in
             [ "${HM_WANMON_ENABLE:-0}" = "1" ] && _wmen="On" || _wmen="Off"
             [ "${HM_SYSLOG_WATCH:-0}" = "1" ] && _swd="On" || _swd="Off"
             [ "${HM_DEBUG:-0}" = "1" ] && _dbg="On" || _dbg="Off"
+            [ "${HM_NFQWS_ALERT:-1}" = "1" ] && _nalert="On" || _nalert="Off"
         else
             [ "$HM_UPDATECHECK_ENABLE" = "1" ] && _upd="A&#231;&#305;k" || _upd="Kapal&#305;"
             [ "${HM_ZAPRET_WATCHDOG}" = "1" ] && _zwd="A&#231;&#305;k" || _zwd="Kapal&#305;"
@@ -15155,6 +15350,7 @@ case "$ACTION" in
             [ "${HM_WANMON_ENABLE:-0}" = "1" ] && _wmen="A&#231;&#305;k" || _wmen="Kapal&#305;"
             [ "${HM_SYSLOG_WATCH:-0}" = "1" ] && _swd="A&#231;&#305;k" || _swd="Kapal&#305;"
             [ "${HM_DEBUG:-0}" = "1" ] && _dbg="A&#231;&#305;k" || _dbg="Kapal&#305;"
+            [ "${HM_NFQWS_ALERT:-1}" = "1" ] && _nalert="A&#231;&#305;k" || _nalert="Kapal&#305;"
         fi
         _r() { printf "<div class='info-row'><div class='lbl'>%s</div><div class='val'>%s</div></div>" "$1" "$2"; }
         _s() { printf "<div class='info-sec'>%s</div>" "$1"; }
@@ -15176,6 +15372,7 @@ case "$ACTION" in
         _rows="${_rows}$(_r "Watchdog Cooldown" "${HM_ZAPRET_COOLDOWN_SEC}s")"
         _rows="${_rows}$(_r "Auto Restart" "${_zar}")"
         _rows="${_rows}$(_r "NFQUEUE Queue Watchdog" "${_qwd} | <span style='color:var(--muted)'>Threshold:</span> <b>${HM_QLEN_WARN_TH}</b> Packets | <span style='color:var(--muted)'>Consecutive:</span> <b>${HM_QLEN_CRIT_TURNS}</b> Turns")"
+        _rows="${_rows}$(_r "nfqws2 Queue Alert" "${_nalert}")"
         _rows="${_rows}$(_r "WAN Monitoring" "${_wmen} | <span style='color:var(--muted)'>Failure Threshold:</span> <b>${HM_WANMON_FAIL_TH:-3}</b> Failed Pings | <span style='color:var(--muted)'>Recovery Threshold:</span> <b>${HM_WANMON_OK_TH:-2}</b> Successful Pings | <span style='color:var(--muted)'>Interface:</span> ${HM_WANMON_IFACE:-auto}")"
         _rows="${_rows}$(_r "KeenDNS Check Interval" "${HM_KEENDNS_CURL_SEC}s")"
         _rows="${_rows}$(_r "System Log Watch" "${_swd} | <span style='color:var(--muted)'>Critical Cooldown:</span> <b>${HM_SYSLOG_COOLDOWN_SEC}</b>s | <span style='color:var(--muted)'>IKE Cooldown:</span> <b>${HM_SYSLOG_IKE_COOLDOWN_SEC}</b>s")"
@@ -15202,6 +15399,7 @@ case "$ACTION" in
         _rows="${_rows}$(_r "Denetim Bekleme" "${HM_ZAPRET_COOLDOWN_SEC}s")"
         _rows="${_rows}$(_r "Oto Yeniden Ba&#351;lat" "${_zar}")"
         _rows="${_rows}$(_r "NFQUEUE Kuyruk Denetimi" "${_qwd} | <span style='color:var(--muted)'>E&#351;ik:</span> <b>${HM_QLEN_WARN_TH}</b> Paket | <span style='color:var(--muted)'>Ard&#305;&#351;&#305;k:</span> <b>${HM_QLEN_CRIT_TURNS}</b> Tur")"
+        _rows="${_rows}$(_r "nfqws2 Kuyruk Alarm&#305;" "${_nalert}")"
         _rows="${_rows}$(_r "WAN &#304;zleme" "${_wmen} | <span style='color:var(--muted)'>Kesinti E&#351;i&#287;i:</span> <b>${HM_WANMON_FAIL_TH:-3}</b> Ba&#351;ar&#305;s&#305;z Ping | <span style='color:var(--muted)'>Toparlanma E&#351;i&#287;i:</span> <b>${HM_WANMON_OK_TH:-2}</b> Ba&#351;ar&#305;l&#305; Ping | <span style='color:var(--muted)'>Aray&#252;z:</span> ${HM_WANMON_IFACE:-auto}")"
         _rows="${_rows}$(_r "KeenDNS Kontrol Aral&#305;&#287;&#305;" "${HM_KEENDNS_CURL_SEC}s")"
         _rows="${_rows}$(_r "Sistem Log &#304;zleme" "${_swd} | <span style='color:var(--muted)'>Kritik Bekleme:</span> <b>${HM_SYSLOG_COOLDOWN_SEC}</b>s | <span style='color:var(--muted)'>IKE Bekleme:</span> <b>${HM_SYSLOG_IKE_COOLDOWN_SEC}</b>s")"
