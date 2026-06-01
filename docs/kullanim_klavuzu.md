@@ -787,13 +787,12 @@ Uzun süre kesintisiz çalışan routerlarda hafızada biriken geçici dosyalar 
 
 # 🔵 B — Blockcheck Test Menüsü
 
-DPI testlerini çalıştırır, bağlantı durumunu analiz eder ve en uygun DPI parametresini otomatik tespit eder.
+DPI testleri çalıştırır, bağlantı durumunu analiz eder ve en uygun DPI parametresini otomatik olarak tespit eder.
 
 ### Alt Menü:
-
-✔ **Tam Test** — Kapsamlı DPI analizi yapar, tüm protokol ve stratejiler denenir  
-✔ **Özet Test (SUMMARY)** — Sadece özet bölümü çalışır; otomatik DPI için kullanılan hafif test  
+✔ **Özet Test (SUMMARY)** — Yalnızca özet bölümünü çalıştırır; otomatik DPI için kullanılan hafif test  
 ✔ **Test Sonuçlarını Temizle** — `blockcheck_*.txt` ve `blockcheck_summary_*.txt` dosyalarını siler  
+✔ **Aktif DPI Profilini Dışa Aktar** — Mevcut DPI profilini ve parametrelerini dışa aktarır  
 
 ### DPI Health Score:
 
