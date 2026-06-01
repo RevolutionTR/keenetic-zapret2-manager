@@ -12,7 +12,8 @@ Zapret2 kelime olarak Rusca “Yasak” anlamına gelir. Rus bir programcının 
 ## Erişim engelini aşmanın Zapret2’den başka yolu yok mu?
 ISS’larının en güncel sofistike erişim engelleme metodu DPI’dır. Bazı ISS’lerde DNS değişikliği ile erişim engeli aşılabilir. O sebepten ISS’nızın erişim engelleme metodunu bilmiyorsanız Zapret2’yi kurmadan önce DNS değişikliğini deneyin.
 
-Önerilen DNS adresleri:  
+Örnek DNS adresleri:
+
 1-    Google DNS: 8.8.8.8 ve 8.8.4.4  
 2-    Cloudflare DNS: 1.1.1.1 ve 1.0.0.1  
 3-    Quad9 DNS: 9.9.9.9 ve 149.112.112.112  
