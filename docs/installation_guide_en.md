@@ -14,7 +14,8 @@ Zapret2 literally means "Prohibition" in Russian. It is a piece of software deve
 ## Is Zapret2 the only way to bypass access restrictions?
 DPI is the most sophisticated and up-to-date access-blocking method used by ISPs. On some ISPs, access restrictions can be bypassed simply by changing the DNS server. For that reason, if you are unsure which blocking method your ISP uses, try changing your DNS before installing Zapret2.
 
-Example DNS addresses: DoT or DoH DNS servers can be added to your Keenetic device easily via **Menu 14 → 3** after KZM2 is installed. 
+Example DNS addresses: 
+
 1. Google DNS: 8.8.8.8 and 8.8.4.4  
 2. Cloudflare DNS: 1.1.1.1 and 1.0.0.1  
 3. Quad9 DNS: 9.9.9.9 and 149.112.112.112  
