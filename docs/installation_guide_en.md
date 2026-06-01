@@ -168,6 +168,14 @@ chmod +x /opt/lib/opkg/keenetic_zapret2_manager.sh
 Once the process is complete, you can launch the installed script by typing `kzm2`, `KZM2`, or `keenetic-zapret2` at the command prompt and pressing Enter.
 
 <img src="/docs/images/KZM2_Main_Menu.png" width="800">
+
+---
+
+## Recommended Settings
+
+<img src="/docs/images/HealthMon_TR.png" width="800">
+
+---
   
 **Method 2 (classic):**  
 Download the Keenetic Zapret2 Manager script — developed by @Revolution_TR on DH — from the GitHub link.
