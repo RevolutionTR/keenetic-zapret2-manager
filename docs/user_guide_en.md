@@ -141,7 +141,7 @@ The `/tmp/.zapret2_paused` flag file is created. This flag ensures that:
 - Even if the netfilter hook fires, Zapret2 will not restart
 - The init.d service cannot start it either
 
-⚠️ Even with `HM_ZAPRET2_AUTORESTART=1`, Health Monitor **does not intervene** when Zapret2 is stopped manually via Menu 4 or the Web Panel — the watchdog is skipped entirely while the pause flag is present. HealthMon only steps in when Zapret2 stops unexpectedly (crash, queue overflow etc.).
+⚠️ Even with `HM_ZAPRET_AUTORESTART=1`, Health Monitor **does not intervene** when Zapret2 is stopped manually via Menu 4 or the Web Panel — the watchdog is skipped entirely while the pause flag is present. HealthMon only steps in when Zapret2 stops unexpectedly (crash, queue overflow etc.).
 
 ---
 
@@ -220,6 +220,7 @@ KZM2 uses **Turk Telekom Fiber (TTL2 fake)** as the default profile and applies 
 | **Default Profile** | The recommended and default DPI profile used by KZM2 (TTL2 fake) |
 | **Custom (Manual) DPI Profile** | Advanced users can manually edit `NFQWS2_OPT` parameters |
 | **Blockcheck (Auto)** | Automatically applies the most suitable DPI parameter based on Blockcheck results |
+| **Passthrough (No Bypass)** | For users whose ISP has no DPI or where bypass is unnecessary — nfqws2 passes traffic through without processing |
 
 ### Default Profile
 
@@ -265,6 +266,10 @@ When active, the status is shown as:
 - **Blockcheck (Auto)**
 
 👉 If you are unsure which configuration to use, start with the **Default Profile**. If issues occur, run **Blockcheck (B)**.
+
+### Passthrough (No Bypass)
+
+For users whose ISP does not use DPI, or where Zapret2's more convincing TLS fake packets interfere with legitimate connections. In this mode, nfqws2 passes traffic through without processing — no fake packets are sent.
 
 ---
 
@@ -318,7 +323,7 @@ Determines which domains Zapret2 is applied to.
 | Mode | Description |
 |------|-------------|
 | **No Filtering** | All traffic is processed; no domain distinction |
-| **Listed Domains Only** | Only domains in `zapret2-hosts-user.txt` and `zapret2-hosts-auto.txt` are processed |
+| **Listed Domains Only** | Only domains in `zapret-hosts-user.txt` and `zapret-hosts-auto.txt` are processed |
 | **Auto-Learn + List** | Both hostlist and autohostlist work together |
 
 ---
@@ -348,7 +353,7 @@ Applied only to blocked hosts (autohostlist-based).
 
 ## Hostlist Management
 
-Manual list of blocked domains (`zapret2-hosts-user.txt`).
+Manual list of blocked domains (`zapret-hosts-user.txt`).
 
 ### Sub-menu:
 
@@ -368,13 +373,13 @@ Manual list of blocked domains (`zapret2-hosts-user.txt`).
 
 ## Autohostlist
 
-Learns blocked services automatically (`zapret2-hosts-auto.txt`).
+Learns blocked services automatically (`zapret-hosts-auto.txt`).
 
 When a DPI-blocked connection is detected, the relevant domain is automatically added to the list. Over time, a personalised bypass list is built.
 
 **A true set-and-forget feature.**
 
-⚠️ To prevent autohostlist from growing indefinitely, `/opt/zapret2/nfqws2_autohostlist.log` is trimmed to the last 500 lines when it exceeds 1 MB (managed by Health Monitor).
+⚠️ To prevent autohostlist from growing indefinitely, `/opt/zapret2/nfqws_autohostlist.log` is trimmed to the last 500 lines when it exceeds 1 MB (managed by Health Monitor).
 
 ---
 
@@ -607,16 +612,16 @@ An alert is sent if free RAM falls below this value.
 
 ## [ZAPRET2]
 
-### Zapret2 Watchdog (HM_ZAPRET2_WATCHDOG)
+### Zapret2 Watchdog (HM_ZAPRET_WATCHDOG)
 Checks on every interval whether the nfqws2 process is running.
 - `1` = active (default), `0` = disabled
 - A crashed Zapret2 is detected within 30 seconds
 
-### Zapret2 Cooldown (HM_ZAPRET2_COOLDOWN_SEC)
+### Zapret2 Cooldown (HM_ZAPRET_COOLDOWN_SEC)
 How long to wait before resending Zapret2-related notifications.
 - Default: `120` seconds
 
-### AutoRes — Auto Restart (HM_ZAPRET2_AUTORESTART)
+### AutoRes — Auto Restart (HM_ZAPRET_AUTORESTART)
 Should HealthMon attempt to restart Zapret2 when it goes down?
 
 | Value | Behaviour |
@@ -636,7 +641,7 @@ Even when the nfqws2 process appears to be running, the NFQUEUE queue can fill u
 - `ps` continues to show nfqws2 as running
 - Users assume "something is wrong with KZM2" — when the real cause is queue congestion
 
-HealthMon reads `/proc/net/netfilter/nfnetlink_queue` to monitor the current fill level (`qlen`) of queue 200.
+HealthMon reads `/proc/net/netfilter/nfnetlink_queue` to monitor the current fill level (`qlen`) of queue 300.
 
 | Setting | Description | Default |
 |---------|-------------|---------|
@@ -708,11 +713,11 @@ Default port: **8088** → `http://<router-ip>:8088`
 
 ### Changing the Port
 
-The port number can be changed from the web panel menu (1024–65535). The change is saved to `/opt/etc/lighttpd/kzm_custom.conf` and the iptables rule is updated automatically.
+The port number can be changed from the web panel menu (1024–65535). The change is saved to `/opt/etc/kzm2_gui.conf` and the iptables rule is updated automatically.
 
 ### How It Works
 
-The web panel reads data from `/opt/var/run/kzm_status.json`. This JSON file is refreshed **every minute** by the `kzm_status_gen.sh` script via cron. The browser dashboard polls this data every 15 seconds — so the panel reflects state with up to 1 minute of delay, not in real time.
+The web panel reads data from `/opt/var/run/kzm2_status.json`. This JSON file is refreshed **every minute** by the `kzm2_status_gen.sh` script via cron. The browser dashboard polls this data every 15 seconds — so the panel reflects state with up to 1 minute of delay, not in real time.
 
 Commands (start/stop Zapret2, change profile etc.) run in real time via CGI.
 
