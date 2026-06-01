@@ -139,7 +139,7 @@ Zapret2 servisini durdurur. Tüm yönlendirme/bypass işlemleri pasif olur.
 - netfilter hook tetiklense bile Zapret2 yeniden başlamaz
 - init.d servisi de başlatma yapmaz
 
-⚠️ Health Monitor `HM_ZAPRET2_AUTORESTART=1` olsa bile Menü 4 veya Web Panel üzerinden yapılan manuel durdurma işlemlerine **müdahale etmez** — pause flag varlığında watchdog tamamen atlanır. Sadece Zapret2'yin beklenmedik şekilde (crash, qlen) durması durumunda HealthMon devreye girer.
+⚠️ Health Monitor `HM_ZAPRET_AUTORESTART=1` olsa bile Menü 4 veya Web Panel üzerinden yapılan manuel durdurma işlemlerine **müdahale etmez** — pause flag varlığında watchdog tamamen atlanır. Sadece Zapret2'yin beklenmedik şekilde (crash, qlen) durması durumunda HealthMon devreye girer.
 
 ---
 
@@ -220,6 +220,7 @@ KZM2’de varsayılan yapı **Türk Telekom Fiber (TTL2 fake)** profilidir ve il
 | **Varsayılan Profil** | KZM2’nin önerilen ve varsayılan DPI profili (TTL2 fake) |
 | **Özel (Manuel) DPI Profili** | Gelişmiş kullanıcılar için `NFQWS2_OPT` parametrelerini manuel düzenleme |
 | **Blockcheck (Otomatik)** | Blockcheck sonucuna göre en uygun DPI parametresinin otomatik uygulanması |
+| **Geçiş Modu (Bypass Yok)** | ISS'de DPI olmayan veya bypass gereksiz kullanıcılar için — nfqws2 trafiği işlemeden geçirir |
 
 ### Varsayılan Profil
 
@@ -265,6 +266,10 @@ Blockcheck sonucu uygulanırsa aktif durum:
 olarak görünür.
 
 👉 Hangi ayarı kullanacağınızı bilmiyorsanız önce **Varsayılan Profil** ile başlayın, sorun yaşarsanız **Blockcheck (B)** kullanın.
+
+### Geçiş Modu (Bypass Yok)
+
+ISS'de DPI bulunmayan veya Zapret2'nin daha ikna edici TLS fake paketlerinin meşru bağlantıları etkilediği durumlarda kullanılır. Bu modda nfqws2 trafiği işlemeden geçirir; herhangi bir fake paket gönderilmez.
 
 ---
 
@@ -322,7 +327,7 @@ Zapret2'yin hangi domainlere uygulanacağını belirler.
 | Mod | Açıklama |
 |-----|----------|
 | **Filtre Yok** | Tüm trafik işlenir, domain ayrımı yapılmaz |
-| **Sadece Listedeki Domainler** | Yalnızca `zapret2-hosts-user.txt` ve `zapret2-hosts-auto.txt`'deki domainler işlenir |
+| **Sadece Listedeki Domainler** | Yalnızca `zapret-hosts-user.txt` ve `zapret-hosts-auto.txt`'deki domainler işlenir |
 | **Otomatik Öğren + Liste** | Hem hostlist hem autohostlist birlikte çalışır |
 
 ---
@@ -352,7 +357,7 @@ Sadece engellenen hostlara uygulanır (autohostlist tabanlı).
 
 ## Hostlist Yönetimi
 
-Manuel engelli domain listesi (`zapret2-hosts-user.txt`).
+Manuel engelli domain listesi (`zapret-hosts-user.txt`).
 
 ### Alt Menü:
 
@@ -372,13 +377,13 @@ Manuel engelli domain listesi (`zapret2-hosts-user.txt`).
 
 ## Autohostlist
 
-Engellenen servisleri otomatik öğrenir (`zapret2-hosts-auto.txt`).
+Engellenen servisleri otomatik öğrenir (`zapret-hosts-auto.txt`).
 
 DPI tarafından engellenen bağlantılar tespit edildiğinde ilgili domain otomatik olarak listeye eklenir. Zamanla kişiselleştirilmiş bir bypass listesi oluşur.
 
 **Kur → unut özelliğidir.**
 
-⚠️ Autohostlist dolup taşmasın diye `/opt/zapret2/nfqws2_autohostlist.log` 1 MB'ı aşınca son 500 satıra kırpılır (Health Monitor tarafından yönetilir).
+⚠️ Autohostlist dolup taşmasın diye `/opt/zapret2/nfqws_autohostlist.log` 1 MB'ı aşınca son 500 satıra kırpılır (Health Monitor tarafından yönetilir).
 
 # 🔹 Menü 12 — IPSet Yönetimi
 
@@ -609,16 +614,16 @@ Boş RAM bu değerin altına düşerse uyarı gönderilir.
 
 ## [ZAPRET2]
 
-### Zapret2 denetimi (HM_ZAPRET2_WATCHDOG)
+### Zapret2 denetimi (HM_ZAPRET_WATCHDOG)
 nfqws2 process'i çalışıyor mu diye her aralıkta kontrol eder.
 - `1` = aktif (varsayılan), `0` = kapalı
 - Zapret2 çökmüşse 30 saniye içinde tespit edilir
 
-### Zapret2 bekleme (HM_ZAPRET2_COOLDOWN_SEC)
+### Zapret2 bekleme (HM_ZAPRET_COOLDOWN_SEC)
 Zapret2 ile ilgili bildirimlerin tekrar gönderilmeden önce beklenmesi gereken süre.
 - Varsayılan: `120` saniye
 
-### AutoRes — Otomatik Yeniden Başlatma (HM_ZAPRET2_AUTORESTART)
+### AutoRes — Otomatik Yeniden Başlatma (HM_ZAPRET_AUTORESTART)
 Zapret2 durduğunda HealthMon otomatik başlatma denesin mi?
 
 | Değer | Davranış |
@@ -640,7 +645,7 @@ nfqws2 process'i çalışıyor görünse de NFQUEUE kuyruğu dolup taşabilir. B
 - `ps` komutu nfqws2'in çalıştığını göstermeye devam ediyor
 - Kullanıcı "KZM2'de sorun var" sanıyor — oysa sorun kuyruk tıkanıklığı
 
-HealthMon `/proc/net/netfilter/nfnetlink_queue` dosyasını okuyarak queue 200'ün anlık doluluk değerini (`qlen`) izler.
+HealthMon `/proc/net/netfilter/nfnetlink_queue` dosyasını okuyarak queue 300'ün anlık doluluk değerini (`qlen`) izler.
 
 | Ayar | Açıklama | Varsayılan |
 |------|----------|------------|
@@ -712,11 +717,11 @@ Varsayılan port: **8088** → `http://<router-ip>:8088`
 
 ### Port Değiştirme
 
-Web panel menüsünden port numarası değiştirilebilir (1024–65535 arası). Değişiklik `/opt/etc/lighttpd/kzm_custom.conf` dosyasına kaydedilir ve iptables kuralı otomatik güncellenir.
+Web panel menüsünden port numarası değiştirilebilir (1024–65535 arası). Değişiklik `/opt/etc/kzm2_gui.conf` dosyasına kaydedilir ve iptables kuralı otomatik güncellenir.
 
 ### Nasıl Çalışır?
 
-Web panel, `/opt/var/run/kzm_status.json` dosyasından veri okur. Bu JSON dosyası `kzm_status_gen.sh` scripti tarafından **her dakika** cron ile yenilenir. Tarayıcıdaki dashboard ise bu veriyi 15 saniyede bir çeker — yani panel anlık değil, en fazla 1 dakika gecikmeli gösterir.
+Web panel, `/opt/var/run/kzm2_status.json` dosyasından veri okur. Bu JSON dosyası `kzm2_status_gen.sh` scripti tarafından **her dakika** cron ile yenilenir. Tarayıcıdaki dashboard ise bu veriyi 15 saniyede bir çeker — yani panel anlık değil, en fazla 1 dakika gecikmeli gösterir.
 
 Komutlar (Zapret2 başlat/durdur, profil değiştir vb.) ise CGI üzerinden gerçek zamanlı çalışır.
 
