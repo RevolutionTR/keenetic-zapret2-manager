@@ -37,7 +37,7 @@
 # -------------------------------------------------------------------
 SCRIPT_NAME="keenetic_zapret2_manager.sh"
 # Version scheme: vYY.M.D[.N]  (YY=year, M=month, D=day, N=daily revision)
-SCRIPT_VERSION="v26.5.31"
+SCRIPT_VERSION="v26.6.1"
 SCRIPT_REPO="https://github.com/RevolutionTR/keenetic-zapret2-manager"
 KZM2_SCRIPT_PATH="/opt/lib/opkg/keenetic_zapret2_manager.sh"
 SCRIPT_AUTHOR="RevolutionTR"
@@ -2238,6 +2238,8 @@ TXT_HL_LIST_EXCLUDE_DOM_TR="Exclude (Domain)       "
 TXT_HL_LIST_EXCLUDE_DOM_EN="Exclude (Domain)       "
 TXT_HL_LIST_EXCLUDE_IP_TR="Exclude (IP/Subnet)    "
 TXT_HL_LIST_EXCLUDE_IP_EN="Exclude (IP/Subnet)    "
+TXT_HL_LIST_LOCALNETS_TR="Yerel Aglar (LocalNets)"
+TXT_HL_LIST_LOCALNETS_EN="Local Networks         "
 TXT_HL_LIST_AUTO_TR="Auto Hostlist          "
 TXT_HL_LIST_AUTO_EN="Auto Hostlist          "
 TXT_HL_DOMAIN_ADD_TR="Domain eklendi: "
@@ -16261,6 +16263,7 @@ select option{background:var(--card)}
     <div class="item" data-view="sched"><span class="item-icon">&#9719;</span><span class="item-label" data-tr="Zamanl&#305; Reboot" data-en="Scheduled Reboot">Zamanl&#305; Reboot</span><span class="pill">R</span><span class="tip">Zamanl&#305; Reboot</span></div>
     <div class="item" data-view="backup"><span class="item-icon">&#128190;</span><span class="item-label" data-tr="Yedekle" data-en="Backup">Yedekle</span><span class="pill">8</span><span class="tip">Yedekle</span></div>
     <div class="item" data-view="changelog"><span class="item-icon">&#128203;</span><span class="item-label" data-tr="KZM2 S&#252;r&#252;m Notlar&#305;" data-en="KZM2 Release Notes">KZM2 S&#252;r&#252;m Notlar&#305;</span><span class="tip">KZM S&#252;r&#252;m Notlar&#305;</span></div>
+    <div class="item" data-view="docs"><span class="item-icon">&#128214;</span><span class="item-label" data-tr="Belgeler" data-en="Documentation">Belgeler</span><span class="tip">Belgeler</span></div>
   </nav>
   <div class="fnote">KZM2 Web Panel<br/><small id="atick"><span id="atickLabel">Otomatik yenileme</span>: 15s</small></div>
 </aside>
@@ -17090,6 +17093,23 @@ var V={
         (L?'Select a version from the list.':'Listeden bir s&#252;r&#252;m se&#231;in.')+
       '</div></div>'+
     '</div>';
+  }},
+  docs:{title:'Belgeler',titleEn:'Documentation',sub:'KZM2 kullan&#305;m k&#305;lavuzlar&#305;.',subEn:'KZM2 user guides.',noPrefix:true,html:function(){
+    setTimeout(function(){docsInit();},100);
+    var docList=[
+      {key:'guide_tr',   label:'Kullan&#305;m K&#305;lavuzu',    file:'kullanim_klavuzu.md',           lang:'tr'},
+      {key:'guide_en',   label:'User Guide',               file:'user_guide_en.md',               lang:'en'},
+      {key:'install_tr', label:'S&#305;f&#305;rdan Kurulum',     file:'sifirdan_kurulum_anlatimi.md',   lang:'tr'},
+      {key:'install_en', label:'Installation Guide',       file:'installation_guide_en.md',        lang:'en'},
+      {key:'tg_tr',      label:'Telegram Kurulum',         file:'telegram.md',                    lang:'tr'},
+      {key:'tg_en',      label:'Telegram Setup',           file:'telegram_en.md',                 lang:'en'}
+    ].filter(function(d){return L?(d.lang==='en'):(d.lang==='tr');});
+    var nav='<div class="card" id="docsNav" style="max-height:70vh;overflow-y:auto"><h3>'+(L?'Guides':'K&#305;lavuzlar')+'</h3><div style="display:flex;flex-direction:column;gap:4px;margin-top:8px">';
+    docList.forEach(function(d){
+      nav+='<div onclick="docsSelect(\''+d.key+'\',\''+d.file+'\')" id="docNav_'+d.key+'" style="cursor:pointer;padding:6px 10px;border-radius:7px;font-size:13px;border:1px solid transparent">'+d.label+'</div>';
+    });
+    nav+='</div></div>';
+    return '<div class="cl-grid">'+nav+'<div class="card" id="docsBody" style="max-height:70vh;overflow-y:auto"><div class="sub">'+(L?'Select a guide from the list.':'Listeden bir k&#305;lavuz se&#231;in.')+'</div></div></div>';
   }}
 };
 function hlLoad(retry){
@@ -17775,6 +17795,72 @@ function clFmt(md){
     .replace(/^(?!<div|<hr)(.+)$/gm,'<div style="color:var(--muted);font-size:12px;margin:2px 0">$1</div>')
     .replace(/\n{2,}/g,'<div style="height:6px"></div>');
 }
+var docsCache={};
+var docsCurKey=null;
+var DOCS_BASE='https://raw.githubusercontent.com/RevolutionTR/keenetic-zapret2-manager/main/docs/';
+function docsInit(){
+  if(docsCurKey){docsSelect(docsCurKey,null);}
+}
+function docsSelect(key,file){
+  docsCurKey=key;
+  document.querySelectorAll('[id^="docNav_"]').forEach(function(el){
+    el.style.background='';el.style.border='1px solid transparent';
+  });
+  var navEl=document.getElementById('docNav_'+key);
+  if(navEl){navEl.style.background='rgba(75,125,255,.2)';navEl.style.border='1px solid rgba(75,125,255,.5)';}
+  var body=document.getElementById('docsBody');
+  if(!body)return;
+  if(docsCache[key]){body.innerHTML=docsFmt(docsCache[key]);body.scrollTop=0;return;}
+  body.innerHTML='<div class="sub">&#8593; Y\u00fckleniyor...</div>';
+  if(!file){body.innerHTML='<div class="sub">Hata.</div>';return;}
+  fetch(DOCS_BASE+file)
+  .then(function(r){if(!r.ok)throw new Error(r.status);return r.text();})
+  .then(function(txt){docsCache[key]=txt;body.innerHTML=docsFmt(txt);body.scrollTop=0;})
+  .catch(function(){body.innerHTML='<div class="sub">'+(L?'Could not load document.':'Belge y\u00fcklenemedi.')+'</div>';});
+}
+function docsFmt(md){
+  if(!md)return '';
+  var REPO_RAW='https://raw.githubusercontent.com/RevolutionTR/keenetic-zapret2-manager/main';
+  // Img taglari: relative src -> full GitHub raw URL, blocks'a al
+  // Kod bloklarini once isle (inline code regex ile bozulmasin)
+  // Blockquote icindeki kod bloklari: "> ```...``` " formatini normallestirelim
+  md=md.replace(/((?:^> [^\n]*\n)*)(> ```[\w]*\n)((?:^> [^\n]*\n)*?)(^> ```)/gm,function(m){
+    return m.replace(/^> ?/gm,'');
+  });
+  var blocks=[];
+  // Img taglari HTML-escape'den once isle
+  md=md.replace(/<img\s+src="([^"]+)"([^>]*)>/g,function(m,src,rest){
+    var fullSrc=src.match(/^https?:\/\//)?src:REPO_RAW+src;
+    var idx=blocks.length;
+    blocks.push('<img src="'+fullSrc+'" style="max-width:100%;border-radius:7px;margin:8px 0;display:block"'+rest+'>');
+    return '\x00BLOCK'+idx+'\x00';
+  });
+  md=md.replace(/```[\w]*\n([\s\S]*?)```/gm,function(m,code){
+    var idx=blocks.length;
+    var clean=code.replace(/^> ?/gm,''); // kalan > prefixleri temizle
+    blocks.push('<pre style="background:rgba(0,0,0,.25);padding:10px 12px;border-radius:7px;font-size:11.5px;white-space:pre-wrap;word-break:break-all;overflow-wrap:break-word;max-width:100%;box-sizing:border-box;margin:6px 0">'+
+      clean.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')+'</pre>');
+    return '\x00BLOCK'+idx+'\x00';
+  });
+  md=md
+    .replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')
+    .replace(/^# (.+)$/gm,'<div style="font-size:18px;font-weight:700;margin:18px 0 8px;color:var(--text);border-bottom:1px solid var(--line);padding-bottom:6px">$1</div>')
+    .replace(/^## (.+)$/gm,'<div style="font-size:15px;font-weight:700;margin:14px 0 5px;color:var(--text)">$1</div>')
+    .replace(/^### (.+)$/gm,'<div style="font-size:13px;font-weight:700;margin:10px 0 4px;color:var(--accent)">$1</div>')
+    .replace(/\*\*([^*]+)\*\*/g,'<b>$1</b>')
+    .replace(/`([^`\n]+)`/g,'<code style="background:rgba(255,255,255,.07);padding:1px 5px;border-radius:4px;font-size:11.5px;font-family:monospace">$1</code>')
+    .replace(/^&gt; \[!WARNING\][^\n]*/gm,'')
+    .replace(/^&gt; (.+)$/gm,'<div style="padding:4px 10px;margin:4px 0;border-left:3px solid var(--warn);color:var(--muted);font-size:12.5px">$1</div>')
+    .replace(/^---$/gm,'<hr style="border:none;border-top:1px solid var(--line);margin:12px 0"/>')
+    .replace(/^\|(.+)\|$/gm,function(m){var c=m.slice(1,-1).split('|');return '<div style="display:flex;gap:4px;margin:1px 0">'+c.map(function(x){return '<div style="flex:1;padding:4px 6px;font-size:12px;background:rgba(255,255,255,.04);border-radius:4px">'+x.trim()+'</div>';}).join('')+'</div>';})
+    .replace(/^[-*] (.+)$/gm,'<div style="padding:2px 0 2px 14px;font-size:13px">&#8226; $1</div>')
+    .replace(/^(?!<div|<pre|<hr|\x00)(.+)$/gm,'<div style="font-size:13px;line-height:1.7;margin:2px 0">$1</div>')
+    .replace(/\n{2,}/g,'<div style="height:6px"></div>');
+  // Kod bloklarini geri koy
+  blocks.forEach(function(b,i){md=md.replace('\x00BLOCK'+i+'\x00',b);});
+  return md;
+}
+
 function securityNote(){
   return '<div class="security-note"><b>&#128274; '+(L?'Trusted LAN only.':'Web Panel sadece g&#252;venilir LAN i&#231;indir.')+'</b> '+(L?'Do not expose this panel to WAN, Guest or IoT networks.':'WAN, Misafir veya IoT a&#287;lar&#305;na a&#231;may&#305;n.')+'</div>';
 }
