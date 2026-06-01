@@ -782,14 +782,11 @@ Routers that run continuously for extended periods can accumulate temporary file
 ---
 
 # 🔵 B — Blockcheck Test Menu
-
 Runs DPI tests, analyses the connection state and automatically detects the most suitable DPI parameter.
-
 ### Sub-menu:
-
-✔ **Full Test** — Comprehensive DPI analysis; all protocols and strategies are tried  
 ✔ **Summary Test (SUMMARY)** — Runs only the summary section; the lightweight test used for automatic DPI  
 ✔ **Clear Test Results** — Deletes `blockcheck_*.txt` and `blockcheck_summary_*.txt` files  
+✔ **Export Active DPI Profile** — Exports the current DPI profile and its parameters 
 
 ### DPI Health Score:
 
