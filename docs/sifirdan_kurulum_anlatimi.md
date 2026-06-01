@@ -40,7 +40,9 @@ Router’ınızın web arayüzüne, YÖNETİM / Sistem Ayarları / Bileşen seç
 
 ## === DNS Ayarları ===
 
-Router’ınızın web arayüzüne, AĞ KURALLARI / İnternet Güvenliği / DNS Yapılandırması’na gidin. “+ Sunucu Ekle” butonunu kullanarak DoT ve DoH DNS sunucuları ekleyin. DoH için önerilen DNS sunucuları: Google, CloudFlare, Adguard, Quad9’dur. Sonraki adım olan İSP'den gelen DNS’leri yoksay’madan önce mutlaka DoT, DoH, ISP'nin DNS’i, girili olmalıdır.
+Router’ınızın web arayüzüne, AĞ KURALLARI / İnternet Güvenliği / DNS Yapılandırması’na gidin. “+ Sunucu Ekle” butonunu kullanarak DoT ve DoH DNS sunucuları ekleyin. DoH için örnek DNS sunucuları: Google, CloudFlare, Adguard, Quad9’dur. Sonraki adım olan İSP'den gelen DNS’leri yoksaymadan önce mutlaka DoT, DoH, ISP'nin DNS’i, girili olmalıdır.
+
+Bu DNS adreslerini DoT veya DoH olarak KZM2'de Menü 14 - 3'ten ayrıca Keenetic cihazınıza otomatik ekleyebilirsiniz.
 
 <img src="/docs/images/KZM2.png" width="800">
 
