@@ -37,7 +37,7 @@
 # -------------------------------------------------------------------
 SCRIPT_NAME="keenetic_zapret2_manager.sh"
 # Version scheme: vYY.M.D[.N]  (YY=year, M=month, D=day, N=daily revision)
-SCRIPT_VERSION="v26.6.1"
+SCRIPT_VERSION="v26.6.1.1"
 SCRIPT_REPO="https://github.com/RevolutionTR/keenetic-zapret2-manager"
 KZM2_SCRIPT_PATH="/opt/lib/opkg/keenetic_zapret2_manager.sh"
 SCRIPT_AUTHOR="RevolutionTR"
@@ -81,7 +81,9 @@ case "$1" in
         echo "$_self_pid" > "$_tg_lockdir/pid" 2>/dev/null
         # Gercek PID'i hemen yaz — watchdog sleep sirasinda botu olu sanmasin
         echo "$_self_pid" > /tmp/kzm2_telegram_bot.pid
-        trap 'rm -rf /tmp/kzm2_telegram_daemon.lock 2>/dev/null; rm -f /tmp/kzm2_telegram_bot.pid 2>/dev/null' EXIT INT TERM HUP
+        # HUP trap'i ayri: PID dosyasini sil degil, yeniden yaz (HealthMon restart HUP gonderince kaybolmasin)
+        trap 'rm -rf /tmp/kzm2_telegram_daemon.lock 2>/dev/null; rm -f /tmp/kzm2_telegram_bot.pid 2>/dev/null' EXIT INT TERM
+        trap 'echo "$_self_pid" > /tmp/kzm2_telegram_bot.pid 2>/dev/null' HUP
         # Telegram sunucusunun eski long-poll oturumunu kapatmasi icin bekle (409 onlemi)
         sleep 5
         KZM2_SKIP_LOCK="1"
@@ -11745,17 +11747,18 @@ healthmon_updatecheck_do() {
                 ps 2>/dev/null | grep -- '--telegram-daemon' | grep -v grep | awk '{print $1}' | while read -r _p; do [ -n "$_p" ] && kill -9 "$_p" 2>/dev/null; done
                 rm -f /tmp/kzm2_telegram_bot.pid 2>/dev/null
                 rm -rf /tmp/kzm2_telegram_daemon.lock 2>/dev/null
-                (KZM2_SKIP_LOCK=1 sh "/opt/lib/opkg/keenetic_zapret2_manager.sh" --telegram-daemon </dev/null >>"/tmp/kzm2_telegram_bot.log" 2>&1 &)
+                # Eski processlerin ps'ten dusmesini bekle, sonra yeni daemon'i baslat
+                sleep 2
+                (KZM2_SKIP_LOCK=1 nohup sh "/opt/lib/opkg/keenetic_zapret2_manager.sh" --telegram-daemon </dev/null >>"/tmp/kzm2_telegram_bot.log" 2>&1 &)
                 # watchdog'a bu turu atlamasi icin sinyal ver
                 touch /tmp/tgbot_just_restarted 2>/dev/null
-                # ps retry: max 5 saniye bekle
+                # ps-wait yerine daemon'in kendi yazdigi PID'i bekle (daha guvenilir)
                 _new_tg_pid=""; _w=0
-                while [ "$_w" -lt 5 ]; do
-                    _new_tg_pid="$(ps 2>/dev/null | awk '/--telegram-daemon/ && !/awk/{print $1}' | head -1)"
-                    [ -n "$_new_tg_pid" ] && break
+                while [ "$_w" -lt 8 ]; do
+                    _new_tg_pid="$(cat /tmp/kzm2_telegram_bot.pid 2>/dev/null)"
+                    [ -n "$_new_tg_pid" ] && kill -0 "$_new_tg_pid" 2>/dev/null && break
                     sleep 1; _w=$((_w+1))
                 done
-                [ -n "$_new_tg_pid" ] && echo "$_new_tg_pid" > /tmp/kzm2_telegram_bot.pid
                 healthmon_log "$(date +%s 2>/dev/null) | updatecheck | kzm2 | tgbot_restarted pid=${_new_tg_pid:-unknown}"
             fi
             # HealthMon restart flag - loop bir sonraki iterasyonda yakalar
@@ -12468,7 +12471,7 @@ healthmon_loop() {
                         while read -r _ppid; do [ -n "$_ppid" ] && kill -9 "$_ppid" 2>/dev/null; done
                     rm -rf /tmp/kzm2_telegram_daemon.lock 2>/dev/null
                     sleep 1
-                    "$KZM2_SCRIPT_PATH" --telegram-daemon </dev/null >>"$TG_BOT_LOG_FILE" 2>&1 &
+                    nohup "$KZM2_SCRIPT_PATH" --telegram-daemon </dev/null >>"$TG_BOT_LOG_FILE" 2>&1 &
                     echo $! > "$_tgpid_f"
                     fi  # else tgbot_just_restarted
                 else
