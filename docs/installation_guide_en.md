@@ -165,7 +165,7 @@ chmod +x /opt/lib/opkg/keenetic_zapret2_manager.sh
 ```
 
   
-Once the process is complete, you can launch the installed script by typing `kzm2`, `KZM2`, or `keenetic-zapret2` at the command prompt and pressing Enter.
+Once the process is complete, you can launch the installed script by typing `kzm2`, `KZM2`, `kzm` or `keenetic-zapret2` at the command prompt and pressing Enter.
 
 <img src="/docs/images/KZM2_Main_Menu.png" width="800">
 
@@ -173,7 +173,7 @@ Once the process is complete, you can launch the installed script by typing `kzm
 
 ## Recommended Settings
 
-<img src="/docs/images/HealthMon_TR.png" width="800">
+<img src="/docs/images/HealthMon_EN.png" width="800">
 
 ---
   
@@ -182,7 +182,7 @@ Download the Keenetic Zapret2 Manager script — developed by @Revolution_TR on 
   
 Log in to your router's web interface and use the file manager to copy the downloaded `keenetic_zapret2_manager.sh` file to `lib/opkg` on your router's internal storage.
   
-Using PuTTY on PC or Termius on mobile, run the commands to grant execute permission and then launch the script. (Recent updates to the script make the permission step unnecessary — the script grants its own execute permission. You also no longer need to type the full path to run it; typing `kzm2`, `KZM2 or `keenetic-zapret2` is enough. Additionally, even if the file is copied to the wrong location, the script installs itself in the correct place.)
+Using PuTTY on PC or Termius on mobile, run the commands to grant execute permission and then launch the script. (Recent updates to the script make the permission step unnecessary — the script grants its own execute permission. You also no longer need to type the full path to run it; typing `kzm2`, `KZM2`, `kzm` or `keenetic-zapret2` is enough. Additionally, even if the file is copied to the wrong location, the script installs itself in the correct place.)
   
 Commands:  
 Grant execute permission:  
@@ -195,7 +195,7 @@ Run:
 /opt/lib/opkg/keenetic_zapret2_manager.sh
 ```
   
-Once the process is complete, you can launch the installed script by typing `kzm2`, `KZM2`, or `keenetic-zapret2` at the command prompt and pressing Enter.
+Once the process is complete, you can launch the installed script by typing `kzm2`, `KZM2`, `kzm` or `keenetic-zapret2` at the command prompt and pressing Enter.
   
 
 For the full usage guide for Keenetic Zapret2 Manager, visit the developer's GitHub page.
