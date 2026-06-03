@@ -37,7 +37,7 @@
 # -------------------------------------------------------------------
 SCRIPT_NAME="keenetic_zapret2_manager.sh"
 # Version scheme: vYY.M.D[.N]  (YY=year, M=month, D=day, N=daily revision)
-SCRIPT_VERSION="v26.6.3"
+SCRIPT_VERSION="v26.6.3.1"
 SCRIPT_REPO="https://github.com/RevolutionTR/keenetic-zapret2-manager"
 KZM2_SCRIPT_PATH="/opt/lib/opkg/keenetic_zapret2_manager.sh"
 SCRIPT_AUTHOR="RevolutionTR"
@@ -16367,7 +16367,7 @@ function fetchS(){
   return fetch('/run/kzm_status.json?t='+Date.now())
     .then(function(r){return r.json();})
     .then(function(d){
-      S=d;syncLang();syncTheme();updHdr();if(curV==='dash'||curV==='healthmon'||curV==='telegram'||curV==='zapret')render(curV);
+      S=d;syncLang();syncTheme();updHdr();if(curV==='dash'||curV==='healthmon'||curV==='telegram'||curV==='zapret'||curV==='dpi'||curV==='manualdpi')render(curV);
       var dt=new Date(d.ts*1000);
       document.getElementById('tsLbl').textContent=dt.toLocaleTimeString('tr-TR');
     })
@@ -16399,7 +16399,7 @@ function act(action,btn,msg){
       headers:{'Content-Type':'application/x-www-form-urlencoded'},
       body:'action=status_refresh'})
     .then(function(){return fetchS();})
-    .then(function(){quickPoll(5,2000);})
+    .then(function(){render(curV);quickPoll(5,2000);})
     .catch(function(){fetchS();quickPoll(5,2000);});
   })
   .catch(function(){toast('Ba&#287;lant&#305; hatas&#305;',false);if(btn){btn.disabled=false;btn.innerHTML=btn._o;}});
@@ -16412,7 +16412,7 @@ function actD(action,data,btn,msg){
   .then(function(r){return r.json();})
   .then(function(res){
     toast(res.msg||msg,!!res.ok);
-    setTimeout(function(){if(btn){btn.disabled=false;btn.innerHTML=btn._o;}fetchS();},1500);
+    setTimeout(function(){if(btn){btn.disabled=false;btn.innerHTML=btn._o;}fetchS().then(function(){render(curV);});},1500);
   })
   .catch(function(){toast('Ba&#287;lant&#305; hatas&#305;',false);if(btn){btn.disabled=false;btn.innerHTML=btn._o;}});
 }
@@ -16801,7 +16801,7 @@ var V={
             }
             return s+'</select>';
           })()+
-          '<button onclick="(function(b){var v=document.getElementById(\'dpiSel\').value;actD(\'dpi_set\',\'profile=\'+v,b,'+(L?'\'Profile set\'':'\'Profil ayarlandi\'')+')})(this)">'+(L?'Apply':'Uygula')+'</button>'+
+          '<button onclick="(function(b){var v=document.getElementById(\'dpiSel\').value;var sel=document.getElementById(\'dpiSel\');var el=document.getElementById(\'dpiVal\');if(el&&sel)el.textContent=sel.options[sel.selectedIndex].text;actD(\'dpi_set\',\'profile=\'+v,b,'+(L?'\'Profile set\'':'\'Profil ayarlandi\'')+')})(this)">'+(L?'Apply':'Uygula')+'</button>'+
         '</div>'+
         '<div class="hint" style="margin-top:8px">'+(L?'Only verified Zapret2 profiles are shown. Turk Telekom Fiber uses the blockcheck-verified TTL2 fake strategy.':'Sadece dogrulanmis Zapret2 profilleri gosterilir. Turk Telekom Fiber profili blockcheck ile dogrulanmis TTL2 fake stratejisini kullanir.')+'</div>'+
       '</div></div>';
@@ -17411,7 +17411,7 @@ function syncLang(){
   if(brandTitle)brandTitle.textContent=L?'KZM2 Control Panel':'KZM2 Kontrol Paneli';
   document.title=L?'KZM2 Control Panel':'KZM2 Kontrol Paneli';
   var langBadge=document.getElementById('langBadge');
-  if(langBadge){langBadge.onclick=function(){var nl=L?'tr':'en';fetch('/cgi-bin/action.sh',{method:'POST',headers:{'Content-Type':'application/x-www-form-urlencoded'},body:'action=lang_set&lang='+nl}).then(function(){setTimeout(fetchS,300);});};}
+  if(langBadge){langBadge.onclick=function(){var nl=L?'tr':'en';fetch('/cgi-bin/action.sh',{method:'POST',headers:{'Content-Type':'application/x-www-form-urlencoded'},body:'action=lang_set&lang='+nl}).then(function(){setTimeout(function(){hmConfCache=null;fetchS().then(function(){render(curV);});},300);});};}
   if(langBadge)langBadge.innerHTML=L?'<img src="data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjQiIGhlaWdodD0iMjQiIHZpZXdCb3g9IjAgMCAzNiAzNiIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cGF0aCBmaWxsPSIjMDAyNDdEIiBkPSJNMCA5LjA1OVYxM2g1LjYyOHpNNC42NjQgMzFIMTN2LTUuODM3ek0yMyAyNS4xNjRWMzFoOC4zMzV6TTAgMjN2My45NDFMNS42MyAyM3pNMzEuMzM3IDVIMjN2NS44Mzd6TTM2IDI2Ljk0MlYyM2gtNS42MzF6TTM2IDEzVjkuMDU5TDMwLjM3MSAxM3pNMTMgNUg0LjY2NEwxMyAxMC44Mzd6Ii8+PHBhdGggZmlsbD0iI0NGMUIyQiIgZD0iTTI1LjE0IDIzbDkuNzEyIDYuODAxYTMuOTc3IDMuOTc3IDAgMCAwIC45OS0xLjc0OUwyOC42MjcgMjNIMjUuMTR6TTEzIDIzaC0yLjE0MWwtOS43MTEgNi44Yy41MjEuNTMgMS4xODkuOTA5IDEuOTM4IDEuMDg1TDEzIDIzLjk0M1YyM3ptMTAtMTBoMi4xNDFsOS43MTEtNi44YTMuOTg4IDMuOTg4IDAgMCAwLTEuOTM3LTEuMDg1TDIzIDEyLjA1N1YxM3ptLTEyLjE0MSAwTDEuMTQ4IDYuMmEzLjk5NCAzLjk5NCAwIDAgMC0uOTkxIDEuNzQ5TDcuMzcyIDEzaDMuNDg3eiIvPjxwYXRoIGZpbGw9IiNFRUUiIGQ9Ik0zNiAyMUgyMXYxMGgydi01LjgzNkwzMS4zMzUgMzFIMzJhMy45OSAzLjk5IDAgMCAwIDIuODUyLTEuMTk5TDI1LjE0IDIzaDMuNDg3bDcuMjE1IDUuMDUyYy4wOTMtLjMzNy4xNTgtLjY4Ni4xNTgtMS4wNTJ2LS4wNThMMzAuMzY5IDIzSDM2di0yek0wIDIxdjJoNS42M0wwIDI2Ljk0MVYyN2MwIDEuMDkxLjQzOSAyLjA3OCAxLjE0OCAyLjhsOS43MTEtNi44SDEzdi45NDNsLTkuOTE0IDYuOTQxYy4yOTQuMDcuNTk4LjExNi45MTQuMTE2aC42NjRMMTMgMjUuMTYzVjMxaDJWMjFIMHpNMzYgOWEzLjk4MyAzLjk4MyAwIDAgMC0xLjE0OC0yLjhMMjUuMTQxIDEzSDIzdi0uOTQzbDkuOTE1LTYuOTQyQTQuMDAxIDQuMDAxIDAgMCAwIDMyIDVoLS42NjNMMjMgMTAuODM3VjVoLTJ2MTBoMTV2LTJoLTUuNjI5TDM2IDkuMDU5Vjl6TTEzIDV2NS44MzdMNC42NjQgNUg0YTMuOTg1IDMuOTg1IDAgMCAwLTIuODUyIDEuMmw5LjcxMSA2LjhINy4zNzJMLjE1NyA3Ljk0OUEzLjk2OCAzLjk2OCAwIDAgMCAwIDl2LjA1OUw1LjYyOCAxM0gwdjJoMTVWNWgtMnoiLz48cGF0aCBmaWxsPSIjQ0YxQjJCIiBkPSJNMjEgMTVWNWgtNnYxMEgwdjZoMTV2MTBoNlYyMWgxNXYtNnoiLz48L3N2Zz4=" width="24" height="24" style="vertical-align:middle"> EN':'<img src="data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjQiIGhlaWdodD0iMjQiIHZpZXdCb3g9IjAgMCAzNiAzNiIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIiB4bWxuczp4bGluaz0iaHR0cDovL3d3dy53My5vcmcvMTk5OS94bGluayI+PHBhdGggZmlsbD0iI0UzMDkxNyIgZD0iTTM2IDI3YTQgNCAwIDAgMS00IDRINGE0IDQgMCAwIDEtNC00VjlhNCA0IDAgMCAxIDQtNGgyOGE0IDQgMCAwIDEgNCA0djE4eiIvPjxwYXRoIGZpbGw9IiNFRUUiIGQ9Ik0xNiAyNGE2IDYgMCAxIDEgMC0xMmMxLjMxIDAgMi41Mi40MjUgMy41MDcgMS4xMzhBNy4zMzIgNy4zMzIgMCAwIDAgMTQgMTAuNjQ3QTcuMzUzIDcuMzUzIDAgMCAwIDYuNjQ3IDE4QTcuMzUzIDcuMzUzIDAgMCAwIDE0IDI1LjM1NGMyLjE5NSAwIDQuMTYtLjk2NyA1LjUwNy0yLjQ5MkE1Ljk2MyA1Ljk2MyAwIDAgMSAxNiAyNHptMy45MTMtNS43N2wyLjQ0LjU2MmwuMjIgMi40OTNsMS4yODgtMi4xNDZsMi40NC41NjFsLTEuNjQ0LTEuODg4bDEuMjg3LTIuMTQ3bC0yLjMwMy45OGwtMS42NDQtMS44ODlsLjIyIDIuNDk0eiIvPjwvc3ZnPg==" width="24" height="24" style="vertical-align:middle"> TR';
 }
 function fixTR(s){if(!s)return s;
