@@ -37,7 +37,7 @@
 # -------------------------------------------------------------------
 SCRIPT_NAME="keenetic_zapret2_manager.sh"
 # Version scheme: vYY.M.D[.N]  (YY=year, M=month, D=day, N=daily revision)
-SCRIPT_VERSION="v26.6.1.1"
+SCRIPT_VERSION="v26.6.3"
 SCRIPT_REPO="https://github.com/RevolutionTR/keenetic-zapret2-manager"
 KZM2_SCRIPT_PATH="/opt/lib/opkg/keenetic_zapret2_manager.sh"
 SCRIPT_AUTHOR="RevolutionTR"
@@ -453,13 +453,27 @@ kzm2_full_uninstall() {
         kzm_gui_remove_cron 2>/dev/null || true
         print_status PASS "$(T TXT_GUI_REMOVED)"
     fi
-    # Stop HealthMon daemon if running
+    # Stop HealthMon daemon ONCE (watchdog botu yeniden baslatmasin diye once HealthMon olduruluyor)
     if [ -f /tmp/kzm2_healthmon.pid ]; then
         _pid="$(cat /tmp/kzm2_healthmon.pid 2>/dev/null)"
         [ -n "$_pid" ] && kill "$_pid" 2>/dev/null
+        sleep 1
+        [ -n "$_pid" ] && kill -9 "$_pid" 2>/dev/null
         rm -f /tmp/kzm2_healthmon.pid 2>/dev/null
     fi
+    ps 2>/dev/null | awk '/--healthmon-daemon/ && !/awk/{print $1}' | while read -r _p; do
+        [ -n "$_p" ] && kill -9 "$_p" 2>/dev/null
+    done
     rm -rf /tmp/kzm2_healthmon.lock 2>/dev/null
+    # Stop Telegram bot daemon if running
+    telegram_bot_stop 2>/dev/null || true
+    ps 2>/dev/null | awk '/--telegram-daemon/ && !/awk/{print $1}' | while read -r _p; do
+        [ -n "$_p" ] && kill -9 "$_p" 2>/dev/null
+    done
+    rm -f /tmp/kzm2_telegram_bot.pid /tmp/kzm2_telegram_bot.log 2>/dev/null
+    rm -f /tmp/kzm2_tgbot_resp.json /tmp/kzm2_nfqws_drops.prev 2>/dev/null
+    rm -f /tmp/kzm2_healthmon.last_script_ver /tmp/kzm2_install_easy.log 2>/dev/null
+    rm -rf /tmp/kzm2_telegram_daemon.lock 2>/dev/null
     # Remove HealthMon / Telegram configs (KZM-owned)
     rm -f /opt/etc/healthmon.conf /opt/etc/healthmon.conf.bak 2>/dev/null
     rm -f /opt/etc/telegram.conf 2>/dev/null
@@ -3045,8 +3059,10 @@ apply_dpi_profile_now() {
     fi
     update_nfqws_parameters
     restart_zapret2 >/dev/null 2>&1 || true
-    enforce_client_mode_rules >/dev/null 2>&1 || true
-    enforce_wan_if_nfqueue_rules >/dev/null 2>&1 || true
+    if [ "$(get_dpi_profile)" != "none" ]; then
+        enforce_client_mode_rules >/dev/null 2>&1 || true
+        enforce_wan_if_nfqueue_rules >/dev/null 2>&1 || true
+    fi
     kzm2_export_active_dpi_profile >/dev/null 2>&1 || true
     healthmon_log "$(date '+%Y-%m-%d %H:%M:%S') | dpi_profile_change | profile=$(get_dpi_profile) | scope=$(get_scope_mode) | new_opt=$(grep '^NFQWS2_OPT=' /opt/zapret2/config 2>/dev/null | cut -d'"' -f2) | src=terminal"
     echo "$(T dpi_applied "DPI profili uygulandi." "DPI profile applied.")"
@@ -4166,6 +4182,7 @@ flush_all_nfqueue_rules() {
 }
 # Zapret2 servisinin calisip calismadigini kontrol eder (nfqws prosesine gore)
 is_zapret2_running() {
+    [ "$(cat /opt/zapret2/dpi_profile 2>/dev/null | tr -d '[:space:]')" = "none" ] && return 0
     pidof nfqws2 >/dev/null 2>&1 && return 0
     pgrep -f "/opt/zapret2/.*/nfqws2" >/dev/null 2>&1 && return 0
     ps w 2>/dev/null | grep -F '/opt/zapret2/' | grep -F 'nfqws2' | grep -v grep >/dev/null 2>&1
@@ -4173,6 +4190,7 @@ is_zapret2_running() {
 # Zapret2'yin iptables kural varligini kontrol eder (filter veya mangle)
 # Process calisiyor olsa bile kural yoksa trafik islenmez
 _zapret2_iptables_ok() {
+    [ "$(cat /opt/zapret2/dpi_profile 2>/dev/null | tr -d '[:space:]')" = "none" ] && return 0
     iptables -t mangle -S 2>/dev/null | \
         grep -qE -- '-j NFQUEUE.*(zport_tcp|zport_udp|zapret2_clients|nozapret)|.*(zport_tcp|zport_udp|zapret2_clients|nozapret).*-j NFQUEUE' && return 0
 
@@ -4238,6 +4256,16 @@ start_zapret2() {
     if ! is_zapret2_installed; then
         echo "$(T TXT_START_NOT_INSTALLED)"
         return 1
+    fi
+    # none profili: nfqws2 ve NFQUEUE kurallari olmadan calisir
+    if [ "$(cat /opt/zapret2/dpi_profile 2>/dev/null | tr -d '[:space:]')" = "none" ]; then
+        zapret_resume
+        killall nfqws2 2>/dev/null; sleep 1
+        flush_all_nfqueue_rules 2>/dev/null
+        nozapret_apply_rules 2>/dev/null
+        kzm2_apply_ip_exclude_rules 2>/dev/null
+        echo "$(T TXT_START_OK)"
+        return 0
     fi
     # Init script eksikse yeniden olustur (blockcheck sonrasi nadiren olabilir)
     if [ ! -x "/opt/zapret2/init.d/sysv/zapret2" ]; then
@@ -4589,7 +4617,7 @@ echo "$(tpl_render "$(T TXT_IPV6_WIZARD_START)" VAL "$IPV6_ANSWER")"
     _cleanup_post_up_hook
     # Servisi tazele
     restart_zapret2
-    enforce_wan_if_nfqueue_rules >/dev/null 2>&1
+    [ "$(get_dpi_profile)" != "none" ] && enforce_wan_if_nfqueue_rules >/dev/null 2>&1
     echo "IPv6 destegi ayari tamamlandi."
     press_enter_to_continue
     clear
@@ -4807,7 +4835,7 @@ apply_ipset_client_settings() {
         /opt/zapret2/init.d/sysv/zapret2 stop-fw >/dev/null 2>&1
         /opt/zapret2/init.d/sysv/zapret2 start-fw >/dev/null 2>&1
         # MODE all/list durumunu kesin uygula
-        enforce_client_mode_rules >/dev/null 2>&1
+        [ "$(get_dpi_profile)" != "none" ] && enforce_client_mode_rules >/dev/null 2>&1
         # nfqws yoksa daemonu da baslat
         if ! is_zapret2_running; then
             /opt/zapret2/init.d/sysv/zapret2 start >/dev/null 2>&1
@@ -8357,7 +8385,7 @@ run_blockcheck() {
     export ENABLE_HTTP="1"
     export ENABLE_HTTPS_TLS12="1"
     export ENABLE_HTTPS_TLS13="0"
-    export ENABLE_HTTP3="0"
+    # ENABLE_HTTP3 set edilmiyor -- blockcheck2 curl HTTP3 destegini kendisi kontrol eder (curl_supports_http3).
     # Her curl testi icin maximum sure (saniye). Set edilmezse blockcheck2 default'u
     # 15-30sn olabilir; engelli sitelerde 100+ kombinasyon x 20sn = saatler.
     export CURL_MAXTIME=8
@@ -8599,7 +8627,7 @@ else
     udp_weak=2
     if [ -n "$_sum_start" ]; then
         total_tests="$(sed -n "${_sum_start},\$p" "$src_report" 2>/dev/null | awk '/^curl_test_/ {print $1}' | sort -u | wc -l 2>/dev/null)"
-        success_tests="$(sed -n "${_sum_start},\$p" "$src_report" 2>/dev/null | awk -v p="$params_filtered" '$0 ~ /^curl_test_/ && index($0,p)>0 {print $1}' | sort -u | wc -l 2>/dev/null)"
+        success_tests="$(sed -n "${_sum_start},\$p" "$src_report" 2>/dev/null | awk '/^curl_test_/ && / : nfqws2/ {print $1}' | sort -u | wc -l 2>/dev/null)"
         sed -n "${_sum_start},\$p" "$src_report" 2>/dev/null | grep -q '^curl_test_https_tls12 ' && tls12_ok=1
         # Short kzmquick tests may skip QUIC/UDP completely. Missing UDP lines
         # must be shown as N/A, not WARN, otherwise users think DNS/UDP is broken.
@@ -8625,8 +8653,8 @@ else
     # GUI icin blockcheck sonucunu JSON olarak kaydet
     local _bcts
     _bcts="$(date +%s 2>/dev/null)"
-    printf '{\n  "score": %s,\n  "dns_ok": %s,\n  "tls12_ok": %s,\n  "udp_weak": %s,\n  "ts": %s\n}\n' \
-        "$score" "$dns_ok" "${tls12_ok:-0}" "${udp_weak:-1}" "$_bcts" \
+    printf '{\n  "score": %s,\n  "dns_ok": %s,\n  "tls12_ok": %s,\n  "udp_weak": %s,\n  "tests_ok": %s,\n  "tests_total": %s,\n  "ts": %s\n}\n' \
+        "$score" "$dns_ok" "${tls12_ok:-0}" "${udp_weak:-1}" "${success_tests:-0}" "${total_tests:-0}" "$_bcts" \
         > /opt/zapret2/blockcheck_result.json 2>/dev/null
     echo
     echo "$(T TXT_BLOCKCHECK_FOUND)"
@@ -9054,6 +9082,7 @@ backup_zapret_settings() {
     add_rel "/opt/zapret2/dpi_profile_origin"
     add_rel "/opt/zapret2/dpi_profile_params"
     add_rel "/opt/zapret2/blockcheck_auto_params"
+    add_rel "/opt/zapret2/blockcheck_result.json"
     add_rel "/opt/zapret2/dpi_profiles"
     add_rel "/opt/etc/healthmon.conf"
     add_rel "/opt/etc/telegram.conf"
@@ -11740,25 +11769,16 @@ healthmon_updatecheck_do() {
             healthmon_log "$(date +%s 2>/dev/null) | updatecheck | kzm2 | autoinstall_ok cur=$cur latest=$latest"
             # Web Panel HTML/CGI guncelle
             (KZM2_SKIP_LOCK=1 sh "/opt/lib/opkg/keenetic_zapret2_manager.sh" --update-gui >/dev/null 2>&1 &)
-            # Telegram bot calisiyorsa yeniden baslat (yeni kod icin)
+            # Autoupdate sonrasi Telegram botu Menu 15 > 4 > 3 ile ayni sekilde restart et.
+            # Ek flag/watchdog kullanma; cift PID race condition burada olusuyordu.
             if [ "$(grep -s '^TG_BOT_ENABLE=' /opt/etc/telegram.conf | cut -d= -f2 | tr -d '"')" = "1" ]; then
-                ps 2>/dev/null | awk '/--telegram-daemon/ && !/awk/{print $1}' | while read -r _p; do
-                    [ -n "$_p" ] && kill -9 "$_p" 2>/dev/null
-                done
-                rm -f /tmp/kzm2_telegram_bot.pid 2>/dev/null
-                rm -rf /tmp/kzm2_telegram_daemon.lock 2>/dev/null
+                rm -f /tmp/tgbot_restart_requested /tmp/tgbot_just_restarted 2>/dev/null
+                healthmon_log "$(date +%s 2>/dev/null) | updatecheck | kzm2 | tgbot_menu_restart_start"
+                telegram_bot_stop >/dev/null 2>&1 || true
                 sleep 1
-                (KZM2_SKIP_LOCK=1 sh "/opt/lib/opkg/keenetic_zapret2_manager.sh" --telegram-daemon </dev/null >>"/tmp/kzm2_telegram_bot.log" 2>&1 &)
-                touch /tmp/tgbot_just_restarted 2>/dev/null
-                # Daemon'in kendi PID'ini yazmasini bekle (script yukleme suresi nedeniyle ps yerine dosya beklenir)
-                _new_tg_pid=""; _w=0
-                while [ "$_w" -lt 8 ]; do
-                    sleep 1; _w=$((_w+1))
-                    _new_tg_pid="$(cat /tmp/kzm2_telegram_bot.pid 2>/dev/null)"
-                    [ -n "$_new_tg_pid" ] && kill -0 "$_new_tg_pid" 2>/dev/null && break
-                    _new_tg_pid=""
-                done
-                healthmon_log "$(date +%s 2>/dev/null) | updatecheck | kzm2 | tgbot_restarted pid=${_new_tg_pid:-unknown}"
+                telegram_bot_start >/dev/null 2>&1 || true
+                _tg_new_pid="$(cat /tmp/kzm2_telegram_bot.pid 2>/dev/null)"
+                healthmon_log "$(date +%s 2>/dev/null) | updatecheck | kzm2 | tgbot_menu_restart_done pid=${_tg_new_pid:-unknown}"
             fi
             # HealthMon restart flag - loop bir sonraki iterasyonda yakalar
             touch /tmp/healthmon_restart_requested 2>/dev/null
@@ -11829,6 +11849,9 @@ kzm2_nfqws_alert_check() {
     [ "${HM_NFQWS_ALERT:-1}" = "1" ] || return 0
     # Queue 300 yoksa (nfqws2 durmus) - yanlis recovery mesaji gonderme
     grep -q '^ *300 ' /proc/net/netfilter/nfnetlink_queue 2>/dev/null || return 0
+    # WAN hazir degilse alarm gonderme (boot/restart sureci)
+    _nfq_wan="$(cat /opt/zapret2/wan_if 2>/dev/null | tr -d '[:space:]')"
+    [ -n "$_nfq_wan" ] && ! hm_wanmon_is_up "$_nfq_wan" 2>/dev/null && return 0
     local _ql _dr _flag _now _last _diff _msg
     _flag="/tmp/kzm2_nfqws_alert_active"
     _ql="$(awk '/^ *300/{print $3}' /proc/net/netfilter/nfnetlink_queue 2>/dev/null)"
@@ -12201,7 +12224,8 @@ healthmon_loop() {
         # nfqws calisiyor gorunse de kuyruk tikanirsa (zombie working) tespit eder ve restart atar.
         # Spike/stall ayrimi: qlen esigi asildiktan sonra dusuyorsa spike (sayac sifirla),
         # artiyorsa veya sabit kaliyorsa gercek stall (sayac artar, N turda restart).
-        if [ "${HM_QLEN_WATCHDOG:-1}" = "1" ]; then
+        _qlen_wan_ifc="$(cat /opt/zapret2/wan_if 2>/dev/null | tr -d '[:space:]')"
+        if [ "${HM_QLEN_WATCHDOG:-1}" = "1" ] && hm_wanmon_is_up "$_qlen_wan_ifc" 2>/dev/null; then
             local qlen_th qlen_turns qlen_val qlen_cnt_f qlen_prev_f qlen_cnt qlen_prev
             qlen_th="${HM_QLEN_WARN_TH:-50}"
             qlen_turns="${HM_QLEN_CRIT_TURNS:-1}"
@@ -12449,6 +12473,24 @@ healthmon_loop() {
                 fi
             fi
             printf '%s\n' "$kdns_reach2" > "$kdns_reach_f" 2>/dev/null
+        fi
+        # ---- TELEGRAM BOT RESTART REQUEST (autoupdate sonrasi) ----
+        if [ -f /tmp/tgbot_restart_requested ]; then
+            rm -f /tmp/tgbot_restart_requested /tmp/tgbot_just_restarted 2>/dev/null
+            ps 2>/dev/null | awk '/--telegram-daemon/ && !/awk/{print $1}' | while read -r _p; do
+                [ -n "$_p" ] && kill -9 "$_p" 2>/dev/null
+            done
+            rm -f /tmp/kzm2_telegram_bot.pid 2>/dev/null
+            rm -rf /tmp/kzm2_telegram_daemon.lock 2>/dev/null
+            sleep 1
+            if command -v nohup >/dev/null 2>&1; then
+                nohup "$KZM2_SCRIPT_PATH" --telegram-daemon </dev/null >>"$TG_BOT_LOG_FILE" 2>&1 &
+            else
+                "$KZM2_SCRIPT_PATH" --telegram-daemon </dev/null >>"$TG_BOT_LOG_FILE" 2>&1 &
+            fi
+            sleep 3
+            _req_pid="$(cat /tmp/kzm2_telegram_bot.pid 2>/dev/null)"
+            healthmon_log "$now | tgbot_restart_requested | restarted pid=${_req_pid:-unknown}"
         fi
         # ---- TELEGRAM BOT WATCHDOG ----
         if [ "${HM_TGBOT_WATCHDOG:-1}" = "1" ]; then
@@ -14262,7 +14304,11 @@ kzm_gui_gen_status() {
     ln -sf /tmp/kzm_status.json "$_dir/kzm_status.json" 2>/dev/null
     # Zapret2 calisiyor mu?
     local _zap_run=0
-    pgrep -x nfqws2 >/dev/null 2>&1 && _zap_run=1
+    if [ "$(cat /opt/zapret2/dpi_profile 2>/dev/null | tr -d '[:space:]')" = "none" ]; then
+        [ -f /opt/zapret2/dpi_profile ] && _zap_run=1
+    else
+        pgrep -x nfqws2 >/dev/null 2>&1 && _zap_run=1
+    fi
     # HealthMon calisiyor mu?
     local _hm_run=0
     local _hm_pid_file="/tmp/kzm2_healthmon.pid"
@@ -14359,30 +14405,23 @@ kzm_gui_gen_status() {
     [ -z "$_dpi_profile" ] && _dpi_profile="Unknown"
     [ -z "$_dpi_origin"  ] && _dpi_origin="manual"
     # Blockcheck sonucu
-    local _bc_score=0 _bc_dns_ok=1 _bc_tls12_ok=0 _bc_udp_weak=2 _bc_ts=0
+    local _bc_score=0 _bc_dns_ok=1 _bc_tls12_ok=0 _bc_udp_weak=2 _bc_tests_ok=0 _bc_tests_total=0 _bc_ts=0
     if [ -f /opt/zapret2/blockcheck_result.json ]; then
         _bc_score="$(grep '"score"'    /opt/zapret2/blockcheck_result.json | grep -o '[0-9]*' | head -1)"
         _bc_dns_ok="$(grep '"dns_ok"'  /opt/zapret2/blockcheck_result.json | grep -o '[0-9]' | head -1)"
         _bc_tls12_ok="$(grep '"tls12_ok"' /opt/zapret2/blockcheck_result.json | grep -o '[0-9]' | head -1)"
         _bc_udp_weak="$(grep '"udp_weak"' /opt/zapret2/blockcheck_result.json | grep -o '[0-9]' | head -1)"
         _bc_ts="$(grep '"ts"'         /opt/zapret2/blockcheck_result.json | grep -o '[0-9]*' | head -1)"
-        [ -z "$_bc_score"    ] && _bc_score=0
-        [ -z "$_bc_dns_ok"   ] && _bc_dns_ok=0
-        [ -z "$_bc_tls12_ok" ] && _bc_tls12_ok=0
-        [ -z "$_bc_udp_weak" ] && _bc_udp_weak=2
-        [ -z "$_bc_ts"       ] && _bc_ts=0
-        # Backward compatibility: older KZM2 builds wrote resolver mismatch as
-        # DNS WARN and missing UDP/QUIC short-test data as weak. Normalize those
-        # for Zapret2 short blockcheck summaries before writing Web Panel JSON.
-        _bc_last_report="$(ls -t /opt/zapret2/blockcheck_*.txt /opt/zapret2/blockcheck_summary*.txt 2>/dev/null | head -n1)"
-        if [ -n "$_bc_last_report" ] && [ -f "$_bc_last_report" ]; then
-            if [ "$_bc_dns_ok" = "0" ] && ! grep -Eqi "system DNS is not working|DNS.*(fail|error|unavailable)" "$_bc_last_report" 2>/dev/null; then
-                _bc_dns_ok=2
-            fi
-            if [ "$_bc_udp_weak" = "1" ] && ! grep -Eqi "^(curl_test_http3|curl_test_quic|curl_test_udp)" "$_bc_last_report" 2>/dev/null; then
-                _bc_udp_weak=2
-            fi
-        fi
+        _bc_tests_ok="$(grep '"tests_ok"'    /opt/zapret2/blockcheck_result.json | grep -o '[0-9]*' | head -1)"
+        _bc_tests_total="$(grep '"tests_total"' /opt/zapret2/blockcheck_result.json | grep -o '[0-9]*' | head -1)"
+        [ -z "$_bc_score"       ] && _bc_score=0
+        [ -z "$_bc_dns_ok"      ] && _bc_dns_ok=0
+        [ -z "$_bc_tls12_ok"    ] && _bc_tls12_ok=0
+        [ -z "$_bc_udp_weak"    ] && _bc_udp_weak=2
+        [ -z "$_bc_tests_ok"    ] && _bc_tests_ok=0
+        [ -z "$_bc_tests_total" ] && _bc_tests_total=0
+        [ -z "$_bc_ts"          ] && _bc_ts=0
+
     fi
     # KeenDNS bilgisi
     local _kdns_raw _kdns_access _kdns_fqdn
@@ -14462,7 +14501,12 @@ export PATH=/opt/sbin:/opt/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin
 mkdir -p /opt/var/run 2>/dev/null
 # JSON /tmp'ye yazilir, /opt/var/run altinda symlink kalir (USB write azaltmak icin)
 ln -sf /tmp/kzm_status.json /opt/var/run/kzm2_status.json 2>/dev/null
-_zap=0; pgrep nfqws2 >/dev/null 2>&1 && _zap=1
+_zap=0
+if [ "$(cat /opt/zapret2/dpi_profile 2>/dev/null | tr -d '[:space:]')" = "none" ]; then
+    [ -f /opt/zapret2/dpi_profile ] && _zap=1
+else
+    pgrep nfqws2 >/dev/null 2>&1 && _zap=1
+fi
 _hm=0
 _hmpid="$(cat /tmp/kzm2_healthmon.pid 2>/dev/null)"
 [ -n "$_hmpid" ] && kill -0 "$_hmpid" 2>/dev/null && _hm=1
@@ -14672,32 +14716,25 @@ _sha_kzm="$(cat /opt/etc/kzm2_sha256_kzm.state 2>/dev/null | tr -d '[:space:]')"
 [ -z "$_sha_kzm" ] && _sha_kzm="unknown"
 _sha_zapret="$(cat /opt/etc/kzm2_sha256_zapret.state 2>/dev/null | tr -d '[:space:]')"
 [ -z "$_sha_zapret" ] && _sha_zapret="unknown"
-_bc_score=0; _bc_dns_ok=1; _bc_tls12_ok=0; _bc_udp_weak=2; _bc_ts=0
+_bc_score=0; _bc_dns_ok=1; _bc_tls12_ok=0; _bc_udp_weak=2; _bc_tests_ok=0; _bc_tests_total=0; _bc_ts=0
 if [ -f /opt/zapret2/blockcheck_result.json ]; then
     _bc_score="$(grep '"score"'    /opt/zapret2/blockcheck_result.json | grep -o '[0-9]*' | head -1)"
     _bc_dns_ok="$(grep '"dns_ok"'  /opt/zapret2/blockcheck_result.json | grep -o '[0-9]' | head -1)"
     _bc_tls12_ok="$(grep '"tls12_ok"' /opt/zapret2/blockcheck_result.json | grep -o '[0-9]' | head -1)"
     _bc_udp_weak="$(grep '"udp_weak"' /opt/zapret2/blockcheck_result.json | grep -o '[0-9]' | head -1)"
     _bc_ts="$(grep '"ts"'         /opt/zapret2/blockcheck_result.json | grep -o '[0-9]*' | head -1)"
+    _bc_tests_ok="$(grep '"tests_ok"'    /opt/zapret2/blockcheck_result.json | grep -o '[0-9]*' | head -1)"
+    _bc_tests_total="$(grep '"tests_total"' /opt/zapret2/blockcheck_result.json | grep -o '[0-9]*' | head -1)"
     [ -z "$_bc_score"    ] && _bc_score=0
     [ -z "$_bc_dns_ok"   ] && _bc_dns_ok=0
     [ -z "$_bc_tls12_ok" ] && _bc_tls12_ok=0
     [ -z "$_bc_udp_weak" ] && _bc_udp_weak=2
     [ -z "$_bc_ts"       ] && _bc_ts=0
-    # Backward compatibility: older KZM2 builds wrote resolver mismatch as
-    # DNS WARN and missing UDP/QUIC short-test data as weak. Normalize those
-    # for Zapret2 short blockcheck summaries before writing Web Panel JSON.
-    _bc_last_report="$(ls -t /opt/zapret2/blockcheck_*.txt /opt/zapret2/blockcheck_summary*.txt 2>/dev/null | head -n1)"
-    if [ -n "$_bc_last_report" ] && [ -f "$_bc_last_report" ]; then
-        if [ "$_bc_dns_ok" = "0" ] && ! grep -Eqi "system DNS is not working|DNS.*(fail|error|unavailable)" "$_bc_last_report" 2>/dev/null; then
-            _bc_dns_ok=2
-        fi
-        if [ "$_bc_udp_weak" = "1" ] && ! grep -Eqi "^(curl_test_http3|curl_test_quic|curl_test_udp)" "$_bc_last_report" 2>/dev/null; then
-            _bc_udp_weak=2
-        fi
-    fi
+    [ -z "$_bc_tests_ok"    ] && _bc_tests_ok=0
+    [ -z "$_bc_tests_total" ] && _bc_tests_total=0
+
 fi
-printf '{\n  "ts": %s,\n  "lang": "%s",\n  "theme": "%s",\n  "kzm_version": "%s",\n  "model": "%s",\n  "firmware": "%s",\n  "wan_dev": "%s",\n  "wan_ip": "%s",\n  "lan_ip": "%s",\n  "keendns_fqdn": "%s",\n  "keendns_access": "%s",\n  "iss_name": "%s",\n  "isp_dns": "%s",\n  "zapret_running": %s,\n  "zapret_version": "%s",\n  "healthmon_running": %s,\n  "healthmon_enabled": %s,\n  "telegram_enabled": %s,\n  "telegram_running": %s,\n  "telegram_configured": %s,\n  "lighttpd_running": %s,\n  "curl_ok": %s,\n  "load1": "%s",\n  "load5": "%s",\n  "load15": "%s",\n  "ram_used_mb": %s,\n  "ram_free_mb": %s,\n  "ram_total_mb": %s,\n  "ram_buffer_mb": %s,\n  "swap_used_mb": %s,\n  "swap_total_mb": %s,\n  "disk_used_pct": %s,\n  "disk_used_mb": %s,\n  "disk_total_mb": %s,\n  "disk_tmp_pct": %s,\n  "disk_tmp_used_mb": %s,\n  "disk_tmp_total_mb": %s,\n  "storage_type": "%s",\n  "storage_label": "%s",\n  "disk_health_status": "%s",\n  "disk_health_msg": "%s",\n  "cpu_temp": %s,\n  "dpi_profile": "%s",\n  "dpi_origin": "%s",\n  "filter_mode": "%s",\n  "scope_mode": "%s",\n  "ipset_mode": "%s",\n  "ipset_count": %s,\n  "bc_score": %s,\n  "bc_dns_ok": %s,\n  "bc_tls12_ok": %s,\n  "bc_udp_weak": %s,\n  "bc_ts": %s,\n  "sha_kzm": "%s",\n  "sha_zapret": "%s"\n}\n' \
+printf '{\n  "ts": %s,\n  "lang": "%s",\n  "theme": "%s",\n  "kzm_version": "%s",\n  "model": "%s",\n  "firmware": "%s",\n  "wan_dev": "%s",\n  "wan_ip": "%s",\n  "lan_ip": "%s",\n  "keendns_fqdn": "%s",\n  "keendns_access": "%s",\n  "iss_name": "%s",\n  "isp_dns": "%s",\n  "zapret_running": %s,\n  "zapret_version": "%s",\n  "healthmon_running": %s,\n  "healthmon_enabled": %s,\n  "telegram_enabled": %s,\n  "telegram_running": %s,\n  "telegram_configured": %s,\n  "lighttpd_running": %s,\n  "curl_ok": %s,\n  "load1": "%s",\n  "load5": "%s",\n  "load15": "%s",\n  "ram_used_mb": %s,\n  "ram_free_mb": %s,\n  "ram_total_mb": %s,\n  "ram_buffer_mb": %s,\n  "swap_used_mb": %s,\n  "swap_total_mb": %s,\n  "disk_used_pct": %s,\n  "disk_used_mb": %s,\n  "disk_total_mb": %s,\n  "disk_tmp_pct": %s,\n  "disk_tmp_used_mb": %s,\n  "disk_tmp_total_mb": %s,\n  "storage_type": "%s",\n  "storage_label": "%s",\n  "disk_health_status": "%s",\n  "disk_health_msg": "%s",\n  "cpu_temp": %s,\n  "dpi_profile": "%s",\n  "dpi_origin": "%s",\n  "filter_mode": "%s",\n  "scope_mode": "%s",\n  "ipset_mode": "%s",\n  "ipset_count": %s,\n  "bc_score": %s,\n  "bc_dns_ok": %s,\n  "bc_tls12_ok": %s,\n  "bc_udp_weak": %s,\n  "bc_tests_ok": %s,\n  "bc_tests_total": %s,\n  "bc_ts": %s,\n  "sha_kzm": "%s",\n  "sha_zapret": "%s"\n}\n' \
     "$_ts" "$(cat /opt/zapret2/lang 2>/dev/null | tr -d '[:space:]' | head -c2)" "$(cat /opt/zapret2/theme 2>/dev/null | tr -d '[:space:]' | head -c5)" "$_kzmver" "$_model" "$_fw" "$_wan_display" "$_wip" "$_lan_ip" \
     "$_kdns_fqdn" "$_kdns_access" "$_iss_name" "$_isp_dns_json" \
     "$_zap" "$_zver" "$_hm" "$_hm_en" "$_tg_en" "$_tg" "$_tg_configured" \
@@ -14709,7 +14746,7 @@ printf '{\n  "ts": %s,\n  "lang": "%s",\n  "theme": "%s",\n  "kzm_version": "%s"
     "$_st_type" "$_st_label" "$_dh_status" "$_dh_msg" \
     "$_cpu_temp" \
     "$_dpi_profile" "$_dpi_origin" "$_filter_mode" "$_scope_mode" "$_ipset_mode" "$_ipset_count" \
-    "$_bc_score" "$_bc_dns_ok" "$_bc_tls12_ok" "$_bc_udp_weak" "$_bc_ts" \
+    "$_bc_score" "$_bc_dns_ok" "$_bc_tls12_ok" "$_bc_udp_weak" "$_bc_tests_ok" "$_bc_tests_total" "$_bc_ts" \
     "$_sha_kzm" "$_sha_zapret" \
     > /tmp/kzm_status.json.tmp && mv -f /tmp/kzm_status.json.tmp /tmp/kzm_status.json
 STATEOF
@@ -16607,10 +16644,10 @@ function opkgUpgradeConfirm(btn){
 }
 function fmtBcCard(S){
   var profileNames={
-    'tt_default':'Varsay&#305;lan Zapret2 (TTL2 fake)',
-    'tt_fiber':'Turk Telekom Fiber (TTL2 fake)',
-    'superonline_fiber':'Superonline Fiber (TTL6 hostcase)',
-    'blockcheck_auto':'Blockcheck Otomatik (Auto)',
+    'tt_default':(L?'Default Zapret2 (TTL2 fake)':'Varsay&#305;lan Zapret2 (TTL2 fake)'),
+    'tt_fiber':(L?'Turk Telekom Fiber (TTL2 fake)':'Turk Telekom Fiber (TTL2 fake)'),
+    'superonline_fiber':(L?'Superonline Fiber (TTL6 hostcase)':'Superonline Fiber (TTL6 hostcase)'),
+    'blockcheck_auto':(L?'Blockcheck Auto':'Blockcheck Otomatik (Auto)'),
     'custom':(L?'Custom NFQWS2_OPT':'&#214;zel NFQWS2_OPT'),
     'none':(L?'Passthrough (No Bypass)':'Ge&#231;i&#351; Modu (Bypass Yok)')
   };
@@ -16630,10 +16667,12 @@ function fmtBcCard(S){
   var dtStr=dt.toLocaleDateString('tr-TR')+' '+dt.toLocaleTimeString('tr-TR',{hour:'2-digit',minute:'2-digit'});
   var warns='';
   if(Number(S.bc_dns_ok)===0) warns+='<span class="badge bad" style="font-size:10px">DNS: WARN</span> ';
-  else if(Number(S.bc_dns_ok)===2) warns+='<span class="badge off" style="font-size:10px">DNS: N/A</span> ';
-  if(Number(S.bc_tls12_ok)===0) warns+='<span class="badge bad" style="font-size:10px">TLS12: WARN</span> ';
-  if(Number(S.bc_udp_weak)===1) warns+='<span class="badge warn" style="font-size:10px">UDP 443: WARN</span>';
-  else if(Number(S.bc_udp_weak)===2) warns+='<span class="badge off" style="font-size:10px">UDP 443: N/A</span>';
+  else if(Number(S.bc_dns_ok)===2) warns+='<span class="badge off" style="font-size:10px;background:rgba(100,120,160,0.15);color:#94a3b8;border:1px solid rgba(100,120,160,0.3)">DNS: ISP</span> ';
+  if(Number(S.bc_tls12_ok)===1) warns+='<span class="badge good" style="font-size:10px">TLS: OK</span> ';
+  else if(Number(S.bc_tls12_ok)===0) warns+='<span class="badge bad" style="font-size:10px">TLS: WARN</span> ';
+  if(Number(S.bc_udp_weak)===0) warns+='<span class="badge good" style="font-size:10px">UDP 443: OK</span> ';
+  else if(Number(S.bc_udp_weak)===1) warns+='<span class="badge warn" style="font-size:10px">UDP 443: WARN</span> ';
+  if(S.bc_tests_total>0) warns+='<span class="badge off" style="font-size:10px">'+S.bc_tests_ok+'/'+S.bc_tests_total+' test</span>';
   return '<div class="card dash-card-span-2"><h3>'+(L?'DPI Health Score':'DPI Sa&#287;l&#305;k Skoru')+'</h3>'+
     '<div style="display:flex;align-items:flex-end;gap:8px;margin:8px 0 4px">'+
       '<span style="font-size:2.4em;font-weight:800;color:'+clr+'">'+sc+'</span>'+
@@ -18371,6 +18410,14 @@ R|r) scheduled_reboot_menu ;;
 if [ "$1" = "--netfilter-hook" ]; then
     # Zapret2 manuel durdurulduysa hook kurallari yeniden uygulamamali
     [ -f /tmp/.zapret2_paused ] && exit 0
+    # none profilde NFQUEUE kurali eklenmez, varsa temizle, nfqws2 durdur
+    if [ "$(cat /opt/zapret2/dpi_profile 2>/dev/null | tr -d '[:space:]')" = "none" ]; then
+        killall nfqws2 2>/dev/null
+        flush_all_nfqueue_rules 2>/dev/null
+        nozapret_apply_rules 2>/dev/null
+        kzm2_apply_ip_exclude_rules 2>/dev/null
+        exit 0
+    fi
     # Zapret2 native kurallarini geri yukle (tum ag modu dahil)
     if [ -x /opt/zapret2/init.d/sysv/zapret2 ]; then
         /opt/zapret2/init.d/sysv/zapret2 start-fw >/dev/null 2>&1
