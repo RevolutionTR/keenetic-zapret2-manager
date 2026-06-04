@@ -150,6 +150,8 @@ Bu durumda Zapret2 çalışıyor olsa bile bağlantı kurulamayabilir.
 - Güncel sürüm uyarıları
 
 ### CLI Kısayollar
+- `kzm`
+- `KZM`
 - `kzm2`
 - `KZM2`
 - `keenetic-zapret2`
