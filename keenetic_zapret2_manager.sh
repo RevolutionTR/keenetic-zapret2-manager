@@ -37,7 +37,7 @@
 # -------------------------------------------------------------------
 SCRIPT_NAME="keenetic_zapret2_manager.sh"
 # Version scheme: vYY.M.D[.N]  (YY=year, M=month, D=day, N=daily revision)
-SCRIPT_VERSION="v26.6.3.1"
+SCRIPT_VERSION="v26.6.4"
 SCRIPT_REPO="https://github.com/RevolutionTR/keenetic-zapret2-manager"
 KZM2_SCRIPT_PATH="/opt/lib/opkg/keenetic_zapret2_manager.sh"
 SCRIPT_AUTHOR="RevolutionTR"
@@ -16367,7 +16367,7 @@ function fetchS(){
   return fetch('/run/kzm_status.json?t='+Date.now())
     .then(function(r){return r.json();})
     .then(function(d){
-      S=d;syncLang();syncTheme();updHdr();if(curV==='dash'||curV==='healthmon'||curV==='telegram'||curV==='zapret'||curV==='dpi'||curV==='manualdpi')render(curV);
+      S=d;syncLang();syncTheme();updHdr();if(curV==='dash'||curV==='healthmon'||curV==='telegram'||curV==='zapret'||curV==='dpi')render(curV);
       var dt=new Date(d.ts*1000);
       document.getElementById('tsLbl').textContent=dt.toLocaleTimeString('tr-TR');
     })
@@ -16412,7 +16412,7 @@ function actD(action,data,btn,msg){
   .then(function(r){return r.json();})
   .then(function(res){
     toast(res.msg||msg,!!res.ok);
-    setTimeout(function(){if(btn){btn.disabled=false;btn.innerHTML=btn._o;}fetchS().then(function(){render(curV);});},1500);
+    setTimeout(function(){if(btn){btn.disabled=false;btn.innerHTML=btn._o;}fetchS().then(function(){if(curV!=='manualdpi')render(curV);});},1500);
   })
   .catch(function(){toast('Ba&#287;lant&#305; hatas&#305;',false);if(btn){btn.disabled=false;btn.innerHTML=btn._o;}});
 }
@@ -16855,7 +16855,7 @@ var V={
           '<button class="ok" onclick="mdpiAdvSave(this)">'+(L?'Apply and Restart Zapret2':'Uygula ve Zapret2&#8217;yi Yeniden Ba&#351;lat')+'</button>'+
         '</div>'+
       '</div>';
-    setTimeout(function(){mdpiLoad('config');mdpiAdvLoad('config');},100);return h;
+    setTimeout(function(){var t=document.getElementById('mdpiTls');if(!t||!t.value){mdpiLoad('config');mdpiAdvLoad('config');}},100);return h;
   }},
   hostlist:{title:'Hostlist Y&#246;netimi',titleEn:'Hostlist Management',sub:'Domain ekle, sil, listele.',subEn:'Add, remove, list domains.',html:function(){
     var h='<div class="grid">'+
@@ -17234,7 +17234,7 @@ function mdpiAdvLoad(src,btn){
   fetch('/cgi-bin/action.sh',{method:'POST',headers:{'Content-Type':'application/x-www-form-urlencoded'},body:'action=manual_dpi_adv_get&source='+encodeURIComponent(src||'config')})
   .then(function(r){return r.json();})
   .then(function(res){
-    if(res&&res.ok){mdpiSetAdv(res.data||res||{});toast(L?'Config variables loaded':'Config degiskenleri yuklendi',true);}else{toast((res&&res.msg)||(L?'Error':'Hata'),false);}
+    if(res&&res.ok){mdpiSetAdv(res.data||res||{});if(btn)toast(L?'Config variables loaded':'Config degiskenleri yuklendi',true);}else{if(btn)toast((res&&res.msg)||(L?'Error':'Hata'),false);}
     if(btn){btn.disabled=false;btn.innerHTML=btn._o;}
   }).catch(function(){toast(L?'Connection error':'Ba&#287;lant&#305; hatas&#305;',false);if(btn){btn.disabled=false;btn.innerHTML=btn._o;}});
 }
@@ -17254,7 +17254,7 @@ function mdpiLoad(src,btn){
   fetch('/cgi-bin/action.sh',{method:'POST',headers:{'Content-Type':'application/x-www-form-urlencoded'},body:'action=manual_dpi_get&source='+encodeURIComponent(src||'config')})
   .then(function(r){return r.json();})
   .then(function(res){
-    if(res&&res.ok){mdpiSetBlocks(res.data||'');toast(L?'Loaded':'Y&#252;klendi',true);}else{toast((res&&res.msg)||(L?'Error':'Hata'),false);}
+    if(res&&res.ok){mdpiSetBlocks(res.data||'');if(btn)toast(L?'Loaded':'Y&#252;klendi',true);}else{if(btn)toast((res&&res.msg)||(L?'Error':'Hata'),false);}
     if(btn){btn.disabled=false;btn.innerHTML=btn._o;}
   }).catch(function(){toast(L?'Connection error':'Ba&#287;lant&#305; hatas&#305;',false);if(btn){btn.disabled=false;btn.innerHTML=btn._o;}});
 }
@@ -17411,7 +17411,7 @@ function syncLang(){
   if(brandTitle)brandTitle.textContent=L?'KZM2 Control Panel':'KZM2 Kontrol Paneli';
   document.title=L?'KZM2 Control Panel':'KZM2 Kontrol Paneli';
   var langBadge=document.getElementById('langBadge');
-  if(langBadge){langBadge.onclick=function(){var nl=L?'tr':'en';fetch('/cgi-bin/action.sh',{method:'POST',headers:{'Content-Type':'application/x-www-form-urlencoded'},body:'action=lang_set&lang='+nl}).then(function(){setTimeout(function(){hmConfCache=null;fetchS().then(function(){render(curV);});},300);});};}
+  if(langBadge){langBadge.onclick=function(){var nl=L?'tr':'en';fetch('/cgi-bin/action.sh',{method:'POST',headers:{'Content-Type':'application/x-www-form-urlencoded'},body:'action=lang_set&lang='+nl}).then(function(){setTimeout(function(){hmConfCache=null;fetchS().then(function(){if(curV==='manualdpi'){var vals={http:(document.getElementById('mdpiHttp')||{}).value,tls:(document.getElementById('mdpiTls')||{}).value,quic:(document.getElementById('mdpiQuic')||{}).value,ptcp:(document.getElementById('mdpiPortsTcp')||{}).value,pudp:(document.getElementById('mdpiPortsUdp')||{}).value,tout:(document.getElementById('mdpiTcpOut')||{}).value,tin:(document.getElementById('mdpiTcpIn')||{}).value,uout:(document.getElementById('mdpiUdpOut')||{}).value,uin:(document.getElementById('mdpiUdpIn')||{}).value};render(curV);setTimeout(function(){if(vals.http!==undefined&&document.getElementById('mdpiHttp'))document.getElementById('mdpiHttp').value=vals.http||'';if(vals.tls!==undefined&&document.getElementById('mdpiTls'))document.getElementById('mdpiTls').value=vals.tls||'';if(vals.quic!==undefined&&document.getElementById('mdpiQuic'))document.getElementById('mdpiQuic').value=vals.quic||'';if(vals.ptcp!==undefined&&document.getElementById('mdpiPortsTcp'))document.getElementById('mdpiPortsTcp').value=vals.ptcp||'';if(vals.pudp!==undefined&&document.getElementById('mdpiPortsUdp'))document.getElementById('mdpiPortsUdp').value=vals.pudp||'';if(vals.tout!==undefined&&document.getElementById('mdpiTcpOut'))document.getElementById('mdpiTcpOut').value=vals.tout||'';if(vals.tin!==undefined&&document.getElementById('mdpiTcpIn'))document.getElementById('mdpiTcpIn').value=vals.tin||'';if(vals.uout!==undefined&&document.getElementById('mdpiUdpOut'))document.getElementById('mdpiUdpOut').value=vals.uout||'';if(vals.uin!==undefined&&document.getElementById('mdpiUdpIn'))document.getElementById('mdpiUdpIn').value=vals.uin||'';},120);}else{render(curV);}});},300);});};}
   if(langBadge)langBadge.innerHTML=L?'<img src="data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjQiIGhlaWdodD0iMjQiIHZpZXdCb3g9IjAgMCAzNiAzNiIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cGF0aCBmaWxsPSIjMDAyNDdEIiBkPSJNMCA5LjA1OVYxM2g1LjYyOHpNNC42NjQgMzFIMTN2LTUuODM3ek0yMyAyNS4xNjRWMzFoOC4zMzV6TTAgMjN2My45NDFMNS42MyAyM3pNMzEuMzM3IDVIMjN2NS44Mzd6TTM2IDI2Ljk0MlYyM2gtNS42MzF6TTM2IDEzVjkuMDU5TDMwLjM3MSAxM3pNMTMgNUg0LjY2NEwxMyAxMC44Mzd6Ii8+PHBhdGggZmlsbD0iI0NGMUIyQiIgZD0iTTI1LjE0IDIzbDkuNzEyIDYuODAxYTMuOTc3IDMuOTc3IDAgMCAwIC45OS0xLjc0OUwyOC42MjcgMjNIMjUuMTR6TTEzIDIzaC0yLjE0MWwtOS43MTEgNi44Yy41MjEuNTMgMS4xODkuOTA5IDEuOTM4IDEuMDg1TDEzIDIzLjk0M1YyM3ptMTAtMTBoMi4xNDFsOS43MTEtNi44YTMuOTg4IDMuOTg4IDAgMCAwLTEuOTM3LTEuMDg1TDIzIDEyLjA1N1YxM3ptLTEyLjE0MSAwTDEuMTQ4IDYuMmEzLjk5NCAzLjk5NCAwIDAgMC0uOTkxIDEuNzQ5TDcuMzcyIDEzaDMuNDg3eiIvPjxwYXRoIGZpbGw9IiNFRUUiIGQ9Ik0zNiAyMUgyMXYxMGgydi01LjgzNkwzMS4zMzUgMzFIMzJhMy45OSAzLjk5IDAgMCAwIDIuODUyLTEuMTk5TDI1LjE0IDIzaDMuNDg3bDcuMjE1IDUuMDUyYy4wOTMtLjMzNy4xNTgtLjY4Ni4xNTgtMS4wNTJ2LS4wNThMMzAuMzY5IDIzSDM2di0yek0wIDIxdjJoNS42M0wwIDI2Ljk0MVYyN2MwIDEuMDkxLjQzOSAyLjA3OCAxLjE0OCAyLjhsOS43MTEtNi44SDEzdi45NDNsLTkuOTE0IDYuOTQxYy4yOTQuMDcuNTk4LjExNi45MTQuMTE2aC42NjRMMTMgMjUuMTYzVjMxaDJWMjFIMHpNMzYgOWEzLjk4MyAzLjk4MyAwIDAgMC0xLjE0OC0yLjhMMjUuMTQxIDEzSDIzdi0uOTQzbDkuOTE1LTYuOTQyQTQuMDAxIDQuMDAxIDAgMCAwIDMyIDVoLS42NjNMMjMgMTAuODM3VjVoLTJ2MTBoMTV2LTJoLTUuNjI5TDM2IDkuMDU5Vjl6TTEzIDV2NS44MzdMNC42NjQgNUg0YTMuOTg1IDMuOTg1IDAgMCAwLTIuODUyIDEuMmw5LjcxMSA2LjhINy4zNzJMLjE1NyA3Ljk0OUEzLjk2OCAzLjk2OCAwIDAgMCAwIDl2LjA1OUw1LjYyOCAxM0gwdjJoMTVWNWgtMnoiLz48cGF0aCBmaWxsPSIjQ0YxQjJCIiBkPSJNMjEgMTVWNWgtNnYxMEgwdjZoMTV2MTBoNlYyMWgxNXYtNnoiLz48L3N2Zz4=" width="24" height="24" style="vertical-align:middle"> EN':'<img src="data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjQiIGhlaWdodD0iMjQiIHZpZXdCb3g9IjAgMCAzNiAzNiIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIiB4bWxuczp4bGluaz0iaHR0cDovL3d3dy53My5vcmcvMTk5OS94bGluayI+PHBhdGggZmlsbD0iI0UzMDkxNyIgZD0iTTM2IDI3YTQgNCAwIDAgMS00IDRINGE0IDQgMCAwIDEtNC00VjlhNCA0IDAgMCAxIDQtNGgyOGE0IDQgMCAwIDEgNCA0djE4eiIvPjxwYXRoIGZpbGw9IiNFRUUiIGQ9Ik0xNiAyNGE2IDYgMCAxIDEgMC0xMmMxLjMxIDAgMi41Mi40MjUgMy41MDcgMS4xMzhBNy4zMzIgNy4zMzIgMCAwIDAgMTQgMTAuNjQ3QTcuMzUzIDcuMzUzIDAgMCAwIDYuNjQ3IDE4QTcuMzUzIDcuMzUzIDAgMCAwIDE0IDI1LjM1NGMyLjE5NSAwIDQuMTYtLjk2NyA1LjUwNy0yLjQ5MkE1Ljk2MyA1Ljk2MyAwIDAgMSAxNiAyNHptMy45MTMtNS43N2wyLjQ0LjU2MmwuMjIgMi40OTNsMS4yODgtMi4xNDZsMi40NC41NjFsLTEuNjQ0LTEuODg4bDEuMjg3LTIuMTQ3bC0yLjMwMy45OGwtMS42NDQtMS44ODlsLjIyIDIuNDk0eiIvPjwvc3ZnPg==" width="24" height="24" style="vertical-align:middle"> TR';
 }
 function fixTR(s){if(!s)return s;
