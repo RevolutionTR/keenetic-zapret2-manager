@@ -149,6 +149,8 @@ In that case, even if Zapret2 is working, the connection may still fail.
 - Latest version notifications
 
 ### CLI Shortcuts
+- `kzm`
+- `KZM`
 - `kzm2`
 - `KZM2`
 - `keenetic-zapret2`
