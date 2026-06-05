@@ -140,7 +140,7 @@ Type the following commands one by one at the command prompt in PuTTY / Termius 
 **With wget:**
 
 ```bash
-wget -O /opt/lib/opkg/keenetic_zapret2_manager.sh \
+wget --no-check-certificate -O /opt/lib/opkg/keenetic_zapret2_manager.sh \
   https://raw.githubusercontent.com/RevolutionTR/keenetic-zapret2-manager/main/keenetic_zapret2_manager.sh
 chmod +x /opt/lib/opkg/keenetic_zapret2_manager.sh
 /opt/lib/opkg/keenetic_zapret2_manager.sh
