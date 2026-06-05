@@ -182,7 +182,7 @@ chmod +x /opt/lib/opkg/keenetic_zapret2_manager.sh
 opkg update && opkg upgrade
 ```
 
-Ardından wget ile komutları tek tek çalıştırın:
+Ardından aşağıdaki komutları tek tek çalıştırın:
 
 ```bash
 wget --no-check-certificate -O /opt/lib/opkg/keenetic_zapret2_manager.sh https://raw.githubusercontent.com/RevolutionTR/keenetic-zapret2-manager/main/keenetic_zapret2_manager.sh
@@ -233,7 +233,7 @@ chmod +x /opt/lib/opkg/keenetic_zapret2_manager.sh
 /opt/lib/opkg/keenetic_zapret2_manager.sh
 ```
   
-İşlem tamamlandıktan sonra kurulu betiği komut satırına "kzm2" , "KZM2" , "kzm" veya "keenetic-zapret2" yazıp onaylayarak kullanmaya başlayabilirsiniz.
+İşlem tamamlandıktan sonra kurulu betiği komut satırına "kzm2" , "KZM2" , "kzm" , "KZM" veya "keenetic-zapret2" yazıp onaylayarak kullanmaya başlayabilirsiniz.
   
 
 Keenetic Zapret2 Manager’ın Tam Kullanım Kılavuzu için geliştiricinin github’daki ilgili sayfasını ziyaret edebilirsiniz.
