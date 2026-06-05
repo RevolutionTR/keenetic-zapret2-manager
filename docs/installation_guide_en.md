@@ -133,11 +133,11 @@ root@192.168.1.1's password: keenetic
 The system will first ask for the old password (keenetic). Then enter and confirm your new password.
   
 ## === Installing the Keenetic Zapret2 Manager script ===
-  
-**Method 1 (quick):**  
-Type the following command at the command prompt in PuTTY / Termius and press Enter. The script will be downloaded and installed from the internet:
 
-With wget:
+**Method 1 (quick):**  
+Type the following commands one by one at the command prompt in PuTTY / Termius and press Enter after each. The script will be downloaded and installed from the internet:
+
+**With wget:**
 
 ```bash
 wget -O /opt/lib/opkg/keenetic_zapret2_manager.sh \
@@ -152,7 +152,7 @@ chmod +x /opt/lib/opkg/keenetic_zapret2_manager.sh
 > ```
 > Then retry the wget command.
 
-Or with curl:
+**Or with curl:**
 
 If curl is not installed, please install it first:
 
@@ -167,8 +167,26 @@ chmod +x /opt/lib/opkg/keenetic_zapret2_manager.sh
 /opt/lib/opkg/keenetic_zapret2_manager.sh
 ```
 
-  
+---
+
+**Alternative Installation** *(for users experiencing certificate errors or copy/paste issues)*
+
+With wget, run each command separately:
+
+```bash
+wget --no-check-certificate -O /opt/lib/opkg/keenetic_zapret2_manager.sh https://raw.githubusercontent.com/RevolutionTR/keenetic-zapret2-manager/main/keenetic_zapret2_manager.sh
+```
+
+```bash
+chmod +x /opt/lib/opkg/keenetic_zapret2_manager.sh
+```
+
+```bash
+/opt/lib/opkg/keenetic_zapret2_manager.sh
+```
+
 Once the process is complete, you can launch the installed script by typing `kzm2`, `KZM2`, `kzm` or `keenetic-zapret2` at the command prompt and pressing Enter.
+
 
 <img src="/docs/images/KZM2_Main_Menu.png" width="800">
 
