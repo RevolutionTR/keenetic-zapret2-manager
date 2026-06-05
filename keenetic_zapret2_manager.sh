@@ -37,7 +37,7 @@
 # -------------------------------------------------------------------
 SCRIPT_NAME="keenetic_zapret2_manager.sh"
 # Version scheme: vYY.M.D[.N]  (YY=year, M=month, D=day, N=daily revision)
-SCRIPT_VERSION="v26.6.4"
+SCRIPT_VERSION="v26.6.5"
 SCRIPT_REPO="https://github.com/RevolutionTR/keenetic-zapret2-manager"
 KZM2_SCRIPT_PATH="/opt/lib/opkg/keenetic_zapret2_manager.sh"
 SCRIPT_AUTHOR="RevolutionTR"
@@ -2568,8 +2568,8 @@ TXT_COMP_STORAGE_INTERNAL_SD_TR="Dahili depolama - eMMC/NAND (/opt bagli)"
 TXT_COMP_STORAGE_INTERNAL_SD_EN="Internal storage - eMMC/NAND (/opt mounted)"
 TXT_COMP_STORAGE_NVME_TR="Dahili depolama - NVMe SSD (/opt bagli)"
 TXT_COMP_STORAGE_NVME_EN="Internal storage - NVMe SSD (/opt mounted)"
-TXT_COMP_STORAGE_INTERNAL_HINT_TR="      (Not: Dahili bellegin omru kisalabilir. Harici USB kullanimi onerilir.)"
-TXT_COMP_STORAGE_INTERNAL_HINT_EN="      (Note: Internal storage wear may occur. External USB is recommended.)"
+TXT_COMP_STORAGE_INTERNAL_HINT_TR="      (Not: Harici USB kullanimi onerilir.)"
+TXT_COMP_STORAGE_INTERNAL_HINT_EN="      (Note: External USB is recommended.)"
 TXT_COMP_CRIT_FAIL_TR="KRITIK bilesenler eksik. Zapret2 calismayacak!"
 TXT_COMP_CRIT_FAIL_EN="CRITICAL components missing. Zapret2 will NOT work!"
 TXT_COMP_MISSING_TR="Eksik bilesenler:"
@@ -3338,7 +3338,7 @@ TXT_INSTALL_COMPAT_WARN_TR="UYARI: Keenetic uyumlulugu ayarlanirken bir sorun ol
 TXT_INSTALL_COMPAT_WARN_EN="WARNING: An issue occurred while applying Keenetic compatibility settings."
 TXT_INSTALL_CFG_RUNNING_TR="Zapret2 yapilandirma betigi calistiriliyor..."
 TXT_INSTALL_CFG_RUNNING_EN="Running Zapret2 configuration script..."
-TXT_INSTALL_KEENETIC_CFG_TR="Zapret2'yin Keenetic cihazlarda calisabilmesi icin gerekli yapilandirmalar yapiliyor..."
+TXT_INSTALL_KEENETIC_CFG_TR="Zapret2'nin Keenetic cihazlarda calisabilmesi icin gerekli yapilandirmalar yapiliyor..."
 TXT_INSTALL_KEENETIC_CFG_EN="Applying required configurations for Zapret2 to run on Keenetic devices..."
 # Zapret2 icin gerekli kernel modullerini yukler
 # Bazi cihazlarda OPKG yeniden kurulumundan sonra modprobe yolu bozuk olabilir
@@ -3387,7 +3387,7 @@ update_kernel_module_config() {
           if (prev_line == "do_start()") {
             print "    # KZM2_KERNEL_MODULES_BEGIN"
             print "    for _m in ip_set ip_set_hash_ip ip_set_hash_net ip_set_bitmap_port nfnetlink nfnetlink_queue xt_set xt_multiport xt_connbytes xt_mark; do"
-            print "        lsmod | awk '{print $1}' | grep -qx \"${_m}\" && continue"
+            print "        lsmod | sed -n \"s/ .*//p\" | grep -qx \"${_m}\" && continue"
             print "        insmod /lib/modules/$(uname -r)/${_m}.ko &> /dev/null || modprobe \"${_m}\" &> /dev/null || true"
             print "    done"
             print ""
