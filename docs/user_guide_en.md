@@ -14,7 +14,13 @@ Suitable for both new and advanced users.
 
 ## 🚀 Installation — Up and Running in 30 Seconds
 Keenetic Zapret2 Manager lets you bypass DPI restrictions with minimal configuration.
-Installation is simpler than you think. Connect to your router via SSH and download the script with one of the commands below:
+Installation is simpler than you think. Connect to your router via SSH and first update your system packages:
+
+```bash
+opkg update && opkg upgrade
+```
+
+Then download the script with one of the commands below:
 
 ```bash
 wget --no-check-certificate -O /opt/lib/opkg/keenetic_zapret2_manager.sh \
@@ -42,7 +48,13 @@ chmod +x /opt/lib/opkg/keenetic_zapret2_manager.sh
 
 **Alternative Installation** *(for users experiencing certificate errors or copy/paste issues)*
 
-With wget, run each command separately:
+First update your system packages:
+
+```bash
+opkg update && opkg upgrade
+```
+
+Then run each command separately:
 
 ```bash
 wget --no-check-certificate -O /opt/lib/opkg/keenetic_zapret2_manager.sh https://raw.githubusercontent.com/RevolutionTR/keenetic-zapret2-manager/main/keenetic_zapret2_manager.sh
