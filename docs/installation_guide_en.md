@@ -217,7 +217,7 @@ Download the Keenetic Zapret2 Manager script — developed by @Revolution_TR on 
   
 Log in to your router's web interface and use the file manager to copy the downloaded `keenetic_zapret2_manager.sh` file to `lib/opkg` on your router's internal storage.
   
-Using PuTTY on PC or Termius on mobile, run the commands to grant execute permission and then launch the script. (Recent updates to the script make the permission step unnecessary — the script grants its own execute permission. You also no longer need to type the full path to run it; typing `kzm2`, `KZM2`, `kzm` or `keenetic-zapret2` is enough. Additionally, even if the file is copied to the wrong location, the script installs itself in the correct place.)
+Using PuTTY on PC or Termius on mobile, run the commands to grant execute permission and then launch the script. (Recent updates to the script make the permission step unnecessary — the script grants its own execute permission. Additionally, even if the file is copied to the wrong location, the script installs itself in the correct place.)
   
 Commands:  
 
