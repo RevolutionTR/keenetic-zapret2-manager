@@ -129,12 +129,12 @@ root@192.168.1.1’s password: keenetic
   
 Sistem sırayla eski parolayı (keenetic) girmenizi isteyecek. Sonraki adımda yeni parolayı girin ve parolayı doğrulayın.
   
-## === Keenetic Zapret2 Manager betiği’nin kurulumu ===
-  
-Yöntem 1 (pratik):  
-PuTTY / Termius’daki komut satırına aşağıdaki komutu yazıp onaylayın. Betik internetten indirip kurulacaktır:
+## === Keenetic Zapret2 Manager betiği'nin kurulumu ===
 
-wget ile
+Yöntem 1 (pratik):  
+PuTTY / Termius'daki komut satırına aşağıdaki komutu yazıp onaylayın. Betik internetten indirip kurulacaktır:
+
+**wget ile**
 
 ```bash
 wget -O /opt/lib/opkg/keenetic_zapret2_manager.sh \
@@ -149,9 +149,9 @@ chmod +x /opt/lib/opkg/keenetic_zapret2_manager.sh
 > ```
 > Ardından wget komutunu tekrar deneyin.
 
-Veya curl ile  
+**Veya curl ile**
 
-Curl yoksa lütfen kurun
+Curl yoksa lütfen kurun:
 
 ```bash
 opkg update && opkg install curl
@@ -164,8 +164,25 @@ chmod +x /opt/lib/opkg/keenetic_zapret2_manager.sh
 /opt/lib/opkg/keenetic_zapret2_manager.sh
 ```
 
-  
-İşlem tamamlandıktan sonra kurulu betiği komut satırına "kzm2" , "KZM2" , "kzm" veya "keenetic-zapret2" yazıp onaylayarak kullanmaya başlayabilirsiniz.
+---
+
+**Alternatif Kurulum** *(sertifika hatası veya kopyala/yapıştır sorunu yaşayanlar için)*
+
+wget ile, komutları tek tek çalıştırın:
+
+```bash
+wget --no-check-certificate -O /opt/lib/opkg/keenetic_zapret2_manager.sh https://raw.githubusercontent.com/RevolutionTR/keenetic-zapret2-manager/main/keenetic_zapret2_manager.sh
+```
+
+```bash
+chmod +x /opt/lib/opkg/keenetic_zapret2_manager.sh
+```
+
+```bash
+/opt/lib/opkg/keenetic_zapret2_manager.sh
+```
+
+İşlem tamamlandıktan sonra kurulu betiği komut satırına `kzm2`, `KZM2`, `kzm` veya `keenetic-zapret2` yazıp onaylayarak kullanmaya başlayabilirsiniz.
 
 <img src="/docs/images/KZM2_Main_Menu.png" width="800">
 
