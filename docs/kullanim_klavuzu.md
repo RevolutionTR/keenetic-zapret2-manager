@@ -46,7 +46,7 @@ chmod +x /opt/lib/opkg/keenetic_zapret2_manager.sh
 
 **Alternatif Kurulum** *(sertifika hatası veya kopyala/yapıştır sorunu yaşayanlar için)*
 
-wget ile, komutları tek tek çalıştırın:
+Komutları tek tek çalıştırın:
 
 ```bash
 wget --no-check-certificate -O /opt/lib/opkg/keenetic_zapret2_manager.sh https://raw.githubusercontent.com/RevolutionTR/keenetic-zapret2-manager/main/keenetic_zapret2_manager.sh
