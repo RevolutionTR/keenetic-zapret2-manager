@@ -11,10 +11,8 @@ Yeni kullanıcılar için olduğu kadar ileri seviye kullanıcılar için de ref
 
 ---
 ## 🚀 Kurulum — 30 Saniyede Kurulum
-
 Keenetic Zapret2 Manager, DPI engellerini minimum yapılandırma ile aşmanızı sağlar.
-
-Kurulum düşündüğünüzden çok daha kolaydır. SSH ile router’a bağlanın ve betiği aşağıdaki komut ile indirin:
+Kurulum düşündüğünüzden çok daha kolaydır. SSH ile router'a bağlanın ve betiği aşağıdaki komut ile indirin:
 
 ```bash
 wget -O /opt/lib/opkg/keenetic_zapret2_manager.sh \
@@ -22,6 +20,7 @@ wget -O /opt/lib/opkg/keenetic_zapret2_manager.sh \
 chmod +x /opt/lib/opkg/keenetic_zapret2_manager.sh
 /opt/lib/opkg/keenetic_zapret2_manager.sh
 ```
+
 > ⚠️ **Not:** Bazı cihazlarda varsayılan `wget` HTTPS desteklemez. `HTTPS support not compiled in` hatası alırsanız önce şunu çalıştırın:
 > ```
 > opkg install wget-ssl
@@ -36,6 +35,25 @@ curl -fsSL https://raw.githubusercontent.com/RevolutionTR/keenetic-zapret2-manag
 chmod +x /opt/lib/opkg/keenetic_zapret2_manager.sh
 /opt/lib/opkg/keenetic_zapret2_manager.sh
 ```
+
+---
+
+**Alternatif Kurulum** *(sertifika hatası veya kopyala/yapıştır sorunu yaşayanlar için)*
+
+wget ile, komutları tek tek çalıştırın:
+
+```bash
+wget --no-check-certificate -O /opt/lib/opkg/keenetic_zapret2_manager.sh https://raw.githubusercontent.com/RevolutionTR/keenetic-zapret2-manager/main/keenetic_zapret2_manager.sh
+```
+
+```bash
+chmod +x /opt/lib/opkg/keenetic_zapret2_manager.sh
+```
+
+```bash
+/opt/lib/opkg/keenetic_zapret2_manager.sh
+```
+
 
 
 ---
