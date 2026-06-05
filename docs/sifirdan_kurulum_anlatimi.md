@@ -216,19 +216,28 @@ Router'ın web arayüzüne girip dosya gezgini yardımı ile indirdiğiniz keene
 PC'de Putty, mobilde Termius ile önce betiğin çalışmasına izin veren sonrada çalıştıran komutları verin (Betik’teki son güncellemeler ile çalışmasına izin vermek için bir komuta ihtiyacı yoktur, betik kendi iznini kendisi almaktadır. Çalıştırmak içinde uzunca komut ve isim yazmak yerine “keenetic” veya “keenetic-zapret2” yazıp onaylamak yeterlidir. Ayrıca kurulum için dosyanın kopyalandığı yer yanlış olsa da betik kurulumu doğru yere yapmaktadır).
   
 Komutlar:  
+
+Önce sistem paketlerini güncelleyin:
+
+```bash
+opkg update && opkg upgrade
+```
+
 Çalışmasına izin vermek için:  
+```bash
 chmod +x /opt/lib/opkg/keenetic_zapret2_manager.sh
+```
   
-Çalıştırmak için:  
+Çalıştırmak için:
+```bash
 /opt/lib/opkg/keenetic_zapret2_manager.sh
+```
   
 İşlem tamamlandıktan sonra kurulu betiği komut satırına "kzm2" , "KZM2" , "kzm" veya "keenetic-zapret2" yazıp onaylayarak kullanmaya başlayabilirsiniz.
   
 
 Keenetic Zapret2 Manager’ın Tam Kullanım Kılavuzu için geliştiricinin github’daki ilgili sayfasını ziyaret edebilirsiniz.
   
-
-
 
 Okuduğunuz için teşekkürler; umarım faydalı bir kaynak olmuştur.
 
