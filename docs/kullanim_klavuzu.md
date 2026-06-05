@@ -15,7 +15,7 @@ Keenetic Zapret2 Manager, DPI engellerini minimum yapılandırma ile aşmanızı
 Kurulum düşündüğünüzden çok daha kolaydır. SSH ile router'a bağlanın ve betiği aşağıdaki komut ile indirin:
 
 ```bash
-wget -O /opt/lib/opkg/keenetic_zapret2_manager.sh \
+wget --no-check-certificate -O /opt/lib/opkg/keenetic_zapret2_manager.sh \
   https://raw.githubusercontent.com/RevolutionTR/keenetic-zapret2-manager/main/keenetic_zapret2_manager.sh
 chmod +x /opt/lib/opkg/keenetic_zapret2_manager.sh
 /opt/lib/opkg/keenetic_zapret2_manager.sh
