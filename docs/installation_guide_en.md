@@ -135,7 +135,15 @@ The system will first ask for the old password (keenetic). Then enter and confir
 ## === Installing the Keenetic Zapret2 Manager script ===
 
 **Method 1 (quick):**  
-Type the following commands one by one at the command prompt in PuTTY / Termius and press Enter after each. The script will be downloaded and installed from the internet:
+Type the following commands one by one at the command prompt in PuTTY / Termius and press Enter after each.
+
+First, update your system packages:
+
+```bash
+opkg update && opkg upgrade
+```
+
+Then download the script:
 
 **With wget:**
 
@@ -171,7 +179,13 @@ chmod +x /opt/lib/opkg/keenetic_zapret2_manager.sh
 
 **Alternative Installation** *(for users experiencing certificate errors or copy/paste issues)*
 
-With wget, run each command separately:
+First, update your system packages:
+
+```bash
+opkg update && opkg upgrade
+```
+
+Then run each command separately:
 
 ```bash
 wget --no-check-certificate -O /opt/lib/opkg/keenetic_zapret2_manager.sh https://raw.githubusercontent.com/RevolutionTR/keenetic-zapret2-manager/main/keenetic_zapret2_manager.sh
@@ -206,6 +220,13 @@ Log in to your router's web interface and use the file manager to copy the downl
 Using PuTTY on PC or Termius on mobile, run the commands to grant execute permission and then launch the script. (Recent updates to the script make the permission step unnecessary — the script grants its own execute permission. You also no longer need to type the full path to run it; typing `kzm2`, `KZM2`, `kzm` or `keenetic-zapret2` is enough. Additionally, even if the file is copied to the wrong location, the script installs itself in the correct place.)
   
 Commands:  
+
+First, update your system packages:
+
+```bash
+opkg update && opkg upgrade
+```
+
 Grant execute permission:  
 ```
 chmod +x /opt/lib/opkg/keenetic_zapret2_manager.sh
