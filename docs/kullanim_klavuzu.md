@@ -12,7 +12,13 @@ Yeni kullanıcılar için olduğu kadar ileri seviye kullanıcılar için de ref
 ---
 ## 🚀 Kurulum — 30 Saniyede Kurulum
 Keenetic Zapret2 Manager, DPI engellerini minimum yapılandırma ile aşmanızı sağlar.
-Kurulum düşündüğünüzden çok daha kolaydır. SSH ile router'a bağlanın ve betiği aşağıdaki komut ile indirin:
+Kurulum düşündüğünüzden çok daha kolaydır. SSH ile router'a bağlanın ve önce sistem paketlerini güncelleyin:
+
+```bash
+opkg update && opkg upgrade
+```
+
+Ardından betiği indirin:
 
 ```bash
 wget --no-check-certificate -O /opt/lib/opkg/keenetic_zapret2_manager.sh \
