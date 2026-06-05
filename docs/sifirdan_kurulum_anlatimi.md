@@ -213,7 +213,7 @@ DH'den @Revolution_TR 'nin geliştirdiği Keenetic router’lar için özelleşt
   
 Router'ın web arayüzüne girip dosya gezgini yardımı ile indirdiğiniz keenetic_zapret2_manager.sh dosyasını router'ınızın dahili depolamasında lib/opkg yoluna kopyalayın.
   
-PC'de Putty, mobilde Termius ile önce betiğin çalışmasına izin veren sonrada çalıştıran komutları verin (Betik’teki son güncellemeler ile çalışmasına izin vermek için bir komuta ihtiyacı yoktur, betik kendi iznini kendisi almaktadır. Çalıştırmak içinde uzunca komut ve isim yazmak yerine “keenetic” veya “keenetic-zapret2” yazıp onaylamak yeterlidir. Ayrıca kurulum için dosyanın kopyalandığı yer yanlış olsa da betik kurulumu doğru yere yapmaktadır).
+PC'de Putty, mobilde Termius ile önce betiğin çalışmasına izin veren sonrada çalıştıran komutları verin (Betik’teki son güncellemeler ile çalışmasına izin vermek için bir komuta ihtiyacı yoktur, betik kendi iznini kendisi almaktadır. Ayrıca kurulum için dosyanın kopyalandığı yer yanlış olsa da betik kurulumu doğru yere yapmaktadır).
   
 Komutlar:  
 
