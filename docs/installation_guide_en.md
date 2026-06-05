@@ -199,7 +199,7 @@ chmod +x /opt/lib/opkg/keenetic_zapret2_manager.sh
 /opt/lib/opkg/keenetic_zapret2_manager.sh
 ```
 
-Once the process is complete, you can launch the installed script by typing `kzm2`, `KZM2`, `kzm` or `keenetic-zapret2` at the command prompt and pressing Enter.
+Once the process is complete, you can launch the installed script by typing `kzm2`, `KZM2`, `kzm` ,`KZM` or `keenetic-zapret2` at the command prompt and pressing Enter.
 
 
 <img src="/docs/images/KZM2_Main_Menu.png" width="800">
@@ -237,7 +237,7 @@ Run:
 /opt/lib/opkg/keenetic_zapret2_manager.sh
 ```
   
-Once the process is complete, you can launch the installed script by typing `kzm2`, `KZM2`, `kzm` or `keenetic-zapret2` at the command prompt and pressing Enter.
+Once the process is complete, you can launch the installed script by typing `kzm2`, `KZM2`, `kzm` , `KZM` or `keenetic-zapret2` at the command prompt and pressing Enter.
   
 
 For the full usage guide for Keenetic Zapret2 Manager, visit the developer's GitHub page.
