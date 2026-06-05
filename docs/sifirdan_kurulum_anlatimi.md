@@ -132,7 +132,15 @@ Sistem sırayla eski parolayı (keenetic) girmenizi isteyecek. Sonraki adımda y
 ## === Keenetic Zapret2 Manager betiği'nin kurulumu ===
 
 Yöntem 1 (pratik):  
-PuTTY / Termius'daki komut satırına aşağıdaki komutu yazıp onaylayın. Betik internetten indirip kurulacaktır:
+PuTTY / Termius'daki komut satırına aşağıdaki komutları sırayla yazıp onaylayın.
+
+Önce sistem paketlerini güncelleyin:
+
+```bash
+opkg update && opkg upgrade
+```
+
+Ardından betiği indirin:
 
 **wget ile**
 
@@ -168,7 +176,13 @@ chmod +x /opt/lib/opkg/keenetic_zapret2_manager.sh
 
 **Alternatif Kurulum** *(sertifika hatası veya kopyala/yapıştır sorunu yaşayanlar için)*
 
-wget ile, komutları tek tek çalıştırın:
+Önce sistem paketlerini güncelleyin:
+
+```bash
+opkg update && opkg upgrade
+```
+
+Ardından wget ile komutları tek tek çalıştırın:
 
 ```bash
 wget --no-check-certificate -O /opt/lib/opkg/keenetic_zapret2_manager.sh https://raw.githubusercontent.com/RevolutionTR/keenetic-zapret2-manager/main/keenetic_zapret2_manager.sh
