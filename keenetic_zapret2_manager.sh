@@ -37,7 +37,7 @@
 # -------------------------------------------------------------------
 SCRIPT_NAME="keenetic_zapret2_manager.sh"
 # Version scheme: vYY.M.D[.N]  (YY=year, M=month, D=day, N=daily revision)
-SCRIPT_VERSION="v26.6.7.3"
+SCRIPT_VERSION="v26.6.7.4"
 SCRIPT_REPO="https://github.com/RevolutionTR/keenetic-zapret2-manager"
 KZM2_SCRIPT_PATH="/opt/lib/opkg/keenetic_zapret2_manager.sh"
 SCRIPT_AUTHOR="RevolutionTR"
@@ -4320,7 +4320,22 @@ start_zapret2() {
     # Zapret2 icin gerekli kernel modullerini yukle (bitmap:port dahil)
     kzm2_load_zapret2_kmods >/dev/null 2>&1
     if is_zapret2_running; then
-        # Process calisiyor ama kurallar eksik olabilir — tamir et
+        # Process calisiyor ama lua uyumsuzlugu olabilir — kontrol et
+        local _nfq_bin="/opt/zapret2/nfq2/nfqws2"
+        local _lua_lib="/opt/zapret2/lua/zapret-lib.lua"
+        if [ -x "$_nfq_bin" ] && [ -f "$_lua_lib" ]; then
+            local _bin_ver _lua_ver
+            _bin_ver="$("$_nfq_bin" --version 2>&1 | grep -o 'lua_compat_ver [0-9]*' | awk '{print $2}')"
+            _lua_ver="$(grep -m1 '^NFQWS2_COMPAT_VER_REQUIRED=' "$_lua_lib" | cut -d= -f2)"
+            if [ -n "$_bin_ver" ] && [ -n "$_lua_ver" ] && [ "$_bin_ver" != "$_lua_ver" ]; then
+                print_status WARN "$(T _ 'Lua uyumsuzlugu tespit edildi. Zapret2 yeniden baslatiliyor...' 'Lua incompatibility detected. Restarting Zapret2...')"
+                stop_zapret2 >/dev/null 2>&1
+                zapret_resume
+                start_zapret2
+                return $?
+            fi
+        fi
+        # Kurallar eksik olabilir — tamir et
         /opt/zapret2/init.d/sysv/zapret2 start-fw >/dev/null 2>&1
         enforce_client_mode_rules >/dev/null 2>&1
         enforce_wan_if_nfqueue_rules >/dev/null 2>&1
