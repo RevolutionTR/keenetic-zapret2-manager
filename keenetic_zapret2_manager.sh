@@ -37,7 +37,7 @@
 # -------------------------------------------------------------------
 SCRIPT_NAME="keenetic_zapret2_manager.sh"
 # Version scheme: vYY.M.D[.N]  (YY=year, M=month, D=day, N=daily revision)
-SCRIPT_VERSION="v26.6.7.2"
+SCRIPT_VERSION="v26.6.7.3"
 SCRIPT_REPO="https://github.com/RevolutionTR/keenetic-zapret2-manager"
 KZM2_SCRIPT_PATH="/opt/lib/opkg/keenetic_zapret2_manager.sh"
 SCRIPT_AUTHOR="RevolutionTR"
@@ -4349,6 +4349,47 @@ start_zapret2() {
         return 0
     fi
     echo "$(T TXT_START_FAIL)"
+    # Lua uyumsuzlugu kontrolu: binary compat ver ile lua REQUIRED farkliysa otomatik duzelt
+    local _nfq_bin="/opt/zapret2/nfq2/nfqws2"
+    local _lua_lib="/opt/zapret2/lua/zapret-lib.lua"
+    if [ -x "$_nfq_bin" ] && [ -f "$_lua_lib" ]; then
+        local _bin_ver _lua_ver
+        _bin_ver="$("$_nfq_bin" --version 2>&1 | grep -o 'lua_compat_ver [0-9]*' | awk '{print $2}')"
+        _lua_ver="$(grep -m1 '^NFQWS2_COMPAT_VER_REQUIRED=' "$_lua_lib" | cut -d= -f2)"
+        if [ -n "$_bin_ver" ] && [ -n "$_lua_ver" ] && [ "$_bin_ver" != "$_lua_ver" ]; then
+            print_status WARN "$(T _ 'Lua uyumsuzlugu tespit edildi. Zapret2 lua scriptleri guncelleniyor...' 'Lua incompatibility detected. Updating Zapret2 lua scripts...')"
+            local _zver _tmpdir _tarball _url _srcdir
+            _zver="$(cat /opt/zapret2/version 2>/dev/null | tr -d '[:space:]')"
+            if [ -n "$_zver" ]; then
+                _tmpdir="/opt/tmp/zapret_lua_fix_$$"
+                _tarball="zapret2-${_zver}.tar.gz"
+                _url="https://github.com/bol-van/zapret2/releases/download/${_zver}/${_tarball}"
+                mkdir -p "$_tmpdir"
+                if curl -fsS -L "$_url" -o "${_tmpdir}/${_tarball}" 2>/dev/null; then
+                    if tar -xzf "${_tmpdir}/${_tarball}" -C "$_tmpdir" 2>/dev/null; then
+                        _srcdir="$(find "$_tmpdir" -maxdepth 1 -mindepth 1 -type d | head -n1)"
+                        if [ -d "${_srcdir}/lua" ]; then
+                            cp -r "${_srcdir}/lua/." /opt/zapret2/lua/ 2>/dev/null
+                            fix_zapret2_runtime_permissions >/dev/null 2>&1
+                            print_status PASS "$(T _ 'Lua scriptleri guncellendi. Yeniden baslatiliyor...' 'Lua scripts updated. Restarting...')"
+                            rm -rf "$_tmpdir"
+                            /opt/zapret2/init.d/sysv/zapret2 start >/dev/null 2>&1
+                            /opt/zapret2/init.d/sysv/zapret2 start-fw >/dev/null 2>&1
+                            sleep 1
+                            enforce_client_mode_rules >/dev/null 2>&1
+                            enforce_wan_if_nfqueue_rules >/dev/null 2>&1
+                            kzm2_apply_ip_exclude_rules >/dev/null 2>&1
+                            if is_zapret2_running; then
+                                echo "$(T TXT_START_OK)"
+                                return 0
+                            fi
+                        fi
+                    fi
+                fi
+                rm -rf "$_tmpdir" 2>/dev/null
+            fi
+        fi
+    fi
     return 1
 }
 # Zapret2 servisini durdurur (kalici durdurma: otomatik restart'i da engeller)
