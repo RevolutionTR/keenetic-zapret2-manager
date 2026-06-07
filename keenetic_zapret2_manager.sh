@@ -37,7 +37,7 @@
 # -------------------------------------------------------------------
 SCRIPT_NAME="keenetic_zapret2_manager.sh"
 # Version scheme: vYY.M.D[.N]  (YY=year, M=month, D=day, N=daily revision)
-SCRIPT_VERSION="v26.6.7"
+SCRIPT_VERSION="v26.6.7.1"
 SCRIPT_REPO="https://github.com/RevolutionTR/keenetic-zapret2-manager"
 KZM2_SCRIPT_PATH="/opt/lib/opkg/keenetic_zapret2_manager.sh"
 SCRIPT_AUTHOR="RevolutionTR"
@@ -4438,6 +4438,10 @@ update_zapret2() {
         rm -rf "$tmpdir"
         print_status FAIL "$(T TXT_ZAP_UPDATE_FAIL_BIN)"
         return 1
+    fi
+    # Lua scriptlerini de guncelle (binary ile uyumlu olmali)
+    if [ -d "${srcdir}/lua" ]; then
+        cp -r "${srcdir}/lua/." /opt/zapret2/lua/ 2>/dev/null
     fi
     if [ -f "${srcdir}/install_bin.sh" ]; then
         cp "${srcdir}/install_bin.sh" /opt/zapret2/install_bin.sh 2>/dev/null
