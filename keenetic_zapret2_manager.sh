@@ -37,7 +37,7 @@
 # -------------------------------------------------------------------
 SCRIPT_NAME="keenetic_zapret2_manager.sh"
 # Version scheme: vYY.M.D[.N]  (YY=year, M=month, D=day, N=daily revision)
-SCRIPT_VERSION="v26.6.5"
+SCRIPT_VERSION="v26.6.7"
 SCRIPT_REPO="https://github.com/RevolutionTR/keenetic-zapret2-manager"
 KZM2_SCRIPT_PATH="/opt/lib/opkg/keenetic_zapret2_manager.sh"
 SCRIPT_AUTHOR="RevolutionTR"
@@ -92,6 +92,7 @@ case "$1" in
     --cgi-action)      KZM2_SKIP_LOCK="1" ;;
     --netfilter-hook)  KZM2_SKIP_LOCK="1" ;;
     --dev|--developer)  KZM2_DEV_CHECK="1" ;;
+    --opkg-upgrade)    KZM2_SKIP_LOCK="1" ;;
 esac
 # Developer / Self-test flags
 KZM2_SELF_TEST="${KZM2_SELF_TEST:-0}"
@@ -597,8 +598,11 @@ EOF
     fi
     return 0
 }
-# Ilk calistirmada CLI kisayolunu garanti altina al
-ensure_cli_shortcut
+# Ilk calistirmada CLI kisayolunu garanti altina al (daemon/cron modlarinda atla)
+case "$1" in
+    --healthmon-daemon|--telegram-daemon|--opkg-upgrade|--netfilter-hook|--cgi-action|--gui-status) ;;
+    *) ensure_cli_shortcut ;;
+esac
 # -------------------------------------------------------------------
 # Zapret2 IPv6 destegi secimi (y/n). Varsayilan: n
 ZAPRET_IPV6="n"
@@ -2336,8 +2340,8 @@ TXT_PROMPT_SELECTION_TR=" Secim: "
 TXT_PROMPT_SELECTION_EN=" Selection: "
 TXT_MENU_L_TR=" L. Dil Degistir (TR/EN)"
 TXT_MENU_L_EN=" L. Switch Language (TR/EN)"
-TXT_MENU_R_TR=" R. Zamanli Yeniden Baslat (Cron)"
-TXT_MENU_R_EN=" R. Scheduled Reboot (Cron)"
+TXT_MENU_R_TR=" R. Zamanlanmis Gorevler (Cron)"
+TXT_MENU_R_EN=" R. Scheduled Tasks (Cron)"
 TXT_MENU_U_TR=" U. KZM2 + Zapret2 Kaldir (Tam Temiz)"
 TXT_MENU_U_EN=" U. KZM2 + Zapret2 Uninstall (Full Clean)"
 TXT_MENU_0_TR=" 0. Cikis"
@@ -6889,8 +6893,8 @@ display_menu() {
     [ -z "$_wan_dev" ] && _wan_dev="-"
     _wan_state="$(kzm2_banner_get_wan_state "$_wan_dev")"
     _zap_state="$(kzm2_banner_get_zapret_state)"
-    # Etiket genisligi: EN'de 'Zapret2 Version' = 14 karakter
-    local _lw=14
+    # Etiket genisligi: TR'de 'OPKG Guncelleme' = 15 karakter
+    local _lw=15
     [ "$LANG" = "en" ] && _lw=15
     printf "  %b%-*s%b : %b%s%b\n"      "${CLR_BOLD}" "$_lw" "$(T TXT_MAIN_SYS_LABEL)"                        "${CLR_RESET}" "${CLR_ORANGE}" "$_sys"                                           "${CLR_RESET}"
     _fw="$(kzm2_banner_get_firmware 2>/dev/null)"
@@ -6951,6 +6955,28 @@ display_menu() {
                 "${CLR_BOLD}" "$_lw" "$(T TXT_SCHED_BANNER_LABEL)" "${CLR_RESET}" \
                 "${CLR_ORANGE}" "${CLR_BOLD}" "${_shh}:${_smm}" "${CLR_RESET}" "$_sname"
         fi
+    fi
+    # Zamanlanmis OPKG upgrade varsa goster
+    local _opkg_sched_cur
+    _opkg_sched_cur="$(crontab -l 2>/dev/null | grep '# KZM_OPKG_UPGRADE' 2>/dev/null)"
+    if [ -n "$_opkg_sched_cur" ]; then
+        local _om _oh _odom _ohh _omm _olabel
+        _om="$(printf '%s\n' "$_opkg_sched_cur" | awk '{print $1}')"
+        _oh="$(printf '%s\n' "$_opkg_sched_cur" | awk '{print $2}')"
+        _odom="$(printf '%s\n' "$_opkg_sched_cur" | awk '{print $3}')"
+        _ohh="$(printf '%02d' "$_oh" 2>/dev/null)"
+        _omm="$(printf '%02d' "$_om" 2>/dev/null)"
+        case "$_odom" in
+            "1,15")
+                if [ "$LANG" = "en" ]; then _olabel="2 weeks"; else _olabel="2 hafta"; fi ;;
+            "1")
+                if [ "$LANG" = "en" ]; then _olabel="monthly"; else _olabel="aylik"; fi ;;
+            *)
+                if [ "$LANG" = "en" ]; then _olabel="weekly"; else _olabel="haftalik"; fi ;;
+        esac
+        printf "  %b%-*s%b : %b%b%s%b (%s)\n" \
+            "${CLR_BOLD}" "$_lw" "$(T TXT_OPKG_SCHED_BANNER_LABEL)" "${CLR_RESET}" \
+            "${CLR_ORANGE}" "${CLR_BOLD}" "${_ohh}:${_omm}" "${CLR_RESET}" "$_olabel"
     fi
     printf "  %b%-*s%b : %b%b\n"        "${CLR_BOLD}" "$_lw" "$(T TXT_MAIN_ZAPRET_LABEL)"                     "${CLR_RESET}" "${CLR_RESET}"  "$(kzm2_banner_fmt_zapret_state "$_zap_state")"
     healthmon_load_config 2>/dev/null
@@ -13868,6 +13894,60 @@ TXT_SCHED_DAILY_SET_TR="Gunluk yeniden baslat: Her gun saat %HOUR%"
 TXT_SCHED_DAILY_SET_EN="Daily reboot: Every day at %HOUR%"
 TXT_SCHED_WEEKLY_SET_TR="Haftalik yeniden baslat: Her hafta saat %HOUR% (Gun: %DOW%)"
 TXT_SCHED_WEEKLY_SET_EN="Weekly reboot: Every week at %HOUR% (Day: %DOW%)"
+# TR/EN Dictionary (Scheduled OPKG Upgrade)
+TXT_OPKG_SCHED_TITLE_TR="[KZM2] Zamanlanmis OPKG Guncelleme"
+TXT_OPKG_SCHED_TITLE_EN="[KZM2] Scheduled OPKG Upgrade"
+TXT_OPKG_SCHED_STATUS_TR="Mevcut Zamanlama"
+TXT_OPKG_SCHED_STATUS_EN="Current Schedule"
+TXT_OPKG_SCHED_NONE_TR="Zamanlama yok"
+TXT_OPKG_SCHED_NONE_EN="No schedule set"
+TXT_OPKG_SCHED_MENU_1_TR="1. Haftalik (Her Pazar 03:00)"
+TXT_OPKG_SCHED_MENU_1_EN="1. Weekly (Every Sunday 03:00)"
+TXT_OPKG_SCHED_MENU_2_TR="2. 2 Haftada Bir (1. ve 15. gun 03:00)"
+TXT_OPKG_SCHED_MENU_2_EN="2. Biweekly (1st and 15th at 03:00)"
+TXT_OPKG_SCHED_MENU_3_TR="3. Aylik (Her ayin 1'i 03:00)"
+TXT_OPKG_SCHED_MENU_3_EN="3. Monthly (1st of month at 03:00)"
+TXT_OPKG_SCHED_MENU_4_TR="4. Zamanlamayi Sil"
+TXT_OPKG_SCHED_MENU_4_EN="4. Delete Schedule"
+TXT_OPKG_SCHED_MENU_0_TR="0. Geri Don"
+TXT_OPKG_SCHED_MENU_0_EN="0. Back"
+TXT_OPKG_SCHED_PROMPT_TR="Seciminiz (0-4): "
+TXT_OPKG_SCHED_PROMPT_EN="Your choice (0-4): "
+TXT_OPKG_SCHED_ADDED_TR="Zamanlama eklendi/guncellendi."
+TXT_OPKG_SCHED_ADDED_EN="Schedule added/updated."
+TXT_OPKG_SCHED_DELETED_TR="Zamanlama silindi."
+TXT_OPKG_SCHED_DELETED_EN="Schedule deleted."
+TXT_OPKG_SCHED_DEL_NONE_TR="Silinecek zamanlama bulunamadi."
+TXT_OPKG_SCHED_DEL_NONE_EN="No schedule found to delete."
+TXT_OPKG_SCHED_WEEKLY_SET_TR="Haftalik: Her Pazar saat %HOUR%"
+TXT_OPKG_SCHED_WEEKLY_SET_EN="Weekly: Every Sunday at %HOUR%"
+TXT_OPKG_SCHED_BIWEEKLY_SET_TR="2 Haftada bir: 1. ve 15. gun saat %HOUR%"
+TXT_OPKG_SCHED_BIWEEKLY_SET_EN="Biweekly: 1st and 15th at %HOUR%"
+TXT_OPKG_SCHED_MONTHLY_SET_TR="Aylik: Her ayin 1'i saat %HOUR%"
+TXT_OPKG_SCHED_MONTHLY_SET_EN="Monthly: 1st of month at %HOUR%"
+TXT_OPKG_SCHED_BANNER_LABEL_TR="OPKG Guncelleme"
+TXT_OPKG_SCHED_BANNER_LABEL_EN="OPKG Upgrade"
+TXT_OPKG_SCHED_RUN_START_TR="Zamanlanmis OPKG guncelleme basliyor..."
+TXT_OPKG_SCHED_RUN_START_EN="Scheduled OPKG upgrade starting..."
+TXT_OPKG_SCHED_RUN_NOUPDATE_TR="✅ Guncellenecek paket bulunamadi."
+TXT_OPKG_SCHED_RUN_NOUPDATE_EN="✅ No packages to upgrade."
+TXT_OPKG_SCHED_RUN_OK_TR="✅ OPKG guncelleme tamamlandi. Yukseltilen: %COUNT% paket."
+TXT_OPKG_SCHED_RUN_OK_EN="✅ OPKG upgrade completed. Upgraded: %COUNT% packages."
+TXT_OPKG_SCHED_RUN_FAIL_TR="❌ OPKG guncelleme basarisiz."
+TXT_OPKG_SCHED_RUN_FAIL_EN="❌ OPKG upgrade failed."
+TXT_OPKG_SCHED_TIME_WARN_TR="UYARI: Router saatinin dogru oldugunu kontrol edin (Sistem Ayarlari > Genel)."
+TXT_OPKG_SCHED_TIME_WARN_EN="WARNING: Make sure the router time is set correctly (System Settings > General)."
+# TR/EN Dictionary (Scheduled Tasks wrapper menu)
+TXT_SCHED_TASKS_TITLE_TR="Zamanlanmis Gorevler (Cron)"
+TXT_SCHED_TASKS_TITLE_EN="Scheduled Tasks (Cron)"
+TXT_SCHED_TASKS_MENU_1_TR="1. Zamanli Yeniden Baslat"
+TXT_SCHED_TASKS_MENU_1_EN="1. Scheduled Reboot"
+TXT_SCHED_TASKS_MENU_2_TR="2. Zamanlanmis OPKG Guncelleme"
+TXT_SCHED_TASKS_MENU_2_EN="2. Scheduled OPKG Upgrade"
+TXT_SCHED_TASKS_MENU_0_TR="0. Geri Don"
+TXT_SCHED_TASKS_MENU_0_EN="0. Back"
+TXT_SCHED_TASKS_PROMPT_TR="Seciminiz (0-2): "
+TXT_SCHED_TASKS_PROMPT_EN="Your choice (0-2): "
 # Crontab'daki KZM reboot satirini tanimlayan etiket
 KZM_REBOOT_TAG="# KZM_REBOOT"
 # crond calisiyor mu kontrol et (ps -w ile)
@@ -14074,11 +14154,148 @@ scheduled_reboot_menu() {
         esac
     done
 }
-health_monitor_menu() {
+# =============================================================================
+# ZAMANLANMIS OPKG GUNCELLEME (Scheduled OPKG Upgrade via Cron)
+# =============================================================================
+KZM_OPKG_UPGRADE_TAG="# KZM_OPKG_UPGRADE"
+# Mevcut KZM_OPKG_UPGRADE crontab satirini oku
+_opkg_sched_get_current() {
+    crontab -l 2>/dev/null | awk '/KZM_OPKG_UPGRADE/'
+}
+# Crontab'dan KZM_OPKG_UPGRADE satirini kaldir
+_opkg_sched_remove() {
+    local _tmp="/tmp/kzm_opkg_cron_remove.$$"
+    crontab -l 2>/dev/null | grep -v '^#' | grep -v "$KZM_OPKG_UPGRADE_TAG" | grep -v '^[[:space:]]*$' > "$_tmp"
+    crontab "$_tmp"
+    rm -f "$_tmp"
+}
+# Mevcut OPKG zamanlamasini okunabilir formatta goster
+_opkg_sched_show_current() {
+    local _cur
+    _cur="$(_opkg_sched_get_current)"
+    if [ -z "$_cur" ]; then
+        print_status INFO "$(T TXT_OPKG_SCHED_NONE)"
+        return
+    fi
+    local _min _hour _dom _time _hh _mm
+    _min="$(printf '%s\n' "$_cur" | awk '{print $1}')"
+    _hour="$(printf '%s\n' "$_cur" | awk '{print $2}')"
+    _dom="$(printf '%s\n' "$_cur" | awk '{print $3}')"
+    _hh="$(printf '%02d' "$_hour" 2>/dev/null)"
+    _mm="$(printf '%02d' "$_min"  2>/dev/null)"
+    _time="${CLR_ORANGE}${CLR_BOLD}${_hh}:${_mm}${CLR_RESET}"
+    case "$_dom" in
+        "1,15") print_status INFO "$(tpl_render "$(T TXT_OPKG_SCHED_BIWEEKLY_SET)" HOUR "$_time")" ;;
+        "1")    print_status INFO "$(tpl_render "$(T TXT_OPKG_SCHED_MONTHLY_SET)" HOUR "$_time")" ;;
+        *)      print_status INFO "$(tpl_render "$(T TXT_OPKG_SCHED_WEEKLY_SET)" HOUR "$_time")" ;;
+    esac
+}
+opkg_scheduled_upgrade_menu() {
     while true; do
         clear
         print_line "="
-        echo "$(T TXT_HM_TITLE)"
+        printf "  %b%s%b\n" "${CLR_BOLD}${CLR_CYAN}" "$(T TXT_OPKG_SCHED_TITLE)" "${CLR_RESET}"
+        print_line "="
+        echo
+        if ! _sched_crond_running; then
+            print_status WARN "$(T TXT_SCHED_CROND_WARN)"
+            echo
+        fi
+        printf "  %b%s:%b\n" "${CLR_BOLD}" "$(T TXT_OPKG_SCHED_STATUS)" "${CLR_RESET}"
+        _opkg_sched_show_current
+        echo
+        print_status WARN "$(T TXT_OPKG_SCHED_TIME_WARN)"
+        echo
+        print_line "-"
+        printf "  %s\n" "$(T TXT_OPKG_SCHED_MENU_1)"
+        printf "  %s\n" "$(T TXT_OPKG_SCHED_MENU_2)"
+        printf "  %s\n" "$(T TXT_OPKG_SCHED_MENU_3)"
+        printf "  %s\n" "$(T TXT_OPKG_SCHED_MENU_4)"
+        printf "  %s\n" "$(T TXT_OPKG_SCHED_MENU_0)"
+        print_line "-"
+        printf "%s" "$(T TXT_OPKG_SCHED_PROMPT)"
+        read -r _sel </dev/tty
+        case "$_sel" in
+            1)
+                # Haftalik - Pazar 03:00
+                local _tmp="/tmp/kzm_opkg_cron_set.$$"
+                crontab -l 2>/dev/null | grep -v '^#' | grep -v "$KZM_OPKG_UPGRADE_TAG" | grep -v '^[[:space:]]*$' > "$_tmp"
+                printf '0 3 * * 0 sh /opt/lib/opkg/keenetic_zapret2_manager.sh --opkg-upgrade %s\n' \
+                    "$KZM_OPKG_UPGRADE_TAG" >> "$_tmp"
+                crontab "$_tmp"; rm -f "$_tmp"
+                print_status PASS "$(T TXT_OPKG_SCHED_ADDED)"
+                press_enter_to_continue
+                ;;
+            2)
+                # 2 haftada bir - 1. ve 15. gun 03:00
+                local _tmp="/tmp/kzm_opkg_cron_set.$$"
+                crontab -l 2>/dev/null | grep -v '^#' | grep -v "$KZM_OPKG_UPGRADE_TAG" | grep -v '^[[:space:]]*$' > "$_tmp"
+                printf '0 3 1,15 * * sh /opt/lib/opkg/keenetic_zapret2_manager.sh --opkg-upgrade %s\n' \
+                    "$KZM_OPKG_UPGRADE_TAG" >> "$_tmp"
+                crontab "$_tmp"; rm -f "$_tmp"
+                print_status PASS "$(T TXT_OPKG_SCHED_ADDED)"
+                press_enter_to_continue
+                ;;
+            3)
+                # Aylik - ayin 1'i 03:00
+                local _tmp="/tmp/kzm_opkg_cron_set.$$"
+                crontab -l 2>/dev/null | grep -v '^#' | grep -v "$KZM_OPKG_UPGRADE_TAG" | grep -v '^[[:space:]]*$' > "$_tmp"
+                printf '0 3 1 * * sh /opt/lib/opkg/keenetic_zapret2_manager.sh --opkg-upgrade %s\n' \
+                    "$KZM_OPKG_UPGRADE_TAG" >> "$_tmp"
+                crontab "$_tmp"; rm -f "$_tmp"
+                print_status PASS "$(T TXT_OPKG_SCHED_ADDED)"
+                press_enter_to_continue
+                ;;
+            4)
+                if [ -z "$(_opkg_sched_get_current)" ]; then
+                    print_status WARN "$(T TXT_OPKG_SCHED_DEL_NONE)"
+                    press_enter_to_continue
+                    continue
+                fi
+                _opkg_sched_remove
+                print_status PASS "$(T TXT_OPKG_SCHED_DELETED)"
+                press_enter_to_continue
+                ;;
+            0|"")
+                return 0
+                ;;
+            *)
+                echo "$(T _ 'Gecersiz secim.' 'Invalid choice.')"
+                press_enter_to_continue
+                ;;
+        esac
+    done
+}
+# =============================================================================
+# ZAMANLANMIS GOREVLER wrapper menusu
+# =============================================================================
+scheduled_tasks_menu() {
+    while true; do
+        clear
+        print_line "="
+        printf "  %b%s%b\n" "${CLR_BOLD}${CLR_CYAN}" "$(T TXT_SCHED_TASKS_TITLE)" "${CLR_RESET}"
+        print_line "="
+        echo
+        print_line "-"
+        printf "  %s\n" "$(T TXT_SCHED_TASKS_MENU_1)"
+        printf "  %s\n" "$(T TXT_SCHED_TASKS_MENU_2)"
+        printf "  %s\n" "$(T TXT_SCHED_TASKS_MENU_0)"
+        print_line "-"
+        printf "%s" "$(T TXT_SCHED_TASKS_PROMPT)"
+        read -r _sel </dev/tty
+        case "$_sel" in
+            1) scheduled_reboot_menu ;;
+            2) opkg_scheduled_upgrade_menu ;;
+            0|"") return 0 ;;
+            *)
+                echo "$(T _ 'Gecersiz secim.' 'Invalid choice.')"
+                press_enter_to_continue
+                ;;
+        esac
+    done
+}
+health_monitor_menu() {
+    while true; do
         print_line "="
         echo
         healthmon_load_config
@@ -15737,6 +15954,34 @@ case "$ACTION" in
         crontab -l 2>/dev/null | grep -v "$SCHED_TAG" > "$_tmp"
         crontab "$_tmp"; rm -f "$_tmp"
         ok "Zamanlama kaldirildi" ;;
+    opkg_sched_get)
+        _line=$(crontab -l 2>/dev/null | grep '# KZM_OPKG_UPGRADE' 2>/dev/null)
+        [ -z "$_line" ] && { printf '{"ok":1,"data":""}'; exit 0; }
+        _h=$(printf '%s' "$_line" | awk '{print $2}')
+        _m=$(printf '%s' "$_line" | awk '{print $1}')
+        _dom=$(printf '%s' "$_line" | awk '{print $3}')
+        case "$_dom" in
+            "1,15") _period="biweekly" ;;
+            "1")    _period="monthly" ;;
+            *)      _period="weekly" ;;
+        esac
+        printf '{"ok":1,"data":"%02d:%02d","period":"%s"}' "$_h" "$_m" "$_period" ;;
+    opkg_sched_set)
+        _period=$(get_param period)
+        _tmp="/tmp/kzm_opkg_cron_set.$$"
+        crontab -l 2>/dev/null | grep -v '^#' | grep -v '# KZM_OPKG_UPGRADE' | grep -v '^[[:space:]]*$' > "$_tmp"
+        case "$_period" in
+            biweekly) printf '0 3 1,15 * * sh /opt/lib/opkg/keenetic_zapret2_manager.sh --opkg-upgrade # KZM_OPKG_UPGRADE\n' >> "$_tmp" ;;
+            monthly)  printf '0 3 1 * * sh /opt/lib/opkg/keenetic_zapret2_manager.sh --opkg-upgrade # KZM_OPKG_UPGRADE\n' >> "$_tmp" ;;
+            *)        printf '0 3 * * 0 sh /opt/lib/opkg/keenetic_zapret2_manager.sh --opkg-upgrade # KZM_OPKG_UPGRADE\n' >> "$_tmp" ;;
+        esac
+        crontab "$_tmp"; rm -f "$_tmp"
+        ok "OPKG zamanlama ayarlandi: $_period" ;;
+    opkg_sched_del)
+        _tmp="/tmp/kzm_opkg_cron_del.$$"
+        crontab -l 2>/dev/null | grep -v '^#' | grep -v '# KZM_OPKG_UPGRADE' | grep -v '^[[:space:]]*$' > "$_tmp"
+        crontab "$_tmp"; rm -f "$_tmp"
+        ok "OPKG zamanlama kaldirildi" ;;
     backup_settings)
         _dir="/opt/zapret2_backups/zapret2_settings"
         mkdir -p "$_dir" 2>/dev/null
@@ -16299,7 +16544,7 @@ select option{background:var(--card)}
   </nav>
   <div class="sec" data-tr="D&#304;&#286;ER" data-en="OTHER">D&#304;&#286;ER</div>
   <nav>
-    <div class="item" data-view="sched"><span class="item-icon">&#9719;</span><span class="item-label" data-tr="Zamanl&#305; Reboot" data-en="Scheduled Reboot">Zamanl&#305; Reboot</span><span class="pill">R</span><span class="tip">Zamanl&#305; Reboot</span></div>
+    <div class="item" data-view="sched"><span class="item-icon">&#9719;</span><span class="item-label" data-tr="Zamanlanm&#305;&#351; G&#246;revler" data-en="Scheduled Tasks">Zamanlanm&#305;&#351; G&#246;revler</span><span class="pill">R</span><span class="tip">Zamanlanm&#305;&#351; G&#246;revler</span></div>
     <div class="item" data-view="backup"><span class="item-icon">&#128190;</span><span class="item-label" data-tr="Yedekle" data-en="Backup">Yedekle</span><span class="pill">8</span><span class="tip">Yedekle</span></div>
     <div class="item" data-view="changelog"><span class="item-icon">&#128203;</span><span class="item-label" data-tr="KZM2 S&#252;r&#252;m Notlar&#305;" data-en="KZM2 Release Notes">KZM2 S&#252;r&#252;m Notlar&#305;</span><span class="tip">KZM S&#252;r&#252;m Notlar&#305;</span></div>
     <div class="item" data-view="docs"><span class="item-icon">&#128214;</span><span class="item-label" data-tr="Belgeler" data-en="Documentation">Belgeler</span><span class="tip">Belgeler</span></div>
@@ -17011,8 +17256,9 @@ var V={
         '</div></div>'+
       '</div>';
   }},
-  sched:{title:'Zamanl&#305; Reboot',titleEn:'Scheduled Reboot',sub:'Cron tabanl&#305; yeniden ba&#351;latma.',subEn:'Cron-based scheduled restart.',html:function(){
+  sched:{title:'Zamanlanm&#305;&#351; G&#246;revler',titleEn:'Scheduled Tasks',sub:'Cron tabanl&#305; zamanlanm&#305;&#351; g&#246;revler.',subEn:'Cron-based scheduled tasks.',html:function(){
     var h='<div class="grid">'+
+      '<div class="card wide" style="grid-column:1/-1"><h3>&#9719; '+(L?'Scheduled Reboot':'Zamanl&#305; Yeniden Ba&#351;latma')+'</h3></div>'+
       '<div class="card" id="schedC"><h3>'+(L?'Current Schedule':'Mevcut Zamanlama')+'</h3><div class="sub">'+(L?'Loading...':'Y&#252;kleniyor...')+'</div></div>'+
       '<div class="card"><h3>'+(L?'Set Schedule':'Zamanlama Ayarla')+'</h3>'+
         '<div class="irow" style="margin-bottom:8px">'+
@@ -17038,6 +17284,22 @@ var V={
           '<button class="danger" onclick="schedDel(this)">'+(L?'Remove':'Kald&#305;r')+'</button>'+
         '</div>'+
         '<div class="hint" style="margin-top:6px">'+(L?'Format: HH:MM &mdash; e.g. 03:30':'Format: SS:DD &mdash; &#246;rn. 03:30')+'</div>'+
+      '</div>'+
+      '<div class="card wide" style="grid-column:1/-1"><h3>&#128260; '+(L?'Scheduled OPKG Upgrade':'Zamanlanm&#305;&#351; OPKG G&#252;ncelleme')+'</h3></div>'+
+      '<div class="card" id="opkgSchedC"><h3>'+(L?'Current Schedule':'Mevcut Zamanlama')+'</h3><div class="sub">'+(L?'Loading...':'Y&#252;kleniyor...')+'</div></div>'+
+      '<div class="card"><h3>'+(L?'Set Schedule':'Zamanlama Ayarla')+'</h3>'+
+        '<div class="irow" style="margin-bottom:8px">'+
+          '<select id="opkgSchedPeriod" style="flex:1">'+
+            '<option value="weekly">'+(L?'Weekly (Every Sunday 03:00)':'Haftal&#305;k (Her Pazar 03:00)')+'</option>'+
+            '<option value="biweekly">'+(L?'Biweekly (1st and 15th 03:00)':'2 Haftada Bir (1. ve 15. 03:00)')+'</option>'+
+            '<option value="monthly">'+(L?'Monthly (1st of month 03:00)':'Ayl&#305;k (Her ay&#305;n 1\'i 03:00)')+'</option>'+
+          '</select>'+
+        '</div>'+
+        '<div class="irow">'+
+          '<button onclick="opkgSchedSet(this)">'+(L?'Set':'Ayarla')+'</button>'+
+          '<button class="danger" onclick="opkgSchedDel(this)">'+(L?'Remove':'Kald&#305;r')+'</button>'+
+        '</div>'+
+        '<div class="hint" style="margin-top:6px">'+(L?'Runs opkg update &amp; upgrade, notifies via Telegram.':'opkg update &amp; upgrade &#231;al&#305;&#351;t&#305;r&#305;r, Telegram ile bildirir.')+'</div>'+
       '</div></div>';
     setTimeout(function(){
       getD('sched_get',function(r){
@@ -17058,6 +17320,18 @@ var V={
           }
           var tEl=document.getElementById('schedT');
           if(tEl)tEl.value=r.data;
+        } else {
+          el.innerHTML='<h3>'+(L?'Current Schedule':'Mevcut Zamanlama')+'</h3><div class="sub">'+(L?'No schedule':'Zamanlama yok')+'</div>';
+        }
+      });
+      getD('opkg_sched_get',function(r){
+        var el=document.getElementById('opkgSchedC');
+        if(!el)return;
+        var periodNames={weekly:(L?'Weekly (Every Sunday)':'Haftal&#305;k (Her Pazar)'),biweekly:(L?'Biweekly (1st &amp; 15th)':'2 Haftada Bir (1. ve 15.)'),monthly:(L?'Monthly (1st of month)':'Ayl&#305;k (Her ay&#305;n 1\'i)')};
+        if(r.ok&&r.data){
+          var pEl=document.getElementById('opkgSchedPeriod');
+          if(pEl)pEl.value=r.period||'weekly';
+          el.innerHTML='<h3>'+(L?'Current Schedule':'Mevcut Zamanlama')+'</h3><div class="big">'+r.data+'</div><div class="sub">'+(periodNames[r.period]||r.period)+'</div>';
         } else {
           el.innerHTML='<h3>'+(L?'Current Schedule':'Mevcut Zamanlama')+'</h3><div class="sub">'+(L?'No schedule':'Zamanlama yok')+'</div>';
         }
@@ -17327,6 +17601,13 @@ function schedSet(){
   setTimeout(function(){render('sched');},1800);
 }
 function schedDel(btn){act('sched_del',btn,'Kaldirildi');setTimeout(function(){render('sched');},1500);}
+function opkgSchedSet(btn){
+  var p=document.getElementById('opkgSchedPeriod');
+  var period=p?p.value:'weekly';
+  actD('opkg_sched_set','period='+encodeURIComponent(period),btn,L?'Schedule set':'Zamanlama ayarlandi');
+  setTimeout(function(){render('sched');},1500);
+}
+function opkgSchedDel(btn){act('opkg_sched_del',btn,L?'Removed':'Kaldirildi');setTimeout(function(){render('sched');},1500);}
 var _hcTimer=null;
 var _hcAttempts=0;
 var _hcMaxAttempts=60;
@@ -18398,7 +18679,7 @@ main_menu_loop() {
 			17) kzm_gui_menu ;;
 B|b) blockcheck_test_menu ;;
 L|l) toggle_lang ;;
-R|r) scheduled_reboot_menu ;;
+R|r) scheduled_tasks_menu ;;
         U|u) kzm2_full_uninstall ;;
             0) echo "Cikis yapiliyor..."; break ;;
             *) echo "$(T _ 'Gecersiz secim! Lutfen 0-17, B, L, R veya U girin.' 'Invalid choice! Please enter 0-17, B, L, R or U.')" ;;
@@ -18475,14 +18756,87 @@ if [ "$1" = "--telegram-daemon" ]; then
     telegram_bot_daemon
     exit 0
 fi
-# --- Betigin Baslangic Noktasi ---
-# Kullanim: ./script.sh cleanup  -> Zapret2 kurulu olmasa bile kalintilari temizler
+if [ "$1" = "--opkg-upgrade" ]; then
+    export PATH="/opt/sbin:/opt/bin:/opt/usr/sbin:/opt/usr/bin:/usr/sbin:/usr/bin:/sbin:/bin"
+    load_lang
+    _log="/tmp/kzm2_healthmon.log"
+    _ts="$(date '+%Y-%m-%d %H:%M:%S')"
+    _title="🔄 $(T TXT_OPKG_SCHED_TITLE)"
+    printf '%s | opkg_upgrade | start\n' "$_ts" >> "$_log"
+    # opkg.lock varsa 30s bekle, tekrar dene
+    if ! opkg update >> "$_log" 2>&1; then
+        if grep -q "opkg.lock" "$_log" 2>/dev/null; then
+            printf '%s | opkg_upgrade | lock busy, retrying in 30s\n' "$_ts" >> "$_log"
+            sleep 30
+            if ! opkg update >> "$_log" 2>&1; then
+                printf '%s | opkg_upgrade | opkg update FAIL\n' "$_ts" >> "$_log"
+                telegram_load_config 2>/dev/null
+                [ -n "$TG_BOT_TOKEN" ] && [ -n "$TG_CHAT_ID" ] && \
+                    telegram_send "$(printf '%s\n%s' "$_title" "$(T TXT_OPKG_SCHED_RUN_FAIL)")" >/dev/null 2>&1
+                exit 1
+            fi
+        else
+            printf '%s | opkg_upgrade | opkg update FAIL\n' "$_ts" >> "$_log"
+            telegram_load_config 2>/dev/null
+            [ -n "$TG_BOT_TOKEN" ] && [ -n "$TG_CHAT_ID" ] && \
+                telegram_send "$(printf '%s\n%s' "$_title" "$(T TXT_OPKG_SCHED_RUN_FAIL)")" >/dev/null 2>&1
+            exit 1
+        fi
+    fi
+    _upgradable="$(opkg list-upgradable 2>/dev/null)"
+    if [ -z "$_upgradable" ]; then
+        _noupdate_msg="$(T TXT_OPKG_SCHED_RUN_NOUPDATE)"
+        printf '%s | opkg_upgrade | %s\n' "$_ts" "$_noupdate_msg" >> "$_log"
+        telegram_load_config 2>/dev/null
+        if [ -n "$TG_BOT_TOKEN" ] && [ -n "$TG_CHAT_ID" ]; then
+            telegram_send "$(printf '%s\n%s' "$_title" "$_noupdate_msg")" >/dev/null 2>&1
+        fi
+        exit 0
+    fi
+    _count="$(printf '%s\n' "$_upgradable" | grep -c .)"
+    _pkglist="$(printf '%s\n' "$_upgradable" | awk '{print "📦 "$1" "$2" -> "$4}' | head -20)"
+    _rc="$?"
+    if [ "$_rc" -eq 0 ] || [ "$_rc" -eq 1 ]; then
+        _msg="$(tpl_render "$(T TXT_OPKG_SCHED_RUN_OK)" COUNT "$_count")"
+        printf '%s | opkg_upgrade | %s\n' "$_ts" "$_msg" >> "$_log"
+        telegram_load_config 2>/dev/null
+        if [ -n "$TG_BOT_TOKEN" ] && [ -n "$TG_CHAT_ID" ]; then
+            telegram_send "$(printf '%s\n%s\n%s' "$_title" "$_msg" "$_pkglist")" >/dev/null 2>&1
+        fi
+    else
+        printf '%s | opkg_upgrade | FAIL rc=%s\n' "$_ts" "$_rc" >> "$_log"
+        telegram_load_config 2>/dev/null
+        [ -n "$TG_BOT_TOKEN" ] && [ -n "$TG_CHAT_ID" ] && \
+            telegram_send "$(printf '%s\n%s' "$_title" "$(T TXT_OPKG_SCHED_RUN_FAIL)")" >/dev/null 2>&1
+        exit 1
+    fi
+    exit 0
+fi
+if [ "$1" = "--opkg-upgrade-test" ]; then
+    export PATH="/opt/sbin:/opt/bin:/opt/usr/sbin:/opt/usr/bin:/usr/sbin:/usr/bin:/sbin:/bin"
+    load_lang
+    _log="/tmp/kzm2_healthmon.log"
+    _ts="$(date '+%Y-%m-%d %H:%M:%S')"
+    _title="🔄 $(T TXT_OPKG_SCHED_TITLE)"
+    _upgradable="htop 3.3.0-1 - 3.4.1-1
+curl 8.5.0-1 - 8.6.0-1"
+    _count="$(printf '%s\n' "$_upgradable" | grep -c .)"
+    _pkglist="$(printf '%s\n' "$_upgradable" | awk '{print "📦 "$1" "$2" -> "$4}')"
+    _msg="$(tpl_render "$(T TXT_OPKG_SCHED_RUN_OK)" COUNT "$_count")"
+    printf '%s | opkg_upgrade_test | %s\n' "$_ts" "$_msg" >> "$_log"
+    telegram_load_config 2>/dev/null
+    if [ -n "$TG_BOT_TOKEN" ] && [ -n "$TG_CHAT_ID" ]; then
+        telegram_send "$(printf '%s\n%s\n%s' "$_title" "$_msg" "$_pkglist")" >/dev/null 2>&1
+    fi
+    echo "Test mesaji gonderildi. Log: $_log"
+    exit 0
+fi
 if [ "$1" = "cleanup" ]; then
     cleanup_only_leftovers
     exit 0
 fi
 # curl kontrolu (daemon ve cleanup modlarinda atla)
-if [ "$1" != "--healthmon-daemon" ] && [ "$1" != "--telegram-daemon" ] && [ "$1" != "cleanup" ]; then
+if [ "$1" != "--healthmon-daemon" ] && [ "$1" != "--telegram-daemon" ] && [ "$1" != "--opkg-upgrade" ] && [ "$1" != "cleanup" ]; then
     if ! command -v curl >/dev/null 2>&1; then
         printf '%b\n' "$(T _ 'WARN: curl bulunamadi. Yukleniyor...' 'WARN: curl not found. Installing...')"
         if command -v opkg >/dev/null 2>&1; then
