@@ -37,7 +37,7 @@
 # -------------------------------------------------------------------
 SCRIPT_NAME="keenetic_zapret2_manager.sh"
 # Version scheme: vYY.M.D[.N]  (YY=year, M=month, D=day, N=daily revision)
-SCRIPT_VERSION="v26.6.7.1"
+SCRIPT_VERSION="v26.6.7.2"
 SCRIPT_REPO="https://github.com/RevolutionTR/keenetic-zapret2-manager"
 KZM2_SCRIPT_PATH="/opt/lib/opkg/keenetic_zapret2_manager.sh"
 SCRIPT_AUTHOR="RevolutionTR"
@@ -4182,7 +4182,6 @@ flush_all_nfqueue_rules() {
     # Sadece queue 300 (zapret2) kurallarini temizle.
     # Keenetic'in kendi ndmmark/queue-64511 kurallarina DOKUNMA.
     command -v iptables >/dev/null 2>&1 || return 0
-    local _tables="mangle filter"
     local _chains_mangle="POSTROUTING PREROUTING OUTPUT INPUT FORWARD"
     local _chains_filter="INPUT FORWARD OUTPUT"
     local _r _del
@@ -4197,6 +4196,26 @@ flush_all_nfqueue_rules() {
             iptables -S "$ch" 2>/dev/null | grep -F -- "--queue-num 300" | grep -F -- "-j NFQUEUE" | while IFS= read -r _r; do
                 _del="$(echo "$_r" | sed 's/^-A /-D /')"
                 iptables $_del >/dev/null 2>&1
+            done
+        done
+    done
+}
+flush_all_ip6tables_nfqueue_rules() {
+    command -v ip6tables >/dev/null 2>&1 || return 0
+    local _chains_mangle="POSTROUTING PREROUTING OUTPUT INPUT FORWARD"
+    local _chains_filter="INPUT FORWARD OUTPUT"
+    local _r _del
+    for _pass in 1 2; do
+        for ch in $_chains_mangle; do
+            ip6tables -t mangle -S "$ch" 2>/dev/null | grep -F -- "--queue-num 300" | grep -F -- "-j NFQUEUE" | while IFS= read -r _r; do
+                _del="$(echo "$_r" | sed 's/^-A /-D /')"
+                ip6tables -t mangle $_del >/dev/null 2>&1
+            done
+        done
+        for ch in $_chains_filter; do
+            ip6tables -S "$ch" 2>/dev/null | grep -F -- "--queue-num 300" | grep -F -- "-j NFQUEUE" | while IFS= read -r _r; do
+                _del="$(echo "$_r" | sed 's/^-A /-D /')"
+                ip6tables $_del >/dev/null 2>&1
             done
         done
     done
@@ -4350,6 +4369,7 @@ stop_zapret2() {
     # Her ihtimale karsi kalan NFQUEUE / exclude RETURN kurallarini da temizle
     kzm2_remove_ip_exclude_rules >/dev/null 2>&1
     flush_all_nfqueue_rules
+    flush_all_ip6tables_nfqueue_rules
     sleep 1
     if is_zapret2_running; then
         echo "$(T TXT_STOP_NFQWS_WARN)"
