@@ -248,5 +248,4 @@ Hazırlayan ve derleyen
 ## Yazının hazırlanmasında istifade edilen kaynaklar:
 - **[Keenetic Destek](https://destek.keenetic.com.tr/?lang=tr)**  
 - **[Keenetic Zapret2 Manager github sayfası](https://github.com/RevolutionTR/keenetic-zapret2-manager)**  
-- **[Forum Keenetic TR](https://forum.keenetictr.com/d/108-keenetic-cihazlarda-zapret2-kurulumu-detayli-anlatim)**  
-  
+
