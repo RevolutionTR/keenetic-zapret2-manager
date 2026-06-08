@@ -252,5 +252,4 @@ Prepared and compiled by
 
 ## Sources used in preparing this guide:
 - **[Keenetic Support](https://destek.keenetic.com.tr/?lang=tr)**  
-- **[Keenetic Zapret2 Manager GitHub page](https://github.com/RevolutionTR/keenetic-zapret2-manager)**  
-- **[Forum Keenetic TR](https://forum.keenetictr.com/d/108-keenetic-cihazlarda-zapret2-kurulumu-detayli-anlatim)**  
+- **[Keenetic Zapret2 Manager GitHub page](https://github.com/RevolutionTR/keenetic-zapret2-manager)**    
