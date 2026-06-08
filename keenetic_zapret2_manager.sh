@@ -37,7 +37,7 @@
 # -------------------------------------------------------------------
 SCRIPT_NAME="keenetic_zapret2_manager.sh"
 # Version scheme: vYY.M.D[.N]  (YY=year, M=month, D=day, N=daily revision)
-SCRIPT_VERSION="v26.6.7.4"
+SCRIPT_VERSION="v26.6.8"
 SCRIPT_REPO="https://github.com/RevolutionTR/keenetic-zapret2-manager"
 KZM2_SCRIPT_PATH="/opt/lib/opkg/keenetic_zapret2_manager.sh"
 SCRIPT_AUTHOR="RevolutionTR"
@@ -451,6 +451,9 @@ kzm2_full_uninstall() {
         rm -f "$KZM2_GUI_CONF_CUSTOM" 2>/dev/null
         iptables -D INPUT -p tcp --dport "$KZM2_GUI_PORT" -j ACCEPT 2>/dev/null || true
         opkg remove lighttpd lighttpd-mod-cgi 2>/dev/null || true
+        rm -f /opt/etc/lighttpd/conf.d/30-cgi.conf 2>/dev/null
+        rmdir /opt/etc/lighttpd/conf.d 2>/dev/null
+        rmdir /opt/etc/lighttpd 2>/dev/null
         kzm_gui_remove_cron 2>/dev/null || true
         print_status PASS "$(T TXT_GUI_REMOVED)"
     fi
@@ -7192,51 +7195,53 @@ display_menu() {
         printf "  %b%-*s%b : %s\n" "${CLR_BOLD}" "$_lw" "$(T TXT_ISS_LABEL)" "${CLR_RESET}" "$_iss_name"
     fi
     _dpi_cur="$(get_dpi_profile 2>/dev/null)"
-    if [ -n "$_dpi_cur" ]; then
-        _dpi_label="$(T dpi_curp "$(dpi_profile_name_tr "$_dpi_cur")" "$(dpi_profile_name_en "$_dpi_cur")")"
-        # ISS DPI li ama profil tt_default ise turuncu uyari
-        _dpi_mismatch=0
-        case "$_iss_domain" in
-            @superonline|@fiber|@vodafone|@kablofiber|@kablonet|@turksat)
-                [ "$_dpi_cur" = "tt_default" ] && _dpi_mismatch=1 ;;
-        esac
-        if [ "$_dpi_mismatch" = "1" ]; then
-            printf "  %b%-*s%b : %b%s — %s%b\n" "${CLR_BOLD}" "$_lw" "$(T _ 'DPI Profili' 'DPI Profile')" "${CLR_RESET}" "${CLR_ORANGE}" "$_dpi_label" "$(T TXT_DPI_MISMATCH)" "${CLR_RESET}"
-        else
-            printf "  %b%-*s%b : %b%s%b\n" "${CLR_BOLD}" "$_lw" "$(T _ 'DPI Profili' 'DPI Profile')" "${CLR_RESET}" "${CLR_CYAN}" "$_dpi_label" "${CLR_RESET}"
+    if is_zapret2_installed; then
+        if [ -n "$_dpi_cur" ]; then
+            _dpi_label="$(T dpi_curp "$(dpi_profile_name_tr "$_dpi_cur")" "$(dpi_profile_name_en "$_dpi_cur")")"
+            # ISS DPI li ama profil tt_default ise turuncu uyari
+            _dpi_mismatch=0
+            case "$_iss_domain" in
+                @superonline|@fiber|@vodafone|@kablofiber|@kablonet|@turksat)
+                    [ "$_dpi_cur" = "tt_default" ] && _dpi_mismatch=1 ;;
+            esac
+            if [ "$_dpi_mismatch" = "1" ]; then
+                printf "  %b%-*s%b : %b%s — %s%b\n" "${CLR_BOLD}" "$_lw" "$(T _ 'DPI Profili' 'DPI Profile')" "${CLR_RESET}" "${CLR_ORANGE}" "$_dpi_label" "$(T TXT_DPI_MISMATCH)" "${CLR_RESET}"
+            else
+                printf "  %b%-*s%b : %b%s%b\n" "${CLR_BOLD}" "$_lw" "$(T _ 'DPI Profili' 'DPI Profile')" "${CLR_RESET}" "${CLR_CYAN}" "$_dpi_label" "${CLR_RESET}"
+            fi
         fi
+        # Filtreleme modu
+        _mf="$(get_mode_filter 2>/dev/null)"
+        case "$_mf" in
+            autohostlist) _mf_clr="${CLR_GREEN}"  ; _mf_lbl="$(T _ 'Otomatik Liste' 'Auto Hostlist')" ;;
+            hostlist)     _mf_clr="${CLR_CYAN}"   ; _mf_lbl="$(T _ 'Manuel Liste'   'Hostlist'      )" ;;
+            none)         _mf_clr="${CLR_YELLOW}" ; _mf_lbl="$(T _ 'Listesiz'       'No Filter'     )" ;;
+            *)            _mf_clr="${CLR_DIM}"    ; _mf_lbl="$_mf" ;;
+        esac
+        printf "  %b%-*s%b : %b%s%b\n" "${CLR_BOLD}" "$_lw" "$(T _ 'Filtreleme' 'Filter Mode')" "${CLR_RESET}" "$_mf_clr" "$_mf_lbl" "${CLR_RESET}"
+        # Kapsam modu
+        _sm="$(get_scope_mode 2>/dev/null)"
+        case "$_sm" in
+            smart)  _sm_clr="${CLR_GREEN}"  ;;
+            global) _sm_clr="${CLR_ORANGE}" ;;
+            *)      _sm_clr="${CLR_DIM}"    ;;
+        esac
+        printf "  %b%-*s%b : %b%s%b\n" "${CLR_BOLD}" "$_lw" "$(T _ 'Kapsam Modu' 'Scope Mode')" "${CLR_RESET}" "$_sm_clr" "$(pretty_scope_mode)" "${CLR_RESET}"
+        # IPSET Modu
+        local _ipset_mode _ipset_label _ipset_clr
+        _ipset_mode="$(cat "$IPSET_CLIENT_MODE_FILE" 2>/dev/null | tr -d '[:space:]')"
+        [ -z "$_ipset_mode" ] && _ipset_mode="all"
+        if [ "$_ipset_mode" = "list" ]; then
+            local _ipset_cnt="$(grep -c '[0-9]' "$IPSET_CLIENT_FILE" 2>/dev/null | tr -d ' ')"
+            [ -z "$_ipset_cnt" ] && _ipset_cnt="0"
+            _ipset_label="$(T _ "Secili IP ($_ipset_cnt)" "Selected IPs ($_ipset_cnt)")"
+            _ipset_clr="${CLR_CYAN}"
+        else
+            _ipset_label="$(T _ 'Tum Ag' 'Whole Network')"
+            _ipset_clr="${CLR_GREEN}"
+        fi
+        printf "  %b%-*s%b : %b%s%b\n" "${CLR_BOLD}" "$_lw" "$(T _ 'IPSET Modu' 'IPSET Mode')" "${CLR_RESET}" "$_ipset_clr" "$_ipset_label" "${CLR_RESET}"
     fi
-    # Filtreleme modu
-    _mf="$(get_mode_filter 2>/dev/null)"
-    case "$_mf" in
-        autohostlist) _mf_clr="${CLR_GREEN}"  ; _mf_lbl="$(T _ 'Otomatik Liste' 'Auto Hostlist')" ;;
-        hostlist)     _mf_clr="${CLR_CYAN}"   ; _mf_lbl="$(T _ 'Manuel Liste'   'Hostlist'      )" ;;
-        none)         _mf_clr="${CLR_YELLOW}" ; _mf_lbl="$(T _ 'Listesiz'       'No Filter'     )" ;;
-        *)            _mf_clr="${CLR_DIM}"    ; _mf_lbl="$_mf" ;;
-    esac
-    printf "  %b%-*s%b : %b%s%b\n" "${CLR_BOLD}" "$_lw" "$(T _ 'Filtreleme' 'Filter Mode')" "${CLR_RESET}" "$_mf_clr" "$_mf_lbl" "${CLR_RESET}"
-    # Kapsam modu
-    _sm="$(get_scope_mode 2>/dev/null)"
-    case "$_sm" in
-        smart)  _sm_clr="${CLR_GREEN}"  ;;
-        global) _sm_clr="${CLR_ORANGE}" ;;
-        *)      _sm_clr="${CLR_DIM}"    ;;
-    esac
-    printf "  %b%-*s%b : %b%s%b\n" "${CLR_BOLD}" "$_lw" "$(T _ 'Kapsam Modu' 'Scope Mode')" "${CLR_RESET}" "$_sm_clr" "$(pretty_scope_mode)" "${CLR_RESET}"
-    # IPSET Modu
-    local _ipset_mode _ipset_label _ipset_clr
-    _ipset_mode="$(cat "$IPSET_CLIENT_MODE_FILE" 2>/dev/null | tr -d '[:space:]')"
-    [ -z "$_ipset_mode" ] && _ipset_mode="all"
-    if [ "$_ipset_mode" = "list" ]; then
-        local _ipset_cnt="$(grep -c '[0-9]' "$IPSET_CLIENT_FILE" 2>/dev/null | tr -d ' ')"
-        [ -z "$_ipset_cnt" ] && _ipset_cnt="0"
-        _ipset_label="$(T _ "Secili IP ($_ipset_cnt)" "Selected IPs ($_ipset_cnt)")"
-        _ipset_clr="${CLR_CYAN}"
-    else
-        _ipset_label="$(T _ 'Tum Ag' 'Whole Network')"
-        _ipset_clr="${CLR_GREEN}"
-    fi
-    printf "  %b%-*s%b : %b%s%b\n" "${CLR_BOLD}" "$_lw" "$(T _ 'IPSET Modu' 'IPSET Mode')" "${CLR_RESET}" "$_ipset_clr" "$_ipset_label" "${CLR_RESET}"
     printf "  %b%-*s%b : %b%s%b\n"      "${CLR_BOLD}" "$_lw" "$(T _ 'GitHub'       'GitHub'          )"       "${CLR_RESET}" "${CLR_DIM}"   "github.com/RevolutionTR/keenetic-zapret2-manager"  "${CLR_RESET}"
     print_line "="
     # Aciklama satirlari — her biri ayri satirda, kisa
@@ -9185,6 +9190,12 @@ print_line "="
             echo "$(T TXT_RESTORE_RESTART_FAIL)"
         fi
     fi
+                # Telegram bot'u restore sonrasi yeniden baslat (ayarlar degismis olabilir)
+                if [ "$(grep -s '^TG_BOT_ENABLE=' /opt/etc/telegram.conf | cut -d= -f2 | tr -d '"')" = "1" ]; then
+                    telegram_bot_stop >/dev/null 2>&1 || true
+                    sleep 1
+                    telegram_bot_start >/dev/null 2>&1 || true
+                fi
                 press_enter_to_continue
                 return 0
             fi
@@ -9355,6 +9366,14 @@ restore_zapret_settings() {
     printf "%s\n" "$(T TXT_BACKUP_BASE_PATH) ${BACKUP_BASE}"
     print_line "-"
     printf "\n"
+    # Zapret2 kurulu degilse engelle
+    if ! is_zapret2_installed; then
+        printf "%b%s %s%b\n\n" "${CLR_ORANGE}${CLR_BOLD}" "WARN" \
+            "$(T _ 'Zapret2 kurulu degil. Once Menu 1 ile Zapret2 kurun, sonra restore yapin.' 'Zapret2 is not installed. Install Zapret2 via Menu 1 first, then restore.')" \
+            "${CLR_RESET}"
+        press_enter_to_continue
+        return 1
+    fi
     if [ ! -d "$SETTINGS_DIR" ]; then
         print_status WARN "$(T TXT_BACKUP_NO_BACKUPS_FOUND)"
         press_enter_to_continue
@@ -9535,6 +9554,19 @@ restore_zapret_settings() {
                     print_status PASS "$(T _ 'crond baslatildi' 'crond started')" || \
                     print_status WARN "$(T _ 'crond baslatilamadi' 'crond could not be started')"
             fi
+        fi
+        # Telegram bot'u restore sonrasi yeniden baslat (telegram.conf restore edilmis olabilir)
+        if [ "$(grep -s '^TG_BOT_ENABLE=' /opt/etc/telegram.conf | cut -d= -f2 | tr -d '"')" = "1" ]; then
+            telegram_bot_stop >/dev/null 2>&1 || true
+            sleep 1
+            telegram_bot_start >/dev/null 2>&1 || true
+            print_status PASS "$(T _ 'Telegram bot yeniden baslatildi.' 'Telegram bot restarted.')"
+        fi
+        # HealthMon'u restore sonrasi yeniden baslat (init dosyasi restore edilmis olabilir)
+        if [ -f "/opt/etc/init.d/S99kzm2_healthmon" ]; then
+            healthmon_stop >/dev/null 2>&1 || true
+            sleep 1
+            healthmon_start >/dev/null 2>&1 || true
         fi
     else
         print_status FAIL "$(T TXT_BACKUP_RESTORE_FAILED)"
@@ -18493,6 +18525,11 @@ kzm_gui_uninstall() {
     iptables -D INPUT -p tcp --dport "$KZM2_GUI_PORT" -j ACCEPT 2>/dev/null
     # opkg ile lighttpd paketlerini kaldir
     opkg remove lighttpd lighttpd-mod-cgi 2>/dev/null | grep -v "^$" || true
+    # opkg "modified conffile" nedeniyle silmedigi dosyalari manuel temizle
+    rm -f /opt/etc/lighttpd/conf.d/30-cgi.conf 2>/dev/null
+    # Lighttpd dizini bos kaldiysa temizle
+    rmdir /opt/etc/lighttpd/conf.d 2>/dev/null
+    rmdir /opt/etc/lighttpd 2>/dev/null
     # Cron kaldir
     kzm_gui_remove_cron
     rm -f "$KZM2_GUI_CONF_CUSTOM"
