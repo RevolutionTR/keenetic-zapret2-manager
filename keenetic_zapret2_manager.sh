@@ -4558,6 +4558,7 @@ update_zapret2() {
     fi
     printf '%s\n' "$latest" > /opt/zapret2/version 2>/dev/null
     rm -rf "$tmpdir"
+    cleanup_files_after_extracted
     print_status PASS "$(T TXT_ZAP_UPDATE_OK)"
     # Binary surum dogrulamasi
     local nfqws_bin="/opt/zapret2/nfq2/nfqws2"
