@@ -37,7 +37,7 @@
 # -------------------------------------------------------------------
 SCRIPT_NAME="keenetic_zapret2_manager.sh"
 # Version scheme: vYY.M.D[.N]  (YY=year, M=month, D=day, N=daily revision)
-SCRIPT_VERSION="v26.6.8"
+SCRIPT_VERSION="v26.6.9"
 SCRIPT_REPO="https://github.com/RevolutionTR/keenetic-zapret2-manager"
 KZM2_SCRIPT_PATH="/opt/lib/opkg/keenetic_zapret2_manager.sh"
 SCRIPT_AUTHOR="RevolutionTR"
@@ -4558,6 +4558,8 @@ update_zapret2() {
     fi
     printf '%s\n' "$latest" > /opt/zapret2/version 2>/dev/null
     rm -rf "$tmpdir"
+    # Gereksiz mimarileri temizle (windows, android, mac, x86 vb.) — disk tasarrufu
+    cleanup_files_after_extracted
     print_status PASS "$(T TXT_ZAP_UPDATE_OK)"
     # Binary surum dogrulamasi
     local nfqws_bin="/opt/zapret2/nfq2/nfqws2"
@@ -5479,25 +5481,47 @@ manage_nozapret_menu() {
 # Kurulumdan sonra gereksiz dosyalari temizler
 cleanup_files_after_extracted() {
     echo "$(T TXT_CLEANUP_REMOVING)"
-    for file in \
-        /opt/zapret2/binaries/mac64 \
-        /opt/zapret2/binaries/linux-ppc \
-        /opt/zapret2/binaries/linux-lexra \
-        /opt/zapret2/binaries/linux-x86 \
-        /opt/zapret2/binaries/linux-x86_64 \
-        /opt/zapret2/binaries/freebsd-x86_64 \
-        /opt/zapret2/binaries/android-arm \
-        /opt/zapret2/binaries/android-arm64 \
-        /opt/zapret2/binaries/android-x86 \
-        /opt/zapret2/binaries/android-x86_64 \
-        /opt/zapret2/binaries/windows-x86 \
-        /opt/zapret2/binaries/windows-x86_64 \
-        /opt/tmp/zapret2-*.tar.gz
-    do
-        [ -e "$file" ] && rm -rf "$file"
-    done
+    # Kullanilan mimariyi symlink'ten tespit et
+    local _used_arch _bindir
+    _bindir="/opt/zapret2/binaries"
+    _used_arch="$(readlink "/opt/zapret2/nfq2/nfqws2" 2>/dev/null | sed 's|.*binaries/||' | cut -d/ -f1)"
+    # Binaries dizinindeki tum alt dizinleri tara, kullanilan mimari haric sil
+    if [ -d "$_bindir" ] && [ -n "$_used_arch" ]; then
+        for _dir in "$_bindir"/*/; do
+            _dirname="$(basename "$_dir")"
+            [ "$_dirname" = "$_used_arch" ] && continue
+            rm -rf "$_dir" 2>/dev/null
+        done
+    else
+        # Fallback: eski davranis — bilinen gereksiz mimarileri sil
+        for file in \
+            /opt/zapret2/binaries/mac64 \
+            /opt/zapret2/binaries/linux-ppc \
+            /opt/zapret2/binaries/linux-lexra \
+            /opt/zapret2/binaries/linux-x86 \
+            /opt/zapret2/binaries/linux-x86_64 \
+            /opt/zapret2/binaries/linux-riscv64 \
+            /opt/zapret2/binaries/freebsd-x86_64 \
+            /opt/zapret2/binaries/android-arm \
+            /opt/zapret2/binaries/android-arm64 \
+            /opt/zapret2/binaries/android-x86 \
+            /opt/zapret2/binaries/android-x86_64 \
+            /opt/zapret2/binaries/windows-x86 \
+            /opt/zapret2/binaries/windows-x86_64 \
+            /opt/tmp/zapret2-*.tar.gz
+        do
+            [ -e "$file" ] && rm -rf "$file"
+        done
+    fi
+    # Tmp tarball'i da temizle
+    rm -f /opt/tmp/zapret2-*.tar.gz 2>/dev/null
     echo "$(T TXT_CLEANUP_REMOVED)"
 }
+# Gereksiz mimari binary'leri bir kez temizle (eski kurulumlar icin)
+if [ ! -f /opt/zapret2/.kzm2_cleanup_done ] && is_zapret2_installed; then
+    cleanup_files_after_extracted >/dev/null 2>&1
+    touch /opt/zapret2/.kzm2_cleanup_done 2>/dev/null
+fi
 # Kaldirma sirasinda kalan iptables/ipset kalintilarini temizler (zapret kaldirildiktan sonra bile kural kalabiliyor)
 cleanup_zapret_firewall_leftovers() {
     command -v iptables >/dev/null 2>&1 || return 0
@@ -11147,7 +11171,7 @@ $(tgbot_client_detail_text "$_rn_mac")" \
                                 "$(printf '%b' "$(T _ "📡 Aktif DPI Profili\n\n🎯 Profil: $_prof_label\n📌 Kaynak: $_orig_label" "📡 Active DPI Profile\n\n🎯 Profile: $_prof_label\n📌 Source: $_orig_label")")" \
                                 "$(tgbot_kb_profil)"
                             ;;
-                        /zapret)
+                        /zapret|/zapret2)
                             tgbot_send "$msg_chat" \
                                 "$(T TXT_TGBOT_BTN_ZAPRET)" \
                                 "$(tgbot_kb_zapret)"
