@@ -37,7 +37,7 @@
 # -------------------------------------------------------------------
 SCRIPT_NAME="keenetic_zapret2_manager.sh"
 # Version scheme: vYY.M.D[.N]  (YY=year, M=month, D=day, N=daily revision)
-SCRIPT_VERSION="v26.6.9"
+SCRIPT_VERSION="v26.6.10"
 SCRIPT_REPO="https://github.com/RevolutionTR/keenetic-zapret2-manager"
 KZM2_SCRIPT_PATH="/opt/lib/opkg/keenetic_zapret2_manager.sh"
 SCRIPT_AUTHOR="RevolutionTR"
@@ -8529,6 +8529,7 @@ run_blockcheck() {
         [ -f /opt/zapret2/blockcheck2.d/standard/10-http-basic.sh ] && cp -f /opt/zapret2/blockcheck2.d/standard/10-http-basic.sh "$_kzm_bc_dir/10-http-basic.sh" 2>/dev/null
         [ -f /opt/zapret2/blockcheck2.d/standard/20-multi.sh ] && cp -f /opt/zapret2/blockcheck2.d/standard/20-multi.sh "$_kzm_bc_dir/20-multi.sh" 2>/dev/null
         [ -f /opt/zapret2/blockcheck2.d/standard/25-fake.sh ] && cp -f /opt/zapret2/blockcheck2.d/standard/25-fake.sh "$_kzm_bc_dir/25-fake.sh" 2>/dev/null
+        [ -f /opt/zapret2/blockcheck2.d/standard/24-syndata.sh ] && cp -f /opt/zapret2/blockcheck2.d/standard/24-syndata.sh "$_kzm_bc_dir/24-syndata.sh" 2>/dev/null
         [ -f /opt/zapret2/blockcheck2.d/standard/90-quic.sh ] && cp -f /opt/zapret2/blockcheck2.d/standard/90-quic.sh "$_kzm_bc_dir/90-quic.sh" 2>/dev/null
         export TEST="kzmquick"
         export TEST_DEFAULT="kzmquick"
@@ -8632,7 +8633,8 @@ run_blockcheck() {
 }
 run_blockcheck_save_summary() {
     # Run the full interactive test exactly like "Tam Test", then save only * SUMMARY * to a separate file.
-    run_blockcheck 1
+    local _sl="${1:-1}"
+    run_blockcheck "$_sl"
     local src_report ts summary_file
     src_report="${LAST_BLOCKCHECK_REPORT}"
     if [ -z "$src_report" ] || [ ! -f "$src_report" ]; then
@@ -8674,16 +8676,22 @@ if [ -n "$sum_ln" ] && [ "$sum_ln" -gt 0 ] 2>/dev/null; then
     # Blockcheck'in buldugu ilk calisani kullan — ip_ttl=2 tercih etme.
     # Diger ISP'lerde (Superonline, Turkcell vb.) farkli strateji dogru olabilir.
     _s_http="$(sed -n "${sum_ln},\$p" "$src_report" 2>/dev/null | \
-        grep -i '^curl_test_http ' | grep 'nfqws2' | head -n1)"
+        grep -i '^curl_test_http ' | grep -m1 'nfqws2')"
 
     _s_tls="$(sed -n "${sum_ln},\$p" "$src_report" 2>/dev/null | \
-        grep -i '^curl_test_https_tls12 ' | grep 'nfqws2' | head -n1)"
+        grep -i '^curl_test_https_tls12 ' | grep -F -- '--payload=tls_client_hello' | grep -m1 -F -- 'ip_ttl=')"
     [ -z "$_s_tls" ] && _s_tls="$(sed -n "${sum_ln},\$p" "$src_report" 2>/dev/null | \
-        grep -i '^curl_test_https_tls13 ' | grep 'nfqws2' | head -n1)"
+        grep -i '^curl_test_https_tls12 ' | grep -m1 -F -- '--payload=tls_client_hello')"
+    [ -z "$_s_tls" ] && _s_tls="$(sed -n "${sum_ln},\$p" "$src_report" 2>/dev/null | \
+        grep -i '^curl_test_https_tls12 ' | grep -m1 'nfqws2')"
+    [ -z "$_s_tls" ] && _s_tls="$(sed -n "${sum_ln},\$p" "$src_report" 2>/dev/null | \
+        grep -i '^curl_test_https_tls13 ' | grep -m1 -F -- '--payload=tls_client_hello')"
+    [ -z "$_s_tls" ] && _s_tls="$(sed -n "${sum_ln},\$p" "$src_report" 2>/dev/null | \
+        grep -i '^curl_test_https_tls13 ' | grep -m1 'nfqws2')"
 
     _s_quic="$(sed -n "${sum_ln},\$p" "$src_report" 2>/dev/null | \
         grep -Ei '^(curl_test_http3|curl_test_quic|curl_test_udp)' | \
-        grep 'nfqws2' | head -n1)"
+        grep -m1 'nfqws2')"
 
     {
         printf '* SUMMARY\n'
@@ -8745,10 +8753,13 @@ fi
         # IPv6 is controlled separately by Menu 7 via DISABLE_IPV6 in config.
         # If Menu 7 IPv6 is ON, add ip6_ttl to found HTTP/TLS/QUIC blocks.
         local _bc_http _bc_tls _bc_quic _bc_combined _bc_ipv6
-        _bc_http="$(grep -i '^curl_test_http ' "$summary_file" 2>/dev/null | grep -F -- '--payload=http_req' | head -n 1 | sed -n 's/^.* : nfqws2[[:space:]]*//p')"
-        _bc_tls="$(grep -i '^curl_test_https_tls12 ' "$summary_file" 2>/dev/null | grep -F -- '--payload=tls_client_hello' | head -n 1 | sed -n 's/^.* : nfqws2[[:space:]]*//p')"
-        [ -z "$_bc_tls" ] && _bc_tls="$(grep -i '^curl_test_https_tls13 ' "$summary_file" 2>/dev/null | grep -F -- '--payload=tls_client_hello' | head -n 1 | sed -n 's/^.* : nfqws2[[:space:]]*//p')"
-        _bc_quic="$(grep -Ei '^(curl_test_http3|curl_test_quic|curl_test_udp)' "$summary_file" 2>/dev/null | grep -F -- '--payload=quic_initial' | head -n 1 | sed -n 's/^.* : nfqws2[[:space:]]*//p')"
+        _bc_http="$(grep -im1 '^curl_test_http ' "$summary_file" 2>/dev/null | grep -F -- '--payload=http_req' | sed -n 's/^.* : nfqws2[[:space:]]*//p')"
+        _bc_tls="$(grep -i '^curl_test_https_tls12 ' "$summary_file" 2>/dev/null | grep -Ei ' nfqws2? ' | grep -F -- '--payload=tls_client_hello' | grep -m1 -F -- 'ip_ttl=' | sed -n 's/^.* : nfqws2[[:space:]]*//p')"
+        [ -z "$_bc_tls" ] && _bc_tls="$(grep -i '^curl_test_https_tls12 ' "$summary_file" 2>/dev/null | grep -Ei ' nfqws2? ' | grep -m1 -F -- '--payload=tls_client_hello' | sed -n 's/^.* : nfqws2[[:space:]]*//p')"
+        [ -z "$_bc_tls" ] && _bc_tls="$(grep -im1 '^curl_test_https_tls12 ' "$summary_file" 2>/dev/null | grep -Ei ' nfqws2? ' | sed -n 's/^.* : nfqws2[[:space:]]*//p')"
+        [ -z "$_bc_tls" ] && _bc_tls="$(grep -i '^curl_test_https_tls13 ' "$summary_file" 2>/dev/null | grep -Ei ' nfqws2? ' | grep -m1 -F -- '--payload=tls_client_hello' | sed -n 's/^.* : nfqws2[[:space:]]*//p')"
+        [ -z "$_bc_tls" ] && _bc_tls="$(grep -im1 '^curl_test_https_tls13 ' "$summary_file" 2>/dev/null | grep -Ei ' nfqws2? ' | sed -n 's/^.* : nfqws2[[:space:]]*//p')"
+        _bc_quic="$(grep -Ei '^(curl_test_http3|curl_test_quic|curl_test_udp)' "$summary_file" 2>/dev/null | grep -m1 -F -- '--payload=quic_initial' | sed -n 's/^.* : nfqws2[[:space:]]*//p')"
 
         _bc_ipv6="n"
         _zapret2_ipv6_enabled 2>/dev/null && _bc_ipv6="y"
@@ -8785,7 +8796,7 @@ else
     #   dns_ok:    1=OK, 0=real DNS failure, 2=informational resolver mismatch/unknown
     #   udp_weak:  1=weak, 0=OK, 2=not tested / N/A
     local _sum_start total_tests success_tests tls12_ok dns_ok udp_weak score
-    _sum_start="$(grep -n "^\* SUMMARY" "$src_report" 2>/dev/null | head -n1 | cut -d: -f1)"
+    _sum_start="$(grep -m1 -n "^\* SUMMARY" "$src_report" 2>/dev/null | cut -d: -f1)"
     total_tests=0
     success_tests=0
     tls12_ok=0
@@ -8877,10 +8888,7 @@ else
     done
 fi
     fi
-    # Summary mode: keep only the summary file (avoid creating an extra large report file) (avoid creating an extra large report file)
-    if [ -n "$src_report" ] && [ -f "$src_report" ]; then
-        rm -f "$src_report" >/dev/null 2>&1
-    fi
+    # Summary mode: tam log dosyasini koru, sadece summary ayri dosyaya kaydedildi.
     echo "$(T TXT_BLOCKCHECK_SUMMARY_SAVED) $summary_file"
     press_enter_to_continue
 }
@@ -8990,15 +8998,17 @@ blockcheck_test_menu() {
         echo "$(T TXT_BLOCKCHECK_TEST_TITLE)"
         print_line
         echo " 1. $(T TXT_BLOCKCHECK_SUMMARY)"
-        echo " 2. $(T TXT_BLOCKCHECK_CLEAN)"
-        echo " 3. $(T TXT_BLOCKCHECK_EXPORT)"
+        echo " 2. $(T _ 'Blockcheck (Tam Test ~30-45dk)' 'Blockcheck (Full Test ~30-45min)')"
+        echo " 3. $(T TXT_BLOCKCHECK_CLEAN)"
+        echo " 4. $(T TXT_BLOCKCHECK_EXPORT)"
         echo " 0. $(T TXT_BACK)"
         print_line
         printf '%s' "$(T TXT_CHOICE) "; read -r ch || return 0
         case "$ch" in
             1) run_blockcheck_save_summary ;;
-            2) clean_blockcheck_reports; press_enter_to_continue ;;
-            3) kzm2_export_active_dpi_profile; press_enter_to_continue ;;
+            2) run_blockcheck_save_summary 2 ;;
+            3) clean_blockcheck_reports; press_enter_to_continue ;;
+            4) kzm2_export_active_dpi_profile; press_enter_to_continue ;;
             0) return ;;
             *) echo "$(T TXT_INVALID_CHOICE)"; press_enter_to_continue ;;
         esac
@@ -9643,6 +9653,7 @@ TG_DEVICE_NAME=""
 TG_DEVICE_LAN_IP=""
 TG_DEVICE_WAN_IP=""
 TG_DEVICE_MODEL=""
+TG_DEVICE_FIRMWARE=""
 telegram_device_info_init() {
     # Cache device identity once per run
     [ -n "$TG_DEVICE_NAME" ] && [ -n "$TG_DEVICE_LAN_IP" ] && [ -n "$TG_DEVICE_MODEL" ] && {
@@ -9723,6 +9734,8 @@ telegram_device_info_init() {
             ?*) TG_DEVICE_MODEL="Keenetic $TG_DEVICE_MODEL" ;;
         esac
         [ -z "$TG_DEVICE_MODEL" ] && TG_DEVICE_MODEL="$(printf '%s\n' "$_ver" | grep -Eo 'KN-[0-9]{3,5}' | head -n 1)"
+        # Firmware versiyonu - kzm2_banner_get_firmware ile al (format tutarli)
+        TG_DEVICE_FIRMWARE="$(kzm2_banner_get_firmware 2>/dev/null)"
         # 3) "Keenetic XXX" line (fallback human name)
         if [ -z "$TG_DEVICE_MODEL" ]; then
             TG_DEVICE_MODEL="$(printf '%s\n' "$_ver" | awk '
@@ -10560,11 +10573,12 @@ tgbot_status_text() {
     [ -z "$kzm_ver" ] && kzm_ver="$SCRIPT_VERSION"
     zapret_ver="$(kzm2_get_zapret_version 2>/dev/null)"
     [ -z "$zapret_ver" ] && zapret_ver="$(T TXT_TGBOT_STATUS_UNKNOWN)"
-    printf "📡 $(T TXT_TG_DEVICE_LABEL) : %s\n🏠 $(T TXT_TG_LAN_LABEL) : %s\n🌍 $(T TXT_TG_WAN_LABEL) : %s\n🔧 $(T TXT_TG_MODEL_LABEL) : %s\n\n" \
+    printf "📡 $(T TXT_TG_DEVICE_LABEL) : %s\n🏠 $(T TXT_TG_LAN_LABEL) : %s\n🌍 $(T TXT_TG_WAN_LABEL) : %s\n🔧 $(T TXT_TG_MODEL_LABEL) : %s\n🖥 $(T _ 'Surum' 'Firmware') : %s\n\n" \
         "${TG_DEVICE_NAME:-$(T TXT_TGBOT_STATUS_UNKNOWN)}" \
         "${TG_DEVICE_LAN_IP:-$(T TXT_TGBOT_STATUS_UNKNOWN)}" \
         "${TG_DEVICE_WAN_IP:-$(T TXT_TGBOT_STATUS_UNKNOWN)}" \
-        "${TG_DEVICE_MODEL:-$(T TXT_TGBOT_STATUS_UNKNOWN)}"
+        "${TG_DEVICE_MODEL:-$(T TXT_TGBOT_STATUS_UNKNOWN)}" \
+        "${TG_DEVICE_FIRMWARE:-$(T TXT_TGBOT_STATUS_UNKNOWN)}"
     printf "📊 DPI : %s\n💻 CPU : %s%% | RAM: %s\n💾 Disk : %s | Uptime: %s\n🩺 Disk Sagligi : %s\n❤️ HMon : %s\n🤖 TGBot : %s\n⚡ Zapret2 : %s\n🌐 KeenDNS : %s\n🔌 WAN : %s\n📦 KZM2 : %s | Zapret2: %s" \
         "$profile_name" \
         "$cpu_val" "$ram_val" \
