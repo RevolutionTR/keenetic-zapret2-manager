@@ -37,7 +37,7 @@
 # -------------------------------------------------------------------
 SCRIPT_NAME="keenetic_zapret2_manager.sh"
 # Version scheme: vYY.M.D[.N]  (YY=year, M=month, D=day, N=daily revision)
-SCRIPT_VERSION="v26.6.10"
+SCRIPT_VERSION="v26.6.12"
 SCRIPT_REPO="https://github.com/RevolutionTR/keenetic-zapret2-manager"
 KZM2_SCRIPT_PATH="/opt/lib/opkg/keenetic_zapret2_manager.sh"
 SCRIPT_AUTHOR="RevolutionTR"
@@ -7699,7 +7699,7 @@ dns_management_menu() {
         printf " %b%s%b\n" "${CLR_CYAN}" "$(T TXT_DNS_MGMT_TITLE)" "${CLR_RESET}"
         dns_show_current "$_raw"
         echo ""
-        printf " %b 1.%b $(T TXT_DNS_MGMT_OPT1) %b[Google / Cloudflare / CF Families / NextDNS]%b\n" "${CLR_BOLD}" "${CLR_RESET}" "${CLR_DIM}" "${CLR_RESET}"
+        printf " %b 1.%b $(T TXT_DNS_MGMT_OPT1) %b[Google / Cloudflare / CF Families]%b\n" "${CLR_BOLD}" "${CLR_RESET}" "${CLR_DIM}" "${CLR_RESET}"
         printf " %b 2.%b $(T TXT_DNS_MGMT_OPT2) %b[IP + SNI veya DoH URL]%b\n" "${CLR_BOLD}" "${CLR_RESET}" "${CLR_DIM}" "${CLR_RESET}"
         printf " %b 3.%b $(T TXT_DNS_MGMT_OPT3)\n" "${CLR_BOLD}" "${CLR_RESET}"
         printf " %b 4.%b $(T TXT_DNS_MGMT_OPT4)\n" "${CLR_BOLD}" "${CLR_RESET}"
@@ -16946,6 +16946,7 @@ function dnsRefresh(){dnsCache=null;setTimeout(dnsLoad,3500);}
 function dnsPresetHtml(){
   var rows=[
     ['Standard','Standard (No Filter)','Standart (Filtresiz)','Google + Cloudflare DoT/DoH'],
+    ['Privacy','Privacy Focused','Gizlilik Odakli','Quad9 + Mullvad'],
     ['AdGuard','Ad Blocker','Reklam Engelleyici','AdGuard DoT'],
     ['Family','Family Filter','Aile Filtresi','CF Families + CleanBrowsing DoT']
   ];
