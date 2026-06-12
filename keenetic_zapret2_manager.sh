@@ -37,7 +37,7 @@
 # -------------------------------------------------------------------
 SCRIPT_NAME="keenetic_zapret2_manager.sh"
 # Version scheme: vYY.M.D[.N]  (YY=year, M=month, D=day, N=daily revision)
-SCRIPT_VERSION="v26.6.12"
+SCRIPT_VERSION="v26.6.12.1"
 SCRIPT_REPO="https://github.com/RevolutionTR/keenetic-zapret2-manager"
 KZM2_SCRIPT_PATH="/opt/lib/opkg/keenetic_zapret2_manager.sh"
 SCRIPT_AUTHOR="RevolutionTR"
@@ -8469,7 +8469,7 @@ run_blockcheck() {
     printf '%s' "$(T blk_domain 'Test edilecek domain(ler) (Enter=pastebin.com, 0=Iptal): ' 'Domain(s) to test (Enter=pastebin.com, 0=Cancel): ')"; read -r domains
     if [ "$domains" = "0" ]; then
         clear
-        return 0
+        return 1
     fi
     [ -z "$domains" ] && domains="$DEF_DOMAIN"
 	now="$(date +%Y%m%d%H%M 2>/dev/null)"
@@ -8634,7 +8634,8 @@ run_blockcheck() {
 run_blockcheck_save_summary() {
     # Run the full interactive test exactly like "Tam Test", then save only * SUMMARY * to a separate file.
     local _sl="${1:-1}"
-    run_blockcheck "$_sl"
+    run_blockcheck "$_sl" || return 0
+    clear
     local src_report ts summary_file
     src_report="${LAST_BLOCKCHECK_REPORT}"
     if [ -z "$src_report" ] || [ ! -f "$src_report" ]; then
@@ -8891,6 +8892,7 @@ fi
     # Summary mode: tam log dosyasini koru, sadece summary ayri dosyaya kaydedildi.
     echo "$(T TXT_BLOCKCHECK_SUMMARY_SAVED) $summary_file"
     press_enter_to_continue
+    clear
 }
 
 kzm2_export_active_dpi_profile() {
