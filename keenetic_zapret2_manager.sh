@@ -37,7 +37,7 @@
 # -------------------------------------------------------------------
 SCRIPT_NAME="keenetic_zapret2_manager.sh"
 # Version scheme: vYY.M.D[.N]  (YY=year, M=month, D=day, N=daily revision)
-SCRIPT_VERSION="v26.6.12.1"
+SCRIPT_VERSION="v26.6.12.2"
 SCRIPT_REPO="https://github.com/RevolutionTR/keenetic-zapret2-manager"
 KZM2_SCRIPT_PATH="/opt/lib/opkg/keenetic_zapret2_manager.sh"
 SCRIPT_AUTHOR="RevolutionTR"
@@ -1020,6 +1020,7 @@ kzm2_banner_get_wan_state() {
     echo "DOWN"
 }
 kzm2_banner_get_zapret_state() {
+    [ "$(get_dpi_profile)" = "none" ] && { echo "DISABLED"; return; }
     if is_zapret2_running; then
         echo "RUNNING"
     else
@@ -1061,10 +1062,11 @@ kzm2_fmt_ip() {
     esac
 }
 kzm2_banner_fmt_zapret_state() {
-    # $1: RUNNING|STOPPED
+    # $1: RUNNING|STOPPED|DISABLED
     case "$1" in
-        RUNNING) printf '%b' "${CLR_GREEN}$(T TXT_MAIN_RUNNING)${CLR_RESET}" ;;
-        *)       printf '%b' "${CLR_RED}$(T TXT_MAIN_STOPPED)${CLR_RESET}" ;;
+        RUNNING)  printf '%b' "${CLR_GREEN}$(T TXT_MAIN_RUNNING)${CLR_RESET}" ;;
+        DISABLED) printf '%b' "${CLR_DIM}$(T _ 'DEVRE DISI' 'DISABLED')${CLR_RESET}" ;;
+        *)        printf '%b' "${CLR_RED}$(T TXT_MAIN_STOPPED)${CLR_RESET}" ;;
     esac
 }
 kzm2_banner_fmt_keendns_state() {
@@ -3072,8 +3074,10 @@ apply_dpi_profile_now() {
         return 1
     fi
     update_nfqws_parameters
-    restart_zapret2 >/dev/null 2>&1 || true
-    if [ "$(get_dpi_profile)" != "none" ]; then
+    if [ "$(get_dpi_profile)" = "none" ]; then
+        stop_zapret2 >/dev/null 2>&1 || true
+    else
+        restart_zapret2 >/dev/null 2>&1 || true
         enforce_client_mode_rules >/dev/null 2>&1 || true
         enforce_wan_if_nfqueue_rules >/dev/null 2>&1 || true
     fi
@@ -4307,7 +4311,7 @@ start_zapret2() {
         flush_all_nfqueue_rules 2>/dev/null
         nozapret_apply_rules 2>/dev/null
         kzm2_apply_ip_exclude_rules 2>/dev/null
-        echo "$(T TXT_START_OK)"
+        echo "$(T _ 'DPI bypass devre disi (none profil). Zapret2 baslatilmadi.' 'DPI bypass disabled (none profile). Zapret2 not started.')"
         return 0
     fi
     # Init script eksikse yeniden olustur (blockcheck sonrasi nadiren olabilir)
@@ -10550,7 +10554,9 @@ tgbot_status_text() {
         tgbot_st="$(T TXT_TGBOT_STATUS_STOPPED)"
     fi
     # Zapret2
-    if is_zapret2_running 2>/dev/null; then
+    if [ "$(get_dpi_profile 2>/dev/null)" = "none" ]; then
+        zapret_st="$(T _ 'Devre Disi' 'Disabled')"
+    elif is_zapret2_running 2>/dev/null; then
         zapret_st="$(T TXT_TGBOT_STATUS_RUNNING)"
     else
         zapret_st="$(T TXT_TGBOT_STATUS_STOPPED)"
@@ -12367,7 +12373,10 @@ healthmon_loop() {
                 if [ "$elz" -ge 30 ]; then
                     # optional auto-restart: try once per down event, and only notify if restart fails
                     local restart_ok="0"
-                    if [ "$HM_ZAPRET_AUTORESTART" = "1" ] && [ ! -f "$zapret_restart_flag" ]; then
+                    if [ "$(get_dpi_profile)" = "none" ]; then
+                        # DPI bypass kapali (none profil) - Zapret2 kasitli durdurulmus, restart etme
+                        restart_ok="1"
+                    elif [ "$HM_ZAPRET_AUTORESTART" = "1" ] && [ ! -f "$zapret_restart_flag" ]; then
                         echo "1" >"$zapret_restart_flag" 2>/dev/null
                         if [ "$_zap_reason" = "iptables_missing" ]; then
                             # Once sadece firewall kurallarini yenile (process'e dokunma)
@@ -14704,7 +14713,7 @@ kzm_gui_gen_status() {
     # Zapret2 calisiyor mu?
     local _zap_run=0
     if [ "$(cat /opt/zapret2/dpi_profile 2>/dev/null | tr -d '[:space:]')" = "none" ]; then
-        [ -f /opt/zapret2/dpi_profile ] && _zap_run=1
+        _zap_run=0
     else
         pgrep -x nfqws2 >/dev/null 2>&1 && _zap_run=1
     fi
@@ -16856,11 +16865,13 @@ function updHdr(){
   document.getElementById('hLoad').textContent=S.load1||'—';
   document.getElementById('hVer').textContent=S.kzm_version||'—';
   var z=document.getElementById('hZap');
-  z.innerHTML=S.zapret_running?'<span class="good">'+(L?'ACTIVE':'AKT&#304;F')+'</span>':'<span class="bad">'+(L?'INACTIVE':'PAS&#304;F')+'</span>';
+  if(S.dpi_profile==='none'){z.innerHTML='<span style="color:#888">'+(L?'DISABLED':'DEVRE DISI')+'</span>';}
+  else{z.innerHTML=S.zapret_running?'<span class="good">'+(L?'ACTIVE':'AKT&#304;F')+'</span>':'<span class="bad">'+(L?'INACTIVE':'PAS&#304;F')+'</span>';}
   var h=document.getElementById('hHm');
   if(h) h.innerHTML=S.healthmon_running?'<span class="good">'+(L?'ACTIVE':'AKT&#304;F')+'</span>':'<span class="bad">'+(L?'INACTIVE':'PAS&#304;F')+'</span>';
 }
 function bdg(on,a,b){return on?'<span class="badge good">'+(a||'AKT&#304;F')+'</span>':'<span class="badge bad">'+(b||'PAS&#304;F')+'</span>';}
+function bdgZap(on,a,b){if(S.dpi_profile==='none'){return '<span class="badge" style="background:#888">'+(L?'DISABLED':'DEVRE DISI')+'</span>';}return bdg(on,a,b);}
 function bdgO(on,a,b){return on?'<span class="badge good">'+(a||'AKT&#304;F')+'</span>':'<span class="badge off">'+(b||'KAPALI')+'</span>';}
 function brr(p){var c=p>85?'bad':p>60?'warn':'good';return '<div class="progress"><div class="bar '+c+'" style="width:'+p+'%"></div></div>';}
 function pct(u,t){return t?Math.round(u/t*100):0;}
@@ -17123,7 +17134,7 @@ var V={
         '<div class="card"><h3>'+(L?'KZM2 Version':'KZM2 S&#252;r&#252;m')+'</h3><div class="big" style="color:'+(S.sha_kzm==='ok'?'var(--good)':S.sha_kzm==='fail'?'var(--warn)':'var(--text)')+'">'+  (S.kzm_version||'—')+'</div></div>'+
         '<div class="card"><h3>'+(L?'Zapret2 Version':'Zapret2 S&#252;r&#252;m')+'</h3><div class="big" style="color:'+(S.sha_zapret==='ok'?'var(--good)':S.sha_zapret==='fail'?'var(--warn)':'var(--text)')+'">'+fixTR(S.zapret_version||'—')+'</div></div>'+
         '<div class="card dash-card-span-2"><h3>'+(L?'Zapret2 Status':'Zapret2 Durumu')+'</h3>'+
-          '<div class="row">'+bdg(S.zapret_running,L?'ACTIVE':'AKT&#304;F',L?'INACTIVE':'PAS&#304;F')+
+          '<div class="row">'+bdgZap(S.zapret_running,L?'ACTIVE':'AKT&#304;F',L?'INACTIVE':'PAS&#304;F')+
             ' <span class="pill">'+(L?S.wan_dev:fixTR(S.wan_dev||'—'))+'</span>'+
             ' <span class="pill">'+(S.wan_ip||'—')+'</span></div>'+
           '<div class="dash-zapret-actions">'+
@@ -17154,7 +17165,7 @@ var V={
         '<div class="svc-badges dash-services-grid">'+
           '<div style="min-width:0">'+bdg(S.healthmon_running,L?'Health Mon.':'Sa&#287;l&#305;k Mon.',L?'Health Mon.':'Sa&#287;l&#305;k Mon.')+'</div>'+
           '<div style="min-width:0">'+bdgO(S.telegram_enabled&&S.telegram_running,'Telegram','Telegram')+'</div>'+
-          '<div style="min-width:0">'+bdg(S.zapret_running,'Zapret2','Zapret2')+'</div>'+
+          '<div style="min-width:0">'+bdgZap(S.zapret_running,'Zapret2','Zapret2')+'</div>'+
           '<div style="min-width:0">'+bdg(S.lighttpd_running,'Web Panel','Web Panel')+'</div>'+
         '</div>'+
       '</div>'+
@@ -17172,7 +17183,7 @@ var V={
         ir(L?'Filter Mode':'Filtreleme',(function(){var m=S.filter_mode||'';if(m==='autohostlist')return '<span style="color:var(--good)">'+(L?'Auto Hostlist':'Otomatik Liste')+'</span>';if(m==='hostlist')return '<span style="color:var(--info)">'+(L?'Hostlist':'Manuel Liste')+'</span>';if(m==='none')return '<span style="color:var(--warn)">'+(L?'No Filter':'Listesiz')+'</span>';return m||'—';})())+
         ir(L?'Scope':'Kapsam Modu',(function(){var m=S.scope_mode||'';if(m==='smart')return '<span style="color:var(--good)">'+(L?'Smart':'Ak&#305;ll&#305;')+'</span>';if(m==='global')return '<span style="color:var(--warn)">'+(L?'Global':'Global')+'</span>';return m||'—';})())+
         ir(L?'IPSET Mode':'IPSET Modu',(function(){var m=S.ipset_mode||'all';var c=S.ipset_count||0;if(m==='list')return '<span style="color:var(--info)">'+(L?'Selected IPs':'Se&#231;ili IP')+' ('+c+')</span>';return '<span style="color:var(--good)">'+(L?'Whole Network':'T&#252;m A&#287;')+'</span>';})())+
-        ir('Zapret2',bdg(S.zapret_running,L?'ACTIVE':'AKT&#304;F',L?'INACTIVE':'PAS&#304;F'))+
+        ir('Zapret2',bdgZap(S.zapret_running,L?'ACTIVE':'AKT&#304;F',L?'INACTIVE':'PAS&#304;F'))+
         ir(L?'Health Monitor':'Sa&#287;l&#305;k Mon.',bdg(S.healthmon_running,L?'ACTIVE':'AKT&#304;F',L?'INACTIVE':'PAS&#304;F'))+
         ir('Telegram Bot',bdgO(S.telegram_enabled&&S.telegram_running,L?'ACTIVE':'AKT&#304;F',L?'OFF':'KAPALI'))+
         ir(L?'Web Panel (lighttpd)':'Web Panel (lighttpd)',bdg(S.lighttpd_running,L?'RUNNING':'&#199;ALI&#350;IYOR',L?'STOPPED':'DURDU'))+
@@ -17185,7 +17196,7 @@ var V={
     if(!S)return nd();
     return '<div class="grid" style="grid-template-columns:1fr 1fr">'+
       '<div class="card"><h3>'+(L?'Status':'Durum')+'</h3>'+
-        '<div class="row">'+bdg(S.zapret_running,L?'ACTIVE':'AKT&#304;F',L?'INACTIVE':'PAS&#304;F')+
+        '<div class="row">'+bdgZap(S.zapret_running,L?'ACTIVE':'AKT&#304;F',L?'INACTIVE':'PAS&#304;F')+
           ' <span class="pill">WAN: '+(L?S.wan_dev:fixTR(S.wan_dev||'—'))+'</span>'+
           ' <span class="pill">'+fixTR(S.zapret_version||'—')+'</span></div></div>'+
       '<div class="card"><h3>'+(L?'Control':'Kontrol')+'</h3>'+
@@ -17432,7 +17443,7 @@ var V={
       '<div class="card"><h3>Disk /opt</h3><div class="big">'+(S.disk_used_pct>0?S.disk_used_pct+'%':'<1%')+'</div>'+
         '<div class="sub">'+(S.disk_used_mb||0)+' MB / '+Math.round(S.disk_total_mb/1024)+' GB</div>'+brr(S.disk_used_pct)+'</div>'+
       '<div class="card"><h3>'+(L?'Services':'Servisler')+'</h3>'+
-        '<div class="row">'+bdg(S.zapret_running,'Zapret2 OK',L?'Zapret2 INACTIVE':'Zapret2 PAS&#304;F')+'</div>'+
+        '<div class="row">'+bdgZap(S.zapret_running,'Zapret2 OK',L?'Zapret2 INACTIVE':'Zapret2 PAS&#304;F')+'</div>'+
         '<div class="row" style="margin-top:6px">'+bdg(S.healthmon_running,'HealthMon OK',L?'HealthMon INACTIVE':'HealthMon PAS&#304;F')+'</div>'+
         '<div class="btns" style="margin-top:10px">'+
           '<button class="ghost" onclick="act(\'status_refresh\',this,'+(L?'\'Updated\'':'\'G&#252;ncellendi\'')+')">'+'&#8635; '+(L?'Refresh':'G&#252;ncelle')+'</button>'+
