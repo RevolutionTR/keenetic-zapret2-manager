@@ -37,7 +37,7 @@
 # -------------------------------------------------------------------
 SCRIPT_NAME="keenetic_zapret2_manager.sh"
 # Version scheme: vYY.M.D[.N]  (YY=year, M=month, D=day, N=daily revision)
-SCRIPT_VERSION="v26.6.12.2"
+SCRIPT_VERSION="v26.6.12.3"
 SCRIPT_REPO="https://github.com/RevolutionTR/keenetic-zapret2-manager"
 KZM2_SCRIPT_PATH="/opt/lib/opkg/keenetic_zapret2_manager.sh"
 SCRIPT_AUTHOR="RevolutionTR"
@@ -2830,7 +2830,7 @@ get_dpi_profile() {
     local p="tt_default"
     [ -f "$DPI_PROFILE_FILE" ] && p="$(cat "$DPI_PROFILE_FILE" 2>/dev/null | tr -d '\r\n')"
     case "$p" in
-        tt_default|tt_fiber|superonline_fiber|blockcheck_auto|custom|none) echo "$p" ;;
+        tt_default|tt_fiber|superonline_fiber|multidisorder|blockcheck_auto|custom|none) echo "$p" ;;
         # Legacy KZM1-derived profiles are intentionally not exposed/applied in KZM2.
         # They require explicit Zapret2/nfqws2 conversion and field testing.
         tt_alt|sol|sol_alt|sol_fiber|turkcell_mob|vodafone_mob) echo "tt_default" ;;
@@ -2846,6 +2846,7 @@ dpi_profile_name_tr() {
         tt_default)        echo "Varsayilan Zapret2 (TTL2 fake)";;
         tt_fiber)          echo "Turk Telekom Fiber (TTL2 fake)";;
         superonline_fiber) echo "Superonline Fiber (TTL6 hostcase)";;
+        multidisorder)     echo "TT + Superonline (Multidisorder)";;
         blockcheck_auto)   echo "Blockcheck Otomatik (Auto)";;
         none)              echo "Gecis Modu (Bypass Yok)";;
         custom)            echo "Ozel NFQWS2_OPT";;
@@ -2858,6 +2859,7 @@ dpi_profile_name_en() {
         tt_default)        echo "Default Zapret2 (TTL2 fake)";;
         tt_fiber)          echo "Turk Telekom Fiber (TTL2 fake)";;
         superonline_fiber) echo "Superonline Fiber (TTL6 hostcase)";;
+        multidisorder)     echo "TT + Superonline (Multidisorder)";;
         blockcheck_auto)   echo "Blockcheck Auto";;
         none)              echo "Passthrough (No Bypass)";;
         custom)            echo "Custom NFQWS2_OPT";;
@@ -2968,14 +2970,15 @@ select_dpi_profile() {
         # Menu satirlarinda:
     # - Varsayilan profil (tt_default) her zaman "Default/Varsayilan" olarak isaretlenir
     # - Kullanilan profil "ACTIVE/AKTIF" olarak isaretlenir
-    for _id in tt_default tt_fiber superonline_fiber blockcheck_auto none; do
+    for _id in tt_default tt_fiber superonline_fiber multidisorder blockcheck_auto none; do
         _num=""
         case "$_id" in
             tt_default)        _num="1" ;;
             tt_fiber)          _num="2" ;;
             superonline_fiber) _num="3" ;;
-            blockcheck_auto)   _num="4" ;;
-            none)              _num="5" ;;
+            multidisorder)     _num="4" ;;
+            blockcheck_auto)   _num="5" ;;
+            none)              _num="6" ;;
         esac
         _name_tr="$(dpi_profile_name_tr "$_id")"
         _name_en="$(dpi_profile_name_en "$_id")"
@@ -3048,6 +3051,12 @@ fi
             rm -f "$BLOCKCHECK_AUTO_PARAMS_FILE" 2>/dev/null
             ;;
         4)
+            set_dpi_profile multidisorder
+            set_dpi_origin "manual"
+            : > "$DPI_PROFILE_PARAMS_FILE" 2>/dev/null
+            rm -f "$BLOCKCHECK_AUTO_PARAMS_FILE" 2>/dev/null
+            ;;
+        5)
             if [ -s "$BLOCKCHECK_AUTO_PARAMS_FILE" ]; then
                 set_dpi_profile blockcheck_auto
                 set_dpi_origin "auto"
@@ -3057,7 +3066,7 @@ fi
                 return 1
             fi
             ;;
-        5)
+        6)
             set_dpi_profile none
             set_dpi_origin "manual"
             ;;
@@ -3490,6 +3499,7 @@ update_nfqws_parameters() {
         tt_default)         TTL="2" ;;
         tt_fiber)           TTL="2" ;;
         superonline_fiber)  TTL="6"; TCP_DESYNC="hostcase"; NO_UDP="1" ;;
+        multidisorder)      TCP_DESYNC="multidisorder"; NO_UDP="1" ;;
         blockcheck_auto) : ;;
         custom)          : ;;
         none)            : ;;
@@ -3505,7 +3515,7 @@ update_nfqws_parameters() {
     local _raw_profile=""
     _raw_profile="$(cat "$DPI_PROFILE_FILE" 2>/dev/null | tr -d '\r\n')"
     case "$_raw_profile" in
-        tt_default|tt_fiber|superonline_fiber|blockcheck_auto|custom) : ;;
+        tt_default|tt_fiber|superonline_fiber|multidisorder|blockcheck_auto|custom) : ;;
         *) set_dpi_profile "$profile" ;;
     esac
     if [ ! -s "$DPI_PROFILE_ORIGIN_FILE" ]; then
@@ -3523,18 +3533,18 @@ update_nfqws_parameters() {
 
     _kzm2_desync_http() {
         case "$TCP_DESYNC" in
-            multisplit) printf '%s' "multisplit${SPLITPOS}$(_kzm2_ttl_args "$TTL")${TCP_EXTRA}" ;;
-            hostcase)   printf '%s' "http_hostcase:spell=hoSt" ;;
-            *)          printf '%s' "fake:blob=fake_default_http$(_kzm2_ttl_args "$TTL"):repeats=${TCP_REPEATS}${TCP_EXTRA}" ;;
+            multisplit|multidisorder) printf '%s' "multisplit${SPLITPOS}$(_kzm2_ttl_args "$TTL")${TCP_EXTRA}" ;;
+            hostcase)                 printf '%s' "http_hostcase:spell=hoSt" ;;
+            *)                        printf '%s' "fake:blob=fake_default_http$(_kzm2_ttl_args "$TTL"):repeats=${TCP_REPEATS}${TCP_EXTRA}" ;;
         esac
     }
 
     _kzm2_desync_tls() {
-        if [ "$TCP_DESYNC" = "multisplit" ]; then
-            printf '%s' "multisplit${SPLITPOS}$(_kzm2_ttl_args "$TTL")${TCP_EXTRA}"
-        else
-            printf '%s' "fake:blob=fake_default_tls$(_kzm2_ttl_args "$TTL"):repeats=${TCP_REPEATS}${TCP_EXTRA}"
-        fi
+        case "$TCP_DESYNC" in
+            multisplit)    printf '%s' "multisplit${SPLITPOS}$(_kzm2_ttl_args "$TTL")${TCP_EXTRA}" ;;
+            multidisorder) printf '%s' "multidisorder:pos=2:seqovl=1" ;;
+            *)             printf '%s' "fake:blob=fake_default_tls$(_kzm2_ttl_args "$TTL"):repeats=${TCP_REPEATS}${TCP_EXTRA}" ;;
+        esac
     }
 
     _kzm2_desync_quic() {
@@ -8532,6 +8542,7 @@ run_blockcheck() {
         done
         [ -f /opt/zapret2/blockcheck2.d/standard/10-http-basic.sh ] && cp -f /opt/zapret2/blockcheck2.d/standard/10-http-basic.sh "$_kzm_bc_dir/10-http-basic.sh" 2>/dev/null
         [ -f /opt/zapret2/blockcheck2.d/standard/20-multi.sh ] && cp -f /opt/zapret2/blockcheck2.d/standard/20-multi.sh "$_kzm_bc_dir/20-multi.sh" 2>/dev/null
+        [ -f /opt/zapret2/blockcheck2.d/standard/23-seqovl.sh ] && cp -f /opt/zapret2/blockcheck2.d/standard/23-seqovl.sh "$_kzm_bc_dir/23-seqovl.sh" 2>/dev/null
         [ -f /opt/zapret2/blockcheck2.d/standard/25-fake.sh ] && cp -f /opt/zapret2/blockcheck2.d/standard/25-fake.sh "$_kzm_bc_dir/25-fake.sh" 2>/dev/null
         [ -f /opt/zapret2/blockcheck2.d/standard/24-syndata.sh ] && cp -f /opt/zapret2/blockcheck2.d/standard/24-syndata.sh "$_kzm_bc_dir/24-syndata.sh" 2>/dev/null
         [ -f /opt/zapret2/blockcheck2.d/standard/90-quic.sh ] && cp -f /opt/zapret2/blockcheck2.d/standard/90-quic.sh "$_kzm_bc_dir/90-quic.sh" 2>/dev/null
@@ -8684,7 +8695,7 @@ if [ -n "$sum_ln" ] && [ "$sum_ln" -gt 0 ] 2>/dev/null; then
         grep -i '^curl_test_http ' | grep -m1 'nfqws2')"
 
     _s_tls="$(sed -n "${sum_ln},\$p" "$src_report" 2>/dev/null | \
-        grep -i '^curl_test_https_tls12 ' | grep -F -- '--payload=tls_client_hello' | grep -m1 -F -- 'ip_ttl=')"
+        grep -i '^curl_test_https_tls12 ' | grep -F -- '--payload=tls_client_hello' | grep -m1 -E 'ip_ttl=|multidisorder|seqovl')"
     [ -z "$_s_tls" ] && _s_tls="$(sed -n "${sum_ln},\$p" "$src_report" 2>/dev/null | \
         grep -i '^curl_test_https_tls12 ' | grep -m1 -F -- '--payload=tls_client_hello')"
     [ -z "$_s_tls" ] && _s_tls="$(sed -n "${sum_ln},\$p" "$src_report" 2>/dev/null | \
@@ -8759,7 +8770,8 @@ fi
         # If Menu 7 IPv6 is ON, add ip6_ttl to found HTTP/TLS/QUIC blocks.
         local _bc_http _bc_tls _bc_quic _bc_combined _bc_ipv6
         _bc_http="$(grep -im1 '^curl_test_http ' "$summary_file" 2>/dev/null | grep -F -- '--payload=http_req' | sed -n 's/^.* : nfqws2[[:space:]]*//p')"
-        _bc_tls="$(grep -i '^curl_test_https_tls12 ' "$summary_file" 2>/dev/null | grep -Ei ' nfqws2? ' | grep -F -- '--payload=tls_client_hello' | grep -m1 -F -- 'ip_ttl=' | sed -n 's/^.* : nfqws2[[:space:]]*//p')"
+        # TLS strateji secimi: ip_ttl= veya multidisorder/seqovl iceren payload=tls_client_hello stratejileri tercih et
+        _bc_tls="$(grep -i '^curl_test_https_tls12 ' "$summary_file" 2>/dev/null | grep -Ei ' nfqws2? ' | grep -F -- '--payload=tls_client_hello' | grep -m1 -E 'ip_ttl=|multidisorder|seqovl' | sed -n 's/^.* : nfqws2[[:space:]]*//p')"
         [ -z "$_bc_tls" ] && _bc_tls="$(grep -i '^curl_test_https_tls12 ' "$summary_file" 2>/dev/null | grep -Ei ' nfqws2? ' | grep -m1 -F -- '--payload=tls_client_hello' | sed -n 's/^.* : nfqws2[[:space:]]*//p')"
         [ -z "$_bc_tls" ] && _bc_tls="$(grep -im1 '^curl_test_https_tls12 ' "$summary_file" 2>/dev/null | grep -Ei ' nfqws2? ' | sed -n 's/^.* : nfqws2[[:space:]]*//p')"
         [ -z "$_bc_tls" ] && _bc_tls="$(grep -i '^curl_test_https_tls13 ' "$summary_file" 2>/dev/null | grep -Ei ' nfqws2? ' | grep -m1 -F -- '--payload=tls_client_hello' | sed -n 's/^.* : nfqws2[[:space:]]*//p')"
@@ -13096,7 +13108,7 @@ DEOF
                 ZAPRET_IPV6="y"
             fi
             case "$_cgi_p" in
-                tt_default|tt_fiber|superonline_fiber)
+                tt_default|tt_fiber|superonline_fiber|multidisorder)
                     set_dpi_profile "$_cgi_p"
                     set_dpi_origin "manual"
                     update_nfqws_parameters >/dev/null 2>&1
@@ -15216,7 +15228,7 @@ kzm_rebuild_profile_restart() {
     _kzm="/opt/lib/opkg/keenetic_zapret2_manager.sh"
     _p="$(cat /opt/zapret2/dpi_profile 2>/dev/null | tr -d '\r\n')"
     [ -z "$_p" ] && _p="tt_default"
-    case "$_p" in tt_default|tt_fiber|superonline_fiber|blockcheck_auto|custom) : ;; *) _p="tt_default"; echo "tt_default" > /opt/zapret2/dpi_profile 2>/dev/null ;; esac
+    case "$_p" in tt_default|tt_fiber|superonline_fiber|multidisorder|blockcheck_auto|custom) : ;; *) _p="tt_default"; echo "tt_default" > /opt/zapret2/dpi_profile 2>/dev/null ;; esac
     if [ -f "$_kzm" ]; then
         # NFQWS2_OPT yeniden yazilsin: hostlist/autohostlist modunda <HOSTLIST> marker'i korunur.
         KZM2_SKIP_LOCK=1 sh "$_kzm" --cgi-action dpi_set "$_p" >/dev/null 2>&1 &
@@ -15988,7 +16000,7 @@ case "$ACTION" in
         _p=$(get_param profile)
         [ -z "$_p" ] && { fail "Profil belirtilmedi"; exit 0; }
         case "$_p" in
-            tt_default|tt_fiber|superonline_fiber|blockcheck_auto|none) ;;
+            tt_default|tt_fiber|superonline_fiber|multidisorder|blockcheck_auto|none) ;;
             *) fail "Gecersiz veya devre disi profil: $_p"; exit 0 ;;
         esac
         _kzm="/opt/lib/opkg/keenetic_zapret2_manager.sh"
@@ -17086,6 +17098,7 @@ function fmtBcCard(S){
     'tt_default':(L?'Default Zapret2 (TTL2 fake)':'Varsay&#305;lan Zapret2 (TTL2 fake)'),
     'tt_fiber':(L?'Turk Telekom Fiber (TTL2 fake)':'Turk Telekom Fiber (TTL2 fake)'),
     'superonline_fiber':(L?'Superonline Fiber (TTL6 hostcase)':'Superonline Fiber (TTL6 hostcase)'),
+    'multidisorder':(L?'TT + Superonline (Multidisorder)':'TT + Superonline (Multidisorder)'),
     'blockcheck_auto':(L?'Blockcheck Auto':'Blockcheck Otomatik (Auto)'),
     'custom':(L?'Custom NFQWS2_OPT':'&#214;zel NFQWS2_OPT'),
     'none':(L?'Passthrough (No Bypass)':'Ge&#231;i&#351; Modu (Bypass Yok)')
@@ -17179,7 +17192,7 @@ var V={
         (S.keendns_fqdn ? ir('KeenDNS',S.keendns_fqdn+' | '+fmtKeenDns(S.keendns_access)) : '')+
         (S.iss_name ? ir(L?'ISP':'ISS',S.iss_name) : '')+
         ir('ISP DNS',S.isp_dns ? '<span style="color:var(--warn)">'+S.isp_dns+' — '+(L?'Zapret2 bypass may be blocked!':'Zapret2 bypass engellenebilir!')+'</span>' : '<span style="color:var(--good)">'+(L?'None - DNS encryption active':'Yok - DNS &#351;ifreleme aktif')+'</span>')+
-        ir(L?'DPI Profile':'Aktif Profil',(function(){var pn={'tt_default':'Varsay&#305;lan Zapret2 (TTL2 fake)','tt_fiber':'Turk Telekom Fiber (TTL2 fake)','blockcheck_auto':'Blockcheck Otomatik (Auto)','custom':(L?'Custom':'&#214;zel NFQWS2_OPT'),'none':(L?'Passthrough (No Bypass)':'Ge&#231;i&#351; Modu (Bypass Yok)')};var n=pn[S.dpi_profile]||S.dpi_profile||'—';var clr=S.dpi_profile==='none'?'var(--warn)':'var(--info)';return '<span style="color:'+clr+'">'+n+'</span>';})())+
+        ir(L?'DPI Profile':'Aktif Profil',(function(){var pn={'tt_default':'Varsay&#305;lan Zapret2 (TTL2 fake)','tt_fiber':'Turk Telekom Fiber (TTL2 fake)','superonline_fiber':'Superonline Fiber (TTL6 hostcase)','multidisorder':'TT + Superonline (Multidisorder)','blockcheck_auto':'Blockcheck Otomatik (Auto)','custom':(L?'Custom':'&#214;zel NFQWS2_OPT'),'none':(L?'Passthrough (No Bypass)':'Ge&#231;i&#351; Modu (Bypass Yok)')};var n=pn[S.dpi_profile]||S.dpi_profile||'—';var clr=S.dpi_profile==='none'?'var(--warn)':'var(--info)';return '<span style="color:'+clr+'">'+n+'</span>';})())+
         ir(L?'Filter Mode':'Filtreleme',(function(){var m=S.filter_mode||'';if(m==='autohostlist')return '<span style="color:var(--good)">'+(L?'Auto Hostlist':'Otomatik Liste')+'</span>';if(m==='hostlist')return '<span style="color:var(--info)">'+(L?'Hostlist':'Manuel Liste')+'</span>';if(m==='none')return '<span style="color:var(--warn)">'+(L?'No Filter':'Listesiz')+'</span>';return m||'—';})())+
         ir(L?'Scope':'Kapsam Modu',(function(){var m=S.scope_mode||'';if(m==='smart')return '<span style="color:var(--good)">'+(L?'Smart':'Ak&#305;ll&#305;')+'</span>';if(m==='global')return '<span style="color:var(--warn)">'+(L?'Global':'Global')+'</span>';return m||'—';})())+
         ir(L?'IPSET Mode':'IPSET Modu',(function(){var m=S.ipset_mode||'all';var c=S.ipset_count||0;if(m==='list')return '<span style="color:var(--info)">'+(L?'Selected IPs':'Se&#231;ili IP')+' ('+c+')</span>';return '<span style="color:var(--good)">'+(L?'Whole Network':'T&#252;m A&#287;')+'</span>';})())+
@@ -17217,6 +17230,7 @@ var V={
               'tt_default':'Varsay&#305;lan Zapret2 (TTL2 fake)',
               'tt_fiber':'Turk Telekom Fiber (TTL2 fake)',
               'superonline_fiber':'Superonline Fiber (TTL6 hostcase)',
+              'multidisorder':'TT + Superonline (Multidisorder)',
               'blockcheck_auto':'Blockcheck Otomatik (Auto)',
               'custom':(L?'Custom NFQWS2_OPT':'&#214;zel NFQWS2_OPT'),
               'none':(L?'Passthrough (No Bypass)':'Ge&#231;i&#351; Modu (Bypass Yok)')
@@ -17231,6 +17245,7 @@ var V={
               ['tt_default','Varsay&#305;lan Zapret2 (TTL2 fake)'],
               ['tt_fiber','Turk Telekom Fiber (TTL2 fake)'],
               ['superonline_fiber','Superonline Fiber (TTL6 hostcase)'],
+              ['multidisorder','TT + Superonline (Multidisorder)'],
               ['blockcheck_auto','Blockcheck Otomatik (Auto)'],
               ['none',L?'Passthrough (No Bypass)':'Ge&#231;i&#351; Modu (Bypass Yok)']
             ];
