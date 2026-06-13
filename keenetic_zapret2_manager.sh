@@ -37,7 +37,7 @@
 # -------------------------------------------------------------------
 SCRIPT_NAME="keenetic_zapret2_manager.sh"
 # Version scheme: vYY.M.D[.N]  (YY=year, M=month, D=day, N=daily revision)
-SCRIPT_VERSION="v26.6.13"
+SCRIPT_VERSION="v26.6.13.1"
 SCRIPT_REPO="https://github.com/RevolutionTR/keenetic-zapret2-manager"
 KZM2_SCRIPT_PATH="/opt/lib/opkg/keenetic_zapret2_manager.sh"
 SCRIPT_AUTHOR="RevolutionTR"
@@ -2403,10 +2403,10 @@ TXT_NOZAPRET_0_TR=" 0. Geri"
 TXT_NOZAPRET_0_EN=" 0. Back"
 TXT_NOZAPRET_PROMPT_TR=" Seciminizi Yapin (0-4): "
 TXT_NOZAPRET_PROMPT_EN=" Select an Option (0-4): "
-TXT_NOZAPRET_ADD_TR="Muaf tutulacak IP'i girin (Enter=iptal): "
-TXT_NOZAPRET_ADD_EN="Enter IP to exempt (Enter=cancel): "
-TXT_NOZAPRET_DEL_TR="Silmek istediginiz IP'i girin (Enter=iptal): "
-TXT_NOZAPRET_DEL_EN="Enter IP to remove (Enter=cancel): "
+TXT_NOZAPRET_ADD_TR="Muaf tutulacak IP veya CIDR girin (ornek: 192.168.1.1 veya 10.0.0.0/24, Enter=iptal): "
+TXT_NOZAPRET_ADD_EN="Enter IP or CIDR to exempt (example: 192.168.1.1 or 10.0.0.0/24, Enter=cancel): "
+TXT_NOZAPRET_DEL_TR="Silmek istediginiz IP veya CIDR girin (Enter=iptal): "
+TXT_NOZAPRET_DEL_EN="Enter IP or CIDR to remove (Enter=cancel): "
 TXT_NOZAPRET_EMPTY_TR="Muafiyet listesi bos."
 TXT_NOZAPRET_EMPTY_EN="Exemption list is empty."
 TXT_NOZAPRET_ADDED_TR="Tamam: IP muafiyet listesine eklendi."
@@ -5454,7 +5454,7 @@ manage_nozapret_menu() {
                 read -r noz_ip
                 if [ -z "$noz_ip" ]; then
                     echo "$(T cancelled 'Iptal edildi.' 'Cancelled.')"
-                elif echo "$noz_ip" | grep -Eq '^([0-9]{1,3}\.){3}[0-9]{1,3}$'; then
+                elif echo "$noz_ip" | grep -Eq '^([0-9]{1,3}[.]){3}[0-9]{1,3}(/([0-9]|[1-2][0-9]|3[0-2]))?$'; then
                     mkdir -p "$(dirname "$NOZAPRET_FILE")"
                     touch "$NOZAPRET_FILE"
                     if grep -Fqx "$noz_ip" "$NOZAPRET_FILE" 2>/dev/null; then
@@ -15224,6 +15224,18 @@ ok()      { printf '{"ok":1,"msg":"%s"}' "$1"; }
 ok_data() { printf '{"ok":1,"data":%s}' "$1"; }
 ok_str()  { printf '{"ok":1,"data":"%s"}' "$1"; }
 fail()    { printf '{"ok":0,"msg":"%s"}' "$1"; }
+kzm_file_ensure_trailing_newline() {
+    [ -f "$1" ] && [ -s "$1" ] || return 0
+    _last="$(tail -c 1 "$1" 2>/dev/null)"
+    [ -n "$_last" ] && printf '\n' >> "$1"
+}
+kzm_append_unique_line() {
+    [ -n "$1" ] && [ -n "$2" ] || return 1
+    touch "$1" 2>/dev/null || return 1
+    grep -Fqx "$2" "$1" 2>/dev/null && return 0
+    kzm_file_ensure_trailing_newline "$1"
+    printf '%s\n' "$2" >> "$1"
+}
 HL_USER="/opt/zapret2/ipset/zapret-hosts-user.txt"
 HL_EXCL="/opt/zapret2/ipset/zapret-hosts-user-exclude.txt"
 HL_LOCALNETS="/opt/zapret2/ipset/zapret-hosts-localnets.txt"
@@ -16135,14 +16147,14 @@ case "$ACTION" in
     nozapret_add)
         _ip=$(get_param ip); [ -z "$_ip" ] && { fail "IP bos"; exit 0; }
         # Cakisma korumasi: ipset_clients.txt'den cikar
-        sed -i "/^$(printf '%s' "$_ip" | sed 's/[.[\*^$]/\\&/g')$/d" "$IPSET_FILE" 2>/dev/null
+        sed -i "\|^$(printf '%s' "$_ip" | sed 's/[.[*^$]/\\&/g')$|d" "$IPSET_FILE" 2>/dev/null
         kzm_append_unique_line "/opt/zapret2/ipset/nozapret.txt" "$_ip"
         echo "$(date '+%Y-%m-%d %H:%M:%S') | zapret_restart | triggered (web)" >> /tmp/kzm2_healthmon.log 2>/dev/null
         kzm_rebuild_profile_restart
         ok "Eklendi: $_ip" ;;
     nozapret_del)
         _ip=$(get_param ip); [ -z "$_ip" ] && { fail "IP bos"; exit 0; }
-        sed -i "/^$(printf '%s' "$_ip" | sed 's/[.[\*^$]/\\&/g')$/d" "/opt/zapret2/ipset/nozapret.txt" 2>/dev/null
+        sed -i "\|^$(printf '%s' "$_ip" | sed 's/[.[*^$]/\\&/g')$|d" "/opt/zapret2/ipset/nozapret.txt" 2>/dev/null
         echo "$(date '+%Y-%m-%d %H:%M:%S') | zapret_restart | triggered (web)" >> /tmp/kzm2_healthmon.log 2>/dev/null
         kzm_rebuild_profile_restart
         ok "Silindi: $_ip" ;;
@@ -17379,7 +17391,7 @@ var V={
         '<div class="lw" id="ipaL"><div class="empty">'+(L?'Loading...':'Y&#252;kleniyor...')+'</div></div></div>'+
       '<div class="card wide"><h3>No Zapret2 <span id="nzCnt" class="tag">0 IP</span></h3>'+
         '<div class="hint" style="margin-bottom:6px">'+(L?'IPs exempt from Zapret2 processing':'Zapret2 i&#351;leminden muaf IP&#39;ler')+'</div>'+
-        '<div class="irow" style="margin-bottom:8px"><input id="nzIn" type="text" placeholder="192.168.1.x" style="flex:1;padding:6px 10px;background:var(--card2);border:1px solid var(--line);border-radius:6px;color:var(--fg)"/>'+
+        '<div class="irow" style="margin-bottom:8px"><input id="nzIn" type="text" placeholder="192.168.1.x / 10.0.0.0/24" style="flex:1;padding:6px 10px;background:var(--card2);border:1px solid var(--line);border-radius:6px;color:var(--fg)"/>'+
         '<button onclick="nzAdd()">'+(L?'Add':'Ekle')+'</button></div>'+
         '<div class="lw" id="nzL"><div class="empty">'+(L?'Loading...':'Y&#252;kleniyor...')+'</div></div></div>'+
       '</div>';
