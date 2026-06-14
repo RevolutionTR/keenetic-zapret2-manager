@@ -8724,7 +8724,9 @@ if [ -n "$sum_ln" ] && [ "$sum_ln" -gt 0 ] 2>/dev/null; then
         grep -i '^curl_test_http ' | grep -m1 'nfqws2')"
 
     _s_tls="$(sed -n "${sum_ln},\$p" "$src_report" 2>/dev/null | \
-        grep -i '^curl_test_https_tls12 ' | grep -F -- '--payload=tls_client_hello' | grep -m1 -E 'ip_ttl=|multidisorder|seqovl')"
+        grep -i '^curl_test_https_tls12 ' | grep -F -- '--payload=tls_client_hello' | grep -m1 'ip_ttl=')"
+    [ -z "$_s_tls" ] && _s_tls="$(sed -n "${sum_ln},\$p" "$src_report" 2>/dev/null | \
+        grep -i '^curl_test_https_tls12 ' | grep -F -- '--payload=tls_client_hello' | grep -m1 -E 'multidisorder|seqovl')"
     [ -z "$_s_tls" ] && _s_tls="$(sed -n "${sum_ln},\$p" "$src_report" 2>/dev/null | \
         grep -i '^curl_test_https_tls12 ' | grep -m1 -F -- '--payload=tls_client_hello')"
     [ -z "$_s_tls" ] && _s_tls="$(sed -n "${sum_ln},\$p" "$src_report" 2>/dev/null | \
@@ -8799,8 +8801,10 @@ fi
         # If Menu 7 IPv6 is ON, add ip6_ttl to found HTTP/TLS/QUIC blocks.
         local _bc_http _bc_tls _bc_quic _bc_combined _bc_ipv6
         _bc_http="$(grep -im1 '^curl_test_http ' "$summary_file" 2>/dev/null | grep -F -- '--payload=http_req' | sed -n 's/^.* : nfqws2[[:space:]]*//p')"
-        # TLS strateji secimi: ip_ttl= veya multidisorder/seqovl iceren payload=tls_client_hello stratejileri tercih et
-        _bc_tls="$(grep -i '^curl_test_https_tls12 ' "$summary_file" 2>/dev/null | grep -Ei ' nfqws2? ' | grep -F -- '--payload=tls_client_hello' | grep -m1 -E 'ip_ttl=|multidisorder|seqovl' | sed -n 's/^.* : nfqws2[[:space:]]*//p')"
+        # TLS strateji secimi: ip_ttl= iceren (fake/TTL tabanli) stratejiler oncelikli,
+        # cunku multidisorder/seqovl bazi sunucu/CDN'lerle uyumsuzluk yaratabilir.
+        _bc_tls="$(grep -i '^curl_test_https_tls12 ' "$summary_file" 2>/dev/null | grep -Ei ' nfqws2? ' | grep -F -- '--payload=tls_client_hello' | grep -m1 'ip_ttl=' | sed -n 's/^.* : nfqws2[[:space:]]*//p')"
+        [ -z "$_bc_tls" ] && _bc_tls="$(grep -i '^curl_test_https_tls12 ' "$summary_file" 2>/dev/null | grep -Ei ' nfqws2? ' | grep -F -- '--payload=tls_client_hello' | grep -m1 -E 'multidisorder|seqovl' | sed -n 's/^.* : nfqws2[[:space:]]*//p')"
         [ -z "$_bc_tls" ] && _bc_tls="$(grep -i '^curl_test_https_tls12 ' "$summary_file" 2>/dev/null | grep -Ei ' nfqws2? ' | grep -m1 -F -- '--payload=tls_client_hello' | sed -n 's/^.* : nfqws2[[:space:]]*//p')"
         [ -z "$_bc_tls" ] && _bc_tls="$(grep -im1 '^curl_test_https_tls12 ' "$summary_file" 2>/dev/null | grep -Ei ' nfqws2? ' | sed -n 's/^.* : nfqws2[[:space:]]*//p')"
         [ -z "$_bc_tls" ] && _bc_tls="$(grep -i '^curl_test_https_tls13 ' "$summary_file" 2>/dev/null | grep -Ei ' nfqws2? ' | grep -m1 -F -- '--payload=tls_client_hello' | sed -n 's/^.* : nfqws2[[:space:]]*//p')"
