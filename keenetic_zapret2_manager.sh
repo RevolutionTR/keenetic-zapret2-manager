@@ -37,7 +37,7 @@
 # -------------------------------------------------------------------
 SCRIPT_NAME="keenetic_zapret2_manager.sh"
 # Version scheme: vYY.M.D[.N]  (YY=year, M=month, D=day, N=daily revision)
-SCRIPT_VERSION="v26.6.14"
+SCRIPT_VERSION="v26.6.15"
 SCRIPT_REPO="https://github.com/RevolutionTR/keenetic-zapret2-manager"
 KZM2_SCRIPT_PATH="/opt/lib/opkg/keenetic_zapret2_manager.sh"
 SCRIPT_AUTHOR="RevolutionTR"
@@ -2299,6 +2299,8 @@ TXT_BLOCKCHECK_TEST_TITLE_TR="Blockcheck Test Menusu"
 TXT_BLOCKCHECK_TEST_TITLE_EN="Blockcheck Test Menu"
 TXT_BLOCKCHECK_SUMMARY_TR="Blockcheck Test (Otomatik DPI Profili)"
 TXT_BLOCKCHECK_SUMMARY_EN="Blockcheck Test (Auto DPI Profile)"
+TXT_BLOCKCHECK_INTERSECT_TR="Blockcheck (Intersection - 6 domain, 15-40dk)"
+TXT_BLOCKCHECK_INTERSECT_EN="Blockcheck (Intersection - 6 domains, 15-40min)"
 TXT_BLOCKCHECK_CLEAN_TR="Test Sonuclarini Temizle"
 TXT_BLOCKCHECK_CLEAN_EN="Clean Test Results"
 TXT_BLOCKCHECK_EXPORT_TR="Aktif DPI Profilini Disa Aktar"
@@ -8491,30 +8493,63 @@ run_health_check() {
 }
 # --- BLOCKCHECK (DPI TEST) ---
 run_blockcheck() {
-    # $1 - scan level: 1=quick, 2=standard (default), 3=force
+    # $1 - scan level: 1=quick, 2=standard (default), 3=force, 4=intersection (kzmquick, 6 domain)
     local BLOCKCHECK="/opt/zapret2/blockcheck2.sh"
-    local DEF_DOMAIN="pastebin.com"
+    local INTERSECT_DOMAIN="pastebin.com wattpad.com discord.com roblox.com pornhub.com onlyfans.com"
     local domains report today was_running stop_ans do_stop stopped_by_us
     local hm_was_autorestart hm_pause_ans dns_check_ip hm_pause_done
     local _scan_level="${1:-2}"
     hm_was_autorestart=0
     hm_pause_done=0
+    # Ctrl-C / SSH disconnect (HUP) / TERM: blockcheck alt sureclerini (curl, nfqws2,
+    # blockcheck2.sh, ana pipeline ve kzmquick scriptleri) temizle, HealthMon
+    # autorestart'i geri ac, pause flag'i kaldir ve Zapret2'yi (biz durdurduysak)
+    # yeniden baslat. _RBC_INTERRUPTED=1 ile ana akis bilgilendirilir; pipeline
+    # bittiginde (asagida) bu flag kontrol edilip eksik raporla devam edilmeden
+    # erken "return" ile Blockcheck menusune donulur.
+    _RBC_INTERRUPTED=0
+    trap '
+        _RBC_INTERRUPTED=1
+        killall -9 blockcheck2.sh 2>/dev/null
+        killall -9 nfqws2 2>/dev/null
+        killall -9 curl 2>/dev/null
+        if [ "$hm_pause_done" -eq 1 ]; then
+            HM_ZAPRET_AUTORESTART="$hm_was_autorestart"
+            healthmon_write_config 2>/dev/null
+            if grep -q "HM_ZAPRET_AUTORESTART=\"0\"" /opt/etc/healthmon.conf 2>/dev/null; then
+                sed -i "s/HM_ZAPRET_AUTORESTART=\"0\"/HM_ZAPRET_AUTORESTART=\"1\"/" /opt/etc/healthmon.conf 2>/dev/null
+            fi
+        fi
+        zapret_resume 2>/dev/null
+        if [ "$was_running" -eq 1 ] && [ "$stopped_by_us" -eq 1 ]; then
+            start_zapret2 >/dev/null 2>&1
+        fi
+    ' INT TERM HUP
     print_line "-"
     echo "$(T blk_title 'Blockcheck (DPI Test Raporu)' 'Blockcheck (DPI Test Report)')"
     print_line "-"
     if [ ! -x "$BLOCKCHECK" ]; then
         echo "$(T blk_missing 'HATA: /opt/zapret2/blockcheck2.sh bulunamadi veya calistirilabilir degil.' 'ERROR: /opt/zapret2/blockcheck2.sh not found or not executable.')"
         press_enter_to_continue
+        trap '_kzm2_force_exit 130' INT; trap '_kzm2_force_exit 143' TERM; trap '_kzm2_force_exit 129' HUP
         clear
         return 1
     fi
-    # Domain(ler)
-    printf '%s' "$(T blk_domain 'Test edilecek domain(ler) (Enter=pastebin.com, 0=Iptal): ' 'Domain(s) to test (Enter=pastebin.com, 0=Cancel): ')"; read -r domains
+    if [ "$_scan_level" = "4" ]; then
+        # Intersection modu: domain seti sabit, kullaniciya sorulmaz.
+        domains="$INTERSECT_DOMAIN"
+        echo "$(T _ 'Intersection testi - 6 domain ile calisacak (15-40dk surebilir):' 'Intersection test - will run with 6 domains (may take 15-40min):')"
+        echo " $domains"
+    else
+    # Domain(ler) - Hizli/Tam Test: tek domain (varsayilan pastebin.com)
+    printf '%s' "$(T _ 'Test edilecek domain (Enter=pastebin.com, 0=Iptal): ' 'Domain to test (Enter=pastebin.com, 0=Cancel): ')"; read -r domains
     if [ "$domains" = "0" ]; then
+        trap '_kzm2_force_exit 130' INT; trap '_kzm2_force_exit 143' TERM; trap '_kzm2_force_exit 129' HUP
         clear
         return 1
     fi
-    [ -z "$domains" ] && domains="$DEF_DOMAIN"
+    [ -z "$domains" ] && domains="pastebin.com"
+    fi
 	now="$(date +%Y%m%d%H%M 2>/dev/null)"
 	[ -z "$now" ] && now="000000000000"
 	report="/opt/zapret2/blockcheck_${now}.txt"
@@ -8560,7 +8595,7 @@ run_blockcheck() {
     # Zapret2 tarafinda blockcheck2.d/quick dizini yok. Ozet modu icin
     # kendi dar test setimizi olusturuyoruz. Bu, standard dizininin tamamini
     # taramaz; sadece hizli sonuc veren temel adaylari calistirir.
-    if [ "$_scan_level" = "1" ]; then
+    if [ "$_scan_level" = "1" ] || [ "$_scan_level" = "4" ]; then
         _kzm_bc_dir="/opt/zapret2/blockcheck2.d/kzmquick"
         mkdir -p "$_kzm_bc_dir" 2>/dev/null
         rm -f "$_kzm_bc_dir"/*.sh 2>/dev/null
@@ -8647,6 +8682,16 @@ run_blockcheck() {
     unset SECURE_DNS BATCH TEST DOMAINS DOMAINS_DEFAULT IPVS TEST_DEFAULT REPEATS PARALLEL ENABLE_HTTP ENABLE_HTTPS_TLS12 ENABLE_HTTPS_TLS13 ENABLE_HTTP3 SCANLEVEL CURL_MAXTIME TIMEOUT_CURL
     export PATH="$(printf '%s' "$PATH" | sed "s|$_kzm_path_dir:||")"
     rm -rf "$_kzm_path_dir"
+    if [ "$_RBC_INTERRUPTED" = "1" ]; then
+        # Ctrl-C/HUP/TERM: temizlik trap icinde yapildi (Zapret2/HealthMon restore edildi).
+        # Eksik/yarim rapor ile devam etmeden Blockcheck menusune don.
+        print_line "-"
+        echo "$(T _ 'Blockcheck iptal edildi, Zapret2/HealthMon eski durumuna getirildi.' 'Blockcheck cancelled, Zapret2/HealthMon restored to previous state.')"
+        press_enter_to_continue
+        trap '_kzm2_force_exit 130' INT; trap '_kzm2_force_exit 143' TERM; trap '_kzm2_force_exit 129' HUP
+        clear
+        return 1
+    fi
     print_line "-"
     echo "$(T blk_done "Bitti. Rapor dosyasi: ${report}" "Done. Report file: ${report}")"
     # HealthMon autorestart eski haline getir
@@ -8672,6 +8717,7 @@ run_blockcheck() {
         fi
     fi
     press_enter_to_continue
+    trap '_kzm2_force_exit 130' INT; trap '_kzm2_force_exit 143' TERM; trap '_kzm2_force_exit 129' HUP
     clear
     return 0
 }
@@ -8717,13 +8763,30 @@ if [ -n "$ws_ln" ] && [ "$ws_ln" -gt 0 ] 2>/dev/null; then
 " "$ws_line" >> "$summary_file"
 fi
 sum_ln="$(grep -ni '^\* SUMMARY' "$src_report" 2>/dev/null | tail -n 1 | cut -d: -f1)"
+# * COMMON bolumu (varsa) - cogu domain test edildiyse blockcheck2.sh
+# bu bolumde TUM domainlerde calisan ortak stratejileri listeler (SUMMARY'den sonra gelir,
+# bos satira kadar surer). Domain adi bos birakilir (ipv4 : nfqws2 ...).
+# Varsa SUMMARY'den ONCE denenir (daha guvenilir intersection sonucu).
+common_ln="$(grep -ni '^\* COMMON' "$src_report" 2>/dev/null | tail -n 1 | cut -d: -f1)"
 if [ -n "$sum_ln" ] && [ "$sum_ln" -gt 0 ] 2>/dev/null; then
     # Blockcheck'in buldugu ilk calisani kullan — ip_ttl=2 tercih etme.
     # Diger ISP'lerde (Superonline, Turkcell vb.) farkli strateji dogru olabilir.
-    _s_http="$(sed -n "${sum_ln},\$p" "$src_report" 2>/dev/null | \
+    if [ -n "$common_ln" ] && [ "$common_ln" -gt 0 ] 2>/dev/null; then
+        _common_block="$(sed -n "${common_ln},\$p" "$src_report" 2>/dev/null | sed '/^$/q')"
+    else
+        _common_block=""
+    fi
+
+    _s_http="$(printf '%s\n' "$_common_block" | \
+        grep -i '^curl_test_http ' | grep -m1 'nfqws2')"
+    [ -z "$_s_http" ] && _s_http="$(sed -n "${sum_ln},\$p" "$src_report" 2>/dev/null | \
         grep -i '^curl_test_http ' | grep -m1 'nfqws2')"
 
-    _s_tls="$(sed -n "${sum_ln},\$p" "$src_report" 2>/dev/null | \
+    _s_tls="$(printf '%s\n' "$_common_block" | \
+        grep -i '^curl_test_https_tls12 ' | grep -F -- '--payload=tls_client_hello' | grep -m1 'ip_ttl=')"
+    [ -z "$_s_tls" ] && _s_tls="$(printf '%s\n' "$_common_block" | \
+        grep -i '^curl_test_https_tls12 ' | grep -F -- '--payload=tls_client_hello' | grep -m1 -E 'multidisorder|seqovl')"
+    [ -z "$_s_tls" ] && _s_tls="$(sed -n "${sum_ln},\$p" "$src_report" 2>/dev/null | \
         grep -i '^curl_test_https_tls12 ' | grep -F -- '--payload=tls_client_hello' | grep -m1 'ip_ttl=')"
     [ -z "$_s_tls" ] && _s_tls="$(sed -n "${sum_ln},\$p" "$src_report" 2>/dev/null | \
         grep -i '^curl_test_https_tls12 ' | grep -F -- '--payload=tls_client_hello' | grep -m1 -E 'multidisorder|seqovl')"
@@ -8736,7 +8799,10 @@ if [ -n "$sum_ln" ] && [ "$sum_ln" -gt 0 ] 2>/dev/null; then
     [ -z "$_s_tls" ] && _s_tls="$(sed -n "${sum_ln},\$p" "$src_report" 2>/dev/null | \
         grep -i '^curl_test_https_tls13 ' | grep -m1 'nfqws2')"
 
-    _s_quic="$(sed -n "${sum_ln},\$p" "$src_report" 2>/dev/null | \
+    _s_quic="$(printf '%s\n' "$_common_block" | \
+        grep -Ei '^(curl_test_http3|curl_test_quic|curl_test_udp)' | \
+        grep -m1 'nfqws2')"
+    [ -z "$_s_quic" ] && _s_quic="$(sed -n "${sum_ln},\$p" "$src_report" 2>/dev/null | \
         grep -Ei '^(curl_test_http3|curl_test_quic|curl_test_udp)' | \
         grep -m1 'nfqws2')"
 
@@ -9049,17 +9115,19 @@ blockcheck_test_menu() {
         echo "$(T TXT_BLOCKCHECK_TEST_TITLE)"
         print_line
         echo " 1. $(T TXT_BLOCKCHECK_SUMMARY)"
-        echo " 2. $(T _ 'Blockcheck (Tam Test ~30-45dk)' 'Blockcheck (Full Test ~30-45min)')"
-        echo " 3. $(T TXT_BLOCKCHECK_CLEAN)"
-        echo " 4. $(T TXT_BLOCKCHECK_EXPORT)"
+        echo " 2. $(T TXT_BLOCKCHECK_INTERSECT)"
+        echo " 3. $(T _ 'Blockcheck (Tam Test ~30-45dk)' 'Blockcheck (Full Test ~30-45min)')"
+        echo " 4. $(T TXT_BLOCKCHECK_CLEAN)"
+        echo " 5. $(T TXT_BLOCKCHECK_EXPORT)"
         echo " 0. $(T TXT_BACK)"
         print_line
         printf '%s' "$(T TXT_CHOICE) "; read -r ch || return 0
         case "$ch" in
             1) run_blockcheck_save_summary ;;
-            2) run_blockcheck_save_summary 2 ;;
-            3) clean_blockcheck_reports; press_enter_to_continue ;;
-            4) kzm2_export_active_dpi_profile; press_enter_to_continue ;;
+            2) run_blockcheck_save_summary 4 ;;
+            3) run_blockcheck_save_summary 2 ;;
+            4) clean_blockcheck_reports; press_enter_to_continue ;;
+            5) kzm2_export_active_dpi_profile; press_enter_to_continue ;;
             0) return ;;
             *) echo "$(T TXT_INVALID_CHOICE)"; press_enter_to_continue ;;
         esac
