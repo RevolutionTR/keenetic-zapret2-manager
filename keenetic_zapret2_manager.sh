@@ -37,7 +37,7 @@
 # -------------------------------------------------------------------
 SCRIPT_NAME="keenetic_zapret2_manager.sh"
 # Version scheme: vYY.M.D[.N]  (YY=year, M=month, D=day, N=daily revision)
-SCRIPT_VERSION="v26.6.15"
+SCRIPT_VERSION="v26.6.16"
 SCRIPT_REPO="https://github.com/RevolutionTR/keenetic-zapret2-manager"
 KZM2_SCRIPT_PATH="/opt/lib/opkg/keenetic_zapret2_manager.sh"
 SCRIPT_AUTHOR="RevolutionTR"
@@ -2848,7 +2848,7 @@ dpi_profile_name_tr() {
         tt_default)        echo "Varsayilan Zapret2 (TTL2 fake)";;
         tt_fiber)          echo "Turk Telekom Fiber (TTL2 fake)";;
         superonline_fiber) echo "Superonline Fiber (TTL6 hostcase)";;
-        multidisorder)     echo "TT + Superonline (Multidisorder)";;
+        multidisorder)     echo "TT Altyapisi (Superonline/Kablonet)";;
         vodafone)          echo "Vodafone";;
         vodafone_tt)       echo "Vodafone (TT Altyapisi)";;
         blockcheck_auto)   echo "Blockcheck Otomatik (Auto)";;
@@ -2863,7 +2863,7 @@ dpi_profile_name_en() {
         tt_default)        echo "Default Zapret2 (TTL2 fake)";;
         tt_fiber)          echo "Turk Telekom Fiber (TTL2 fake)";;
         superonline_fiber) echo "Superonline Fiber (TTL6 hostcase)";;
-        multidisorder)     echo "TT + Superonline (Multidisorder)";;
+        multidisorder)     echo "TT Altyapisi (Superonline/Kablonet)";;
         vodafone)          echo "Vodafone";;
         vodafone_tt)       echo "Vodafone (TT Infrastructure)";;
         blockcheck_auto)   echo "Blockcheck Auto";;
@@ -4769,19 +4769,6 @@ echo "$(tpl_render "$(T TXT_IPV6_WIZARD_START)" VAL "$IPV6_ANSWER")"
         clear
         return 1
     }
-    # Bazi zapret2 kurulumlarinda /opt/zapret2/config minimal bir fallback'ten
-    # geldiyse DISABLE_IPV6 satiri hic bulunmayabilir -- bu durumda install_easy.sh
-    # (sed ile mevcut satiri degistirir) bu satiri ekleyemez. IPV6_ANSWER'a gore
-    # satirin var ve dogru oldugunu garanti et (self-heal).
-    if [ -f /opt/zapret2/config ]; then
-        local _want_disable_ipv6=1
-        [ "$IPV6_ANSWER" = "y" ] && _want_disable_ipv6=0
-        if grep -q '^DISABLE_IPV6=' /opt/zapret2/config 2>/dev/null; then
-            sed -i "s/^DISABLE_IPV6=.*/DISABLE_IPV6=${_want_disable_ipv6}/" /opt/zapret2/config 2>/dev/null
-        else
-            echo "DISABLE_IPV6=${_want_disable_ipv6}" >> /opt/zapret2/config 2>/dev/null
-        fi
-    fi
     # Bizim Keenetic-ozel dokunuslarimizi tekrar uygula
     fix_keenetic_udp
     update_kernel_module_config
@@ -5874,19 +5861,6 @@ install_zapret2() {
     #   7. WAN interface (Enter=ANY, sorulursa)
     run_zapret2_install_easy "$IPV6_ANSWER" || \
     { echo "$(T TXT_INSTALL_CFG_FAIL)"; echo "Log: /tmp/kzm2_install_easy.log"; return 1; }
-    # Bazi zapret2 kurulumlarinda /opt/zapret2/config'de DISABLE_IPV6 satiri
-    # hic bulunmayabilir (install_easy.sh varsayilan/N cevabinda bu satiri
-    # yazmiyor veya siliyor olabilir). IPV6_ANSWER'a gore satirin var ve
-    # dogru oldugunu garanti et (self-heal).
-    if [ -f /opt/zapret2/config ]; then
-        local _want_disable_ipv6=1
-        [ "$IPV6_ANSWER" = "y" ] && _want_disable_ipv6=0
-        if grep -q '^DISABLE_IPV6=' /opt/zapret2/config 2>/dev/null; then
-            sed -i "s/^DISABLE_IPV6=.*/DISABLE_IPV6=${_want_disable_ipv6}/" /opt/zapret2/config 2>/dev/null
-        else
-            echo "DISABLE_IPV6=${_want_disable_ipv6}" >> /opt/zapret2/config 2>/dev/null
-        fi
-    fi
     
     echo "$(T TXT_INSTALL_KEENETIC_CFG)"
     fix_keenetic_udp
@@ -6266,8 +6240,6 @@ ensure_zapret_config() {
     cat > /opt/zapret2/config <<'EOF'
 # this file is included from init scripts
 # change values here
-# do not work with ipv6
-DISABLE_IPV6=1
 # filtering mode : none|ipset|hostlist|autohostlist
 MODE_FILTER=none
 # use <HOSTLIST> and <HOSTLIST_NOAUTO> placeholders to engage standard hostlists and autohostlist in ipset dir
@@ -17025,6 +16997,7 @@ function updHdr(){
 }
 function bdg(on,a,b){return on?'<span class="badge good">'+(a||'AKT&#304;F')+'</span>':'<span class="badge bad">'+(b||'PAS&#304;F')+'</span>';}
 function bdgZap(on,a,b){if(S.dpi_profile==='none'){return '<span class="badge" style="background:#888">'+(L?'DISABLED':'DEVRE DISI')+'</span>';}return bdg(on,a,b);}
+function bdgZapSvc(on){if(S.dpi_profile==='none'){return '<span class="badge off">Zapret2</span>';}return bdg(on,'Zapret2','Zapret2');}
 function bdgO(on,a,b){return on?'<span class="badge good">'+(a||'AKT&#304;F')+'</span>':'<span class="badge off">'+(b||'KAPALI')+'</span>';}
 function brr(p){var c=p>85?'bad':p>60?'warn':'good';return '<div class="progress"><div class="bar '+c+'" style="width:'+p+'%"></div></div>';}
 function pct(u,t){return t?Math.round(u/t*100):0;}
@@ -17237,11 +17210,11 @@ function opkgUpgradeConfirm(btn){
 function fmtBcCard(S){
   var profileNames={
     'tt_default':(L?'Default Zapret2 (TTL2 fake)':'Varsay&#305;lan Zapret2 (TTL2 fake)'),
-    'tt_fiber':(L?'Turk Telekom Fiber (TTL2 fake)':'Turk Telekom Fiber (TTL2 fake)'),
+    'tt_fiber':(L?'Türk Telekom Fiber (TTL2 fake)':'Türk Telekom Fiber (TTL2 fake)'),
     'superonline_fiber':(L?'Superonline Fiber (TTL6 hostcase)':'Superonline Fiber (TTL6 hostcase)'),
-    'multidisorder':(L?'TT + Superonline (Multidisorder)':'TT + Superonline (Multidisorder)'),
+    'multidisorder':(L?'TT Altyapısı (Superonline/Kablonet)':'TT Altyapısı (Superonline/Kablonet)'),
     'vodafone':(L?'Vodafone':'Vodafone'),
-    'vodafone_tt':(L?'Vodafone (TT Infrastructure)':'Vodafone (TT Altyapisi)'),
+    'vodafone_tt':(L?'Vodafone (TT Infrastructure)':'Vodafone (TT Altyapısı)'),
     'blockcheck_auto':(L?'Blockcheck Auto':'Blockcheck Otomatik (Auto)'),
     'custom':(L?'Custom NFQWS2_OPT':'&#214;zel NFQWS2_OPT'),
     'none':(L?'Passthrough (No Bypass)':'Ge&#231;i&#351; Modu (Bypass Yok)')
@@ -17321,7 +17294,7 @@ var V={
         '<div class="svc-badges dash-services-grid">'+
           '<div style="min-width:0">'+bdg(S.healthmon_running,L?'Health Mon.':'Sa&#287;l&#305;k Mon.',L?'Health Mon.':'Sa&#287;l&#305;k Mon.')+'</div>'+
           '<div style="min-width:0">'+bdgO(S.telegram_enabled&&S.telegram_running,'Telegram','Telegram')+'</div>'+
-          '<div style="min-width:0">'+bdgZap(S.zapret_running,'Zapret2','Zapret2')+'</div>'+
+          '<div style="min-width:0">'+bdgZapSvc(S.zapret_running)+'</div>'+
           '<div style="min-width:0">'+bdg(S.lighttpd_running,'Web Panel','Web Panel')+'</div>'+
         '</div>'+
       '</div>'+
@@ -17335,7 +17308,7 @@ var V={
         (S.keendns_fqdn ? ir('KeenDNS',S.keendns_fqdn+' | '+fmtKeenDns(S.keendns_access)) : '')+
         (S.iss_name ? ir(L?'ISP':'ISS',S.iss_name) : '')+
         ir('ISP DNS',S.isp_dns ? '<span style="color:var(--warn)">'+S.isp_dns+' — '+(L?'Zapret2 bypass may be blocked!':'Zapret2 bypass engellenebilir!')+'</span>' : '<span style="color:var(--good)">'+(L?'None - DNS encryption active':'Yok - DNS &#351;ifreleme aktif')+'</span>')+
-        ir(L?'DPI Profile':'Aktif Profil',(function(){var pn={'tt_default':(L?'Default Zapret2 (TTL2 fake)':'Varsay&#305;lan Zapret2 (TTL2 fake)'),'tt_fiber':'Turk Telekom Fiber (TTL2 fake)','superonline_fiber':'Superonline Fiber (TTL6 hostcase)','multidisorder':'TT + Superonline (Multidisorder)','vodafone':'Vodafone','vodafone_tt':(L?'Vodafone (TT Infrastructure)':'Vodafone (TT Altyapisi)'),'blockcheck_auto':(L?'Blockcheck Auto':'Blockcheck Otomatik (Auto)'),'custom':(L?'Custom':'&#214;zel NFQWS2_OPT'),'none':(L?'Passthrough (No Bypass)':'Ge&#231;i&#351; Modu (Bypass Yok)')};var n=pn[S.dpi_profile]||S.dpi_profile||'—';var clr=S.dpi_profile==='none'?'var(--warn)':'var(--info)';return '<span style="color:'+clr+'">'+n+'</span>';})())+
+        ir(L?'DPI Profile':'Aktif Profil',(function(){var pn={'tt_default':(L?'Default Zapret2 (TTL2 fake)':'Varsay&#305;lan Zapret2 (TTL2 fake)'),'tt_fiber':'Türk Telekom Fiber (TTL2 fake)','superonline_fiber':'Superonline Fiber (TTL6 hostcase)','multidisorder':'TT Altyapısı (Superonline/Kablonet)','vodafone':'Vodafone','vodafone_tt':(L?'Vodafone (TT Infrastructure)':'Vodafone (TT Altyapısı)'),'blockcheck_auto':(L?'Blockcheck Auto':'Blockcheck Otomatik (Auto)'),'custom':(L?'Custom':'&#214;zel NFQWS2_OPT'),'none':(L?'Passthrough (No Bypass)':'Ge&#231;i&#351; Modu (Bypass Yok)')};var n=pn[S.dpi_profile]||S.dpi_profile||'—';var clr=S.dpi_profile==='none'?'var(--warn)':'var(--info)';return '<span style="color:'+clr+'">'+n+'</span>';})())+
         ir(L?'Filter Mode':'Filtreleme',(function(){var m=S.filter_mode||'';if(m==='autohostlist')return '<span style="color:var(--good)">'+(L?'Auto Hostlist':'Otomatik Liste')+'</span>';if(m==='hostlist')return '<span style="color:var(--info)">'+(L?'Hostlist':'Manuel Liste')+'</span>';if(m==='none')return '<span style="color:var(--warn)">'+(L?'No Filter':'Listesiz')+'</span>';return m||'—';})())+
         ir(L?'Scope':'Kapsam Modu',(function(){var m=S.scope_mode||'';if(m==='smart')return '<span style="color:var(--good)">'+(L?'Smart':'Ak&#305;ll&#305;')+'</span>';if(m==='global')return '<span style="color:var(--warn)">'+(L?'Global':'Global')+'</span>';return m||'—';})())+
         ir(L?'IPSET Mode':'IPSET Modu',(function(){var m=S.ipset_mode||'all';var c=S.ipset_count||0;if(m==='list')return '<span style="color:var(--info)">'+(L?'Selected IPs':'Se&#231;ili IP')+' ('+c+')</span>';return '<span style="color:var(--good)">'+(L?'Whole Network':'T&#252;m A&#287;')+'</span>';})())+
@@ -17371,11 +17344,11 @@ var V={
             var p=S.dpi_profile||'';
             var names={
               'tt_default':'Varsay&#305;lan Zapret2 (TTL2 fake)',
-              'tt_fiber':'Turk Telekom Fiber (TTL2 fake)',
+              'tt_fiber':'Türk Telekom Fiber (TTL2 fake)',
               'superonline_fiber':'Superonline Fiber (TTL6 hostcase)',
-              'multidisorder':'TT + Superonline (Multidisorder)',
+              'multidisorder':'TT Altyapısı (Superonline/Kablonet)',
               'vodafone':'Vodafone',
-              'vodafone_tt':(L?'Vodafone (TT Infrastructure)':'Vodafone (TT Altyapisi)'),
+              'vodafone_tt':(L?'Vodafone (TT Infrastructure)':'Vodafone (TT Altyapısı)'),
               'blockcheck_auto':(L?'Blockcheck Auto':'Blockcheck Otomatik (Auto)'),
               'custom':(L?'Custom NFQWS2_OPT':'&#214;zel NFQWS2_OPT'),
               'none':(L?'Passthrough (No Bypass)':'Ge&#231;i&#351; Modu (Bypass Yok)')
@@ -17388,11 +17361,11 @@ var V={
             var cp=S.dpi_profile||'tt_default';
             var opts=[
               ['tt_default',(L?'Default Zapret2 (TTL2 fake)':'Varsay&#305;lan Zapret2 (TTL2 fake)')],
-              ['tt_fiber','Turk Telekom Fiber (TTL2 fake)'],
+              ['tt_fiber','Türk Telekom Fiber (TTL2 fake)'],
               ['superonline_fiber','Superonline Fiber (TTL6 hostcase)'],
-              ['multidisorder','TT + Superonline (Multidisorder)'],
+              ['multidisorder','TT Altyapısı (Superonline/Kablonet)'],
               ['vodafone','Vodafone'],
-              ['vodafone_tt',(L?'Vodafone (TT Infrastructure)':'Vodafone (TT Altyapisi)')],
+              ['vodafone_tt',(L?'Vodafone (TT Infrastructure)':'Vodafone (TT Altyapısı)')],
               ['blockcheck_auto',(L?'Blockcheck Auto':'Blockcheck Otomatik (Auto)')],
               ['none',L?'Passthrough (No Bypass)':'Ge&#231;i&#351; Modu (Bypass Yok)']
             ];
@@ -17404,7 +17377,7 @@ var V={
           })()+
           '<button onclick="(function(b){var v=document.getElementById(\'dpiSel\').value;var sel=document.getElementById(\'dpiSel\');var el=document.getElementById(\'dpiVal\');if(el&&sel)el.textContent=sel.options[sel.selectedIndex].text;actD(\'dpi_set\',\'profile=\'+v,b,'+(L?'\'Profile set\'':'\'Profil ayarlandi\'')+')})(this)">'+(L?'Apply':'Uygula')+'</button>'+
         '</div>'+
-        '<div class="hint" style="margin-top:8px">'+(L?'Only verified Zapret2 profiles are shown. Turk Telekom Fiber uses the blockcheck-verified TTL2 fake strategy.':'Sadece dogrulanmis Zapret2 profilleri gosterilir. Turk Telekom Fiber profili blockcheck ile dogrulanmis TTL2 fake stratejisini kullanir.')+'</div>'+
+        '<div class="hint" style="margin-top:8px">'+(L?'Only verified Zapret2 profiles are shown. Türk Telekom Fiber uses the blockcheck-verified TTL2 fake strategy.':'Sadece doğrulanmış Zapret2 profilleri gösterilir. Türk Telekom Fiber profili blockcheck ile doğrulanmış TTL2 fake stratejisini kullanır.')+'</div>'+
       '</div></div>';
     return h;
   }},
@@ -17707,7 +17680,7 @@ var V={
     '<div class="card"><h3>Rebind '+(L?'Protection':'Koruma')+'</h3>'+
       '<div id="dnsRebindStatus" class="sub">'+(L?'Loading...':'Y&#252;kleniyor...')+'</div>'+
       '<div style="margin-top:10px">'+
-        '<button id="dnsRebindBtn" onclick="dnsRebindToggle(this)">'+(L?'Toggle':'Degistir')+'</button>'+
+        '<button id="dnsRebindBtn" onclick="dnsRebindToggle(this)">'+(L?'Toggle':'Değiştir')+'</button>'+
       '</div>'+
       '<div class="hint" style="margin-top:8px">'+(L?'Blocks DNS responses returning local IPs (prevents DNS rebinding attacks).':'Yerel IP d&#246;nd&#252;ren DNS yan&#305;tlar&#305;n&#305; engeller.')+'</div>'+
     '</div>'+
@@ -18903,7 +18876,7 @@ kzm_gui_menu() {
         printf " %s\n" "$(T TXT_GUI_OPT_2)"
         printf " %s\n" "$(T TXT_GUI_OPT_3)"
         printf " %s\n" "$(T TXT_GUI_OPT_4)"
-        printf " %s%b%s%b\n" "$(T _ '5) Port Degistir (Mevcut: ' '5) Change Port (Current: ')" "${CLR_CYAN}${CLR_BOLD}" "${KZM2_GUI_PORT})" "${CLR_RESET}"
+        printf " %s%b%s%b\n" "$(T _ '5) Port Değiştir (Mevcut: ' '5) Change Port (Current: ')" "${CLR_CYAN}${CLR_BOLD}" "${KZM2_GUI_PORT})" "${CLR_RESET}"
         printf " %s\n" "$(T TXT_GUI_OPT_6)"
         printf " %s\n" "$(T TXT_GUI_OPT_0)"
         print_line "-"
@@ -18952,8 +18925,8 @@ main_menu_loop() {
                 print_line "="
                 printf " %b%s%b\n" "${CLR_CYAN}" "$(T _ '9. DPI Profili / WAN Arayuzu' '9. DPI Profile / WAN Interface')" "${CLR_RESET}"
                 print_line "="
-                printf " 1. %s\n" "$(T _ 'DPI Profilini Degistir' 'Change DPI Profile')"
-                printf " 2. %s  %b[$(T _ 'Mevcut' 'Current'): $([ -z "$(get_wan_if)" ] && printf "%b%s%b" "${CLR_CYAN}" "$(T _ 'Tum Arayuzler' 'All Interfaces')" "${CLR_RESET}" || printf "%b%s%b" "${CLR_GREEN}" "$(get_wan_if)" "${CLR_RESET}")]%b\n" "$(T _ 'WAN Arayuzunu Degistir' 'Change WAN Interface')" "${CLR_RESET}"
+                printf " 1. %s\n" "$(T _ 'DPI Profilini Değiştir' 'Change DPI Profile')"
+                printf " 2. %s  %b[$(T _ 'Mevcut' 'Current'): $([ -z "$(get_wan_if)" ] && printf "%b%s%b" "${CLR_CYAN}" "$(T _ 'Tum Arayuzler' 'All Interfaces')" "${CLR_RESET}" || printf "%b%s%b" "${CLR_GREEN}" "$(get_wan_if)" "${CLR_RESET}")]%b\n" "$(T _ 'WAN Arayuzunu Değiştir' 'Change WAN Interface')" "${CLR_RESET}"
                 printf " 0. %s\n" "$(T _ 'Geri' 'Back')"
                 print_line "-"
                 printf "%s" "$(T _ 'Secim: ' 'Choice: ')"
