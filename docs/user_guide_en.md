@@ -817,9 +817,11 @@ Routers that run continuously for extended periods can accumulate temporary file
 # 🔵 B — Blockcheck Test Menu
 Runs DPI tests, analyses the connection state and automatically detects the most suitable DPI parameter.
 ### Sub-menu:
-✔ **Summary Test (SUMMARY)** — Runs only the summary section; the lightweight test used for automatic DPI  
-✔ **Clear Test Results** — Deletes `blockcheck_*.txt` and `blockcheck_summary_*.txt` files  
-✔ **Export Active DPI Profile** — Exports the current DPI profile and its parameters 
+✔ **1. Blockcheck Test (Auto DPI Profile)** — Quick test; detects DPI blocking and suggests the most suitable parameter  
+✔ **2. Blockcheck Intersection (6 domains, 15-40min)** — Finds a strategy that works across 6 different domains; more reliable result  
+✔ **3. Blockcheck Full Test (~30-45min)** — Runs all test scenarios  
+✔ **4. Clear Test Results** — Deletes `blockcheck_*.txt` and `blockcheck_summary_*.txt` files  
+✔ **5. Export Active DPI Profile** — Exports the current DPI profile and its parameters
 
 ### DPI Health Score:
 
@@ -833,7 +835,7 @@ A score is calculated when the summary test completes (e.g. `8.5 / 10`):
 
 ### Automatic DPI Flow:
 
-The most suitable nfqws2 parameter is detected from the summary test result. A decision screen is presented:
+When any of the 3 tests completes and a result is found, the most suitable nfqws2 parameter is detected. A decision screen is presented:
 
 | Option | Description |
 |--------|-------------|
@@ -841,8 +843,6 @@ The most suitable nfqws2 parameter is detected from the summary test result. A d
 | **[2] Inspect Parameter** | Shows the detected parameter |
 | **[3] Save Only** | Saves without changing the active profile |
 | **[0] Cancel** | No action taken |
-
-⚠️ The full test does not apply automatically — only the Summary test triggers automatic DPI.
 
 👉 If you are unsure which profile to use, or the current profile is not working, start here.
 
@@ -906,7 +906,7 @@ Users who wish to delete it can do so manually.
 If internet is not working after install:
 
 ```
-B → Run Summary test → Apply
+B → Run Blockcheck Test → Apply
 ```
 
 ---
@@ -925,7 +925,7 @@ R  → Schedule a weekly midnight reboot
 
 ```
 14 → Run diagnostics (check DNS, WAN, Zapret2, GitHub)
-B  → Summary test → Apply automatic DPI parameter
+B  → Blockcheck Test → Apply automatic DPI parameter
 9  → Switch profile and try again
 14 → If still broken, refresh OPKG list
 U  → Last resort: full clean uninstall → 1 → reinstall
