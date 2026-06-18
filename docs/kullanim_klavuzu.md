@@ -819,9 +819,11 @@ Uzun süre kesintisiz çalışan routerlarda hafızada biriken geçici dosyalar 
 DPI testleri çalıştırır, bağlantı durumunu analiz eder ve en uygun DPI parametresini otomatik olarak tespit eder.
 
 ### Alt Menü:
-✔ **Özet Test (SUMMARY)** — Yalnızca özet bölümünü çalıştırır; otomatik DPI için kullanılan hafif test  
-✔ **Test Sonuçlarını Temizle** — `blockcheck_*.txt` ve `blockcheck_summary_*.txt` dosyalarını siler  
-✔ **Aktif DPI Profilini Dışa Aktar** — Mevcut DPI profilini ve parametrelerini dışa aktarır  
+✔ **1. Blockcheck Test (Otomatik DPI Profili)** — Hızlı test; DPI engelini tespit edip en uygun parametreyi önerir  
+✔ **2. Blockcheck Intersection (6 domain, 15-40dk)** — 6 farklı domain üzerinde ortak çalışan stratejiyi bulur; daha güvenilir sonuç  
+✔ **3. Blockcheck Tam Test (~30-45dk)** — Tüm test senaryolarını çalıştırır  
+✔ **4. Test Sonuçlarını Temizle** — `blockcheck_*.txt` ve `blockcheck_summary_*.txt` dosyalarını siler  
+✔ **5. Aktif DPI Profilini Dışa Aktar** — Mevcut DPI profilini ve parametrelerini dışa aktarır  
 
 ### DPI Health Score:
 
@@ -835,7 +837,7 @@ DPI testleri çalıştırır, bağlantı durumunu analiz eder ve en uygun DPI pa
 
 ### Otomatik DPI Akışı:
 
-Özet test sonucundan en uygun nfqws2 parametresi tespit edilir. Kullanıcıya karar ekranı sunulur:
+Her 3 test tamamlandığında sonuç bulunursa en uygun nfqws2 parametresi tespit edilir. Kullanıcıya karar ekranı sunulur:
 
 | Seçenek | Açıklama |
 |---------|----------|
@@ -843,8 +845,6 @@ DPI testleri çalıştırır, bağlantı durumunu analiz eder ve en uygun DPI pa
 | **[2] Parametreyi İncele** | Bulunun parametreyi gösterir |
 | **[3] Sadece Kaydet** | Profili değiştirmeden sadece kaydeder |
 | **[0] Vazgeç** | İşlem yapılmaz |
-
-⚠️ Tam test otomatik uygulama yapmaz — sadece Özet test otomatik DPI'yi tetikler.
 
 👉 Hangi profili kullanacağınızı bilmiyorsanız veya mevcut profil çalışmıyorsa buradan başlayın.
 
@@ -910,7 +910,7 @@ Amaç:
 İnternet çalışmıyorsa:
 
 ```
-B → Özet test yap → Uygula
+B → Blockcheck Test yap → Uygula
 ```
 
 ---
@@ -929,7 +929,7 @@ R  → Haftalık gece yarısı reboot planla
 
 ```
 14 → Tanılama çalıştır (DNS, WAN, Zapret2, GitHub kontrol et)
-B  → Özet test → Otomatik DPI parametresi uygula
+B  → Blockcheck Test → Otomatik DPI parametresi uygula
 9  → Profili değiştir ve dene
 14 → Hâlâ sorun varsa OPKG listesini yenile
 U  → Son çare: tam temiz kaldır → 1 → yeniden kur
