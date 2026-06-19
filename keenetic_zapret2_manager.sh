@@ -37,7 +37,7 @@
 # -------------------------------------------------------------------
 SCRIPT_NAME="keenetic_zapret2_manager.sh"
 # Version scheme: vYY.M.D[.N]  (YY=year, M=month, D=day, N=daily revision)
-SCRIPT_VERSION="v26.6.18"
+SCRIPT_VERSION="v26.6.19"
 SCRIPT_REPO="https://github.com/RevolutionTR/keenetic-zapret2-manager"
 KZM2_SCRIPT_PATH="/opt/lib/opkg/keenetic_zapret2_manager.sh"
 SCRIPT_AUTHOR="RevolutionTR"
@@ -2832,7 +2832,7 @@ get_dpi_profile() {
     local p="tt_default"
     [ -f "$DPI_PROFILE_FILE" ] && p="$(cat "$DPI_PROFILE_FILE" 2>/dev/null | tr -d '\r\n')"
     case "$p" in
-        tt_default|tt_fiber|superonline_fiber|multidisorder|vodafone|vodafone_tt|blockcheck_auto|custom|none) echo "$p" ;;
+        tt_default|tt_fiber|superonline_fiber|multidisorder|vodafone|vodafone_tt|vodafone_tt2|blockcheck_auto|custom|none) echo "$p" ;;
         # Legacy KZM1-derived profiles are intentionally not exposed/applied in KZM2.
         # They require explicit Zapret2/nfqws2 conversion and field testing.
         tt_alt|sol|sol_alt|sol_fiber|turkcell_mob|vodafone_mob) echo "tt_default" ;;
@@ -2851,6 +2851,7 @@ dpi_profile_name_tr() {
         multidisorder)     echo "TT Altyapisi (Superonline/Kablonet)";;
         vodafone)          echo "Vodafone";;
         vodafone_tt)       echo "Vodafone (TT Altyapisi)";;
+        vodafone_tt2)      echo "Vodafone (TT Altyapisi v2)";;
         blockcheck_auto)   echo "Blockcheck Otomatik (Auto)";;
         none)              echo "Gecis Modu (Bypass Yok)";;
         custom)            echo "Ozel NFQWS2_OPT";;
@@ -2866,6 +2867,7 @@ dpi_profile_name_en() {
         multidisorder)     echo "TT Altyapisi (Superonline/Kablonet)";;
         vodafone)          echo "Vodafone";;
         vodafone_tt)       echo "Vodafone (TT Infrastructure)";;
+        vodafone_tt2)      echo "Vodafone (TT Infrastructure v2)";;
         blockcheck_auto)   echo "Blockcheck Auto";;
         none)              echo "Passthrough (No Bypass)";;
         custom)            echo "Custom NFQWS2_OPT";;
@@ -2969,7 +2971,7 @@ select_dpi_profile() {
         # Menu satirlarinda:
     # - Varsayilan profil (tt_default) her zaman "Default/Varsayilan" olarak isaretlenir
     # - Kullanilan profil "ACTIVE/AKTIF" olarak isaretlenir
-    for _id in tt_default tt_fiber superonline_fiber multidisorder vodafone vodafone_tt blockcheck_auto none; do
+    for _id in tt_default tt_fiber superonline_fiber multidisorder vodafone vodafone_tt vodafone_tt2 blockcheck_auto none; do
         _num=""
         case "$_id" in
             tt_default)        _num="1" ;;
@@ -2978,6 +2980,7 @@ select_dpi_profile() {
             multidisorder)     _num="4" ;;
             vodafone)          _num="5" ;;
             vodafone_tt)       _num="6" ;;
+            vodafone_tt2)      _num="7" ;;
             blockcheck_auto)   _num="7" ;;
             none)              _num="8" ;;
         esac
@@ -3509,6 +3512,7 @@ update_nfqws_parameters() {
         multidisorder)      TCP_DESYNC="multidisorder"; NO_UDP="1" ;;
         vodafone)           TCP_DESYNC="vodafone"; NO_UDP="1" ;;
         vodafone_tt)        TCP_DESYNC="vodafone_tt"; NO_UDP="1" ;;
+        vodafone_tt2)       TCP_DESYNC="vodafone_tt2"; NO_UDP="1" ;;
         blockcheck_auto) : ;;
         custom)          : ;;
         none)            : ;;
@@ -3524,7 +3528,7 @@ update_nfqws_parameters() {
     local _raw_profile=""
     _raw_profile="$(cat "$DPI_PROFILE_FILE" 2>/dev/null | tr -d '\r\n')"
     case "$_raw_profile" in
-        tt_default|tt_fiber|superonline_fiber|multidisorder|vodafone|vodafone_tt|blockcheck_auto|custom) : ;;
+        tt_default|tt_fiber|superonline_fiber|multidisorder|vodafone|vodafone_tt|vodafone_tt2|blockcheck_auto|custom) : ;;
         *) set_dpi_profile "$profile" ;;
     esac
     if [ ! -s "$DPI_PROFILE_ORIGIN_FILE" ]; then
@@ -3608,6 +3612,13 @@ update_nfqws_parameters() {
         local _vt="${_vt_http} --new ${_vt_tls_a}${_vt_tls_b}${_vt_tls_c}${_vt_tls_d}"
         NFQWS_BLOCK="NFQWS2_OPT=\"${_vt} \""
         set_dpi_params "$_vt"
+    elif [ "$profile" = "vodafone_tt2" ]; then
+        # Vodafone TT Altyapisi v2: blockcheck sonucu (multisplit, ip_ttl=4)
+        local _vt2_http="--filter-tcp=80 <HOSTLIST> --filter-l7=http --payload=http_req --lua-desync=http_unixeol"
+        local _vt2_tls="--filter-tcp=443 <HOSTLIST> --filter-l7=tls --payload=tls_client_hello --lua-desync=multisplit:blob=fake_default_tls:ip_ttl=4:pos=2:nodrop:repeats=1"
+        local _vt2="${_vt2_http} --new ${_vt2_tls}"
+        NFQWS_BLOCK="NFQWS2_OPT=\"${_vt2} \""
+        set_dpi_params "$_vt2"
     elif [ "$profile" = "blockcheck_auto" ] && printf '%s' "$AUTO_PARAMS" | grep -q -- '--filter-'; then
         AUTO_FULL="$AUTO_PARAMS"
         AUTO_PARAMS=""
@@ -3628,7 +3639,7 @@ update_nfqws_parameters() {
         printf "%s
 " "$AUTO_FULL" > "$BLOCKCHECK_AUTO_PARAMS_FILE" 2>/dev/null
     fi
-    if [ "$profile" != "none" ] && [ "$profile" != "vodafone" ] && [ "$profile" != "vodafone_tt" ]; then
+    if [ "$profile" != "none" ] && [ "$profile" != "vodafone" ] && [ "$profile" != "vodafone_tt" ] && [ "$profile" != "vodafone_tt2" ]; then
     L1="$(build_line tcp 80  http http_req          "$(_kzm2_desync_http)" "--new")"
     L2="$(build_line tcp 443 tls  tls_client_hello "$(_kzm2_desync_tls)"  "$_l2_end")"
     if [ "${NO_UDP:-0}" = "1" ]; then
@@ -3652,7 +3663,7 @@ update_nfqws_parameters() {
     fi  # end if [ "$profile" != "none" ]
 
     # Keep SSH/Web Panel display in sync with the actual config we just generated.
-    if [ "$profile" != "none" ] && [ "$profile" != "vodafone" ] && [ "$profile" != "vodafone_tt" ]; then
+    if [ "$profile" != "none" ] && [ "$profile" != "vodafone" ] && [ "$profile" != "vodafone_tt" ] && [ "$profile" != "vodafone_tt2" ]; then
     if [ -n "$AUTO_FULL" ]; then
         set_dpi_params "$AUTO_FULL"
     else
@@ -13212,7 +13223,7 @@ DEOF
                 ZAPRET_IPV6="y"
             fi
             case "$_cgi_p" in
-                tt_default|tt_fiber|superonline_fiber|multidisorder|vodafone|vodafone_tt)
+                tt_default|tt_fiber|superonline_fiber|multidisorder|vodafone|vodafone_tt|vodafone_tt2)
                     set_dpi_profile "$_cgi_p"
                     set_dpi_origin "manual"
                     update_nfqws_parameters >/dev/null 2>&1
@@ -15344,7 +15355,7 @@ kzm_rebuild_profile_restart() {
     _kzm="/opt/lib/opkg/keenetic_zapret2_manager.sh"
     _p="$(cat /opt/zapret2/dpi_profile 2>/dev/null | tr -d '\r\n')"
     [ -z "$_p" ] && _p="tt_default"
-    case "$_p" in tt_default|tt_fiber|superonline_fiber|multidisorder|vodafone|vodafone_tt|blockcheck_auto|custom) : ;; *) _p="tt_default"; echo "tt_default" > /opt/zapret2/dpi_profile 2>/dev/null ;; esac
+    case "$_p" in tt_default|tt_fiber|superonline_fiber|multidisorder|vodafone|vodafone_tt|vodafone_tt2|blockcheck_auto|custom) : ;; *) _p="tt_default"; echo "tt_default" > /opt/zapret2/dpi_profile 2>/dev/null ;; esac
     if [ -f "$_kzm" ]; then
         # NFQWS2_OPT yeniden yazilsin: hostlist/autohostlist modunda <HOSTLIST> marker'i korunur.
         KZM2_SKIP_LOCK=1 sh "$_kzm" --cgi-action dpi_set "$_p" >/dev/null 2>&1 &
@@ -16116,7 +16127,7 @@ case "$ACTION" in
         _p=$(get_param profile)
         [ -z "$_p" ] && { fail "Profil belirtilmedi"; exit 0; }
         case "$_p" in
-            tt_default|tt_fiber|superonline_fiber|multidisorder|vodafone|vodafone_tt|blockcheck_auto|none) ;;
+            tt_default|tt_fiber|superonline_fiber|multidisorder|vodafone|vodafone_tt|vodafone_tt2|blockcheck_auto|none) ;;
             *) fail "Gecersiz veya devre disi profil: $_p"; exit 0 ;;
         esac
         _kzm="/opt/lib/opkg/keenetic_zapret2_manager.sh"
@@ -17218,6 +17229,7 @@ function fmtBcCard(S){
     'multidisorder':(L?'TT Altyap&#305;s&#305; (Superonline/Kablonet)':'TT Altyap&#305;s&#305; (Superonline/Kablonet)'),
     'vodafone':(L?'Vodafone':'Vodafone'),
     'vodafone_tt':(L?'Vodafone (TT Infrastructure)':'Vodafone (TT Altyap&#305;s&#305;)'),
+    'vodafone_tt2':(L?'Vodafone (TT Infrastructure v2)':'Vodafone (TT Altyap&#305;s&#305; v2)'),
     'blockcheck_auto':(L?'Blockcheck Auto':'Blockcheck Otomatik (Auto)'),
     'custom':(L?'Custom NFQWS2_OPT':'&#214;zel NFQWS2_OPT'),
     'none':(L?'Passthrough (No Bypass)':'Ge&#231;i&#351; Modu (Bypass Yok)')
@@ -17311,7 +17323,7 @@ var V={
         (S.keendns_fqdn ? ir('KeenDNS',S.keendns_fqdn+' | '+fmtKeenDns(S.keendns_access)) : '')+
         (S.iss_name ? ir(L?'ISP':'ISS',S.iss_name) : '')+
         ir('ISP DNS',S.isp_dns ? '<span style="color:var(--warn)">'+S.isp_dns+' — '+(L?'Zapret2 bypass may be blocked!':'Zapret2 bypass engellenebilir!')+'</span>' : '<span style="color:var(--good)">'+(L?'None - DNS encryption active':'Yok - DNS &#351;ifreleme aktif')+'</span>')+
-        ir(L?'DPI Profile':'Aktif Profil',(function(){var pn={'tt_default':(L?'Default Zapret2 (TTL2 fake)':'Varsay&#305;lan Zapret2 (TTL2 fake)'),'tt_fiber':'T&#252;rk Telekom Fiber (TTL2 fake)','superonline_fiber':'Superonline Fiber (TTL6 hostcase)','multidisorder':'TT Altyap&#305;s&#305; (Superonline/Kablonet)','vodafone':'Vodafone','vodafone_tt':(L?'Vodafone (TT Infrastructure)':'Vodafone (TT Altyap&#305;s&#305;)'),'blockcheck_auto':(L?'Blockcheck Auto':'Blockcheck Otomatik (Auto)'),'custom':(L?'Custom':'&#214;zel NFQWS2_OPT'),'none':(L?'Passthrough (No Bypass)':'Ge&#231;i&#351; Modu (Bypass Yok)')};var n=pn[S.dpi_profile]||S.dpi_profile||'—';var clr=S.dpi_profile==='none'?'var(--warn)':'var(--info)';return '<span style="color:'+clr+'">'+n+'</span>';})())+
+        ir(L?'DPI Profile':'Aktif Profil',(function(){var pn={'tt_default':(L?'Default Zapret2 (TTL2 fake)':'Varsay&#305;lan Zapret2 (TTL2 fake)'),'tt_fiber':'T&#252;rk Telekom Fiber (TTL2 fake)','superonline_fiber':'Superonline Fiber (TTL6 hostcase)','multidisorder':'TT Altyap&#305;s&#305; (Superonline/Kablonet)','vodafone':'Vodafone','vodafone_tt':(L?'Vodafone (TT Infrastructure)':'Vodafone (TT Altyap&#305;s&#305;)'),'vodafone_tt2':(L?'Vodafone (TT Infrastructure v2)':'Vodafone (TT Altyap&#305;s&#305; v2)'),'blockcheck_auto':(L?'Blockcheck Auto':'Blockcheck Otomatik (Auto)'),'custom':(L?'Custom':'&#214;zel NFQWS2_OPT'),'none':(L?'Passthrough (No Bypass)':'Ge&#231;i&#351; Modu (Bypass Yok)')};var n=pn[S.dpi_profile]||S.dpi_profile||'—';var clr=S.dpi_profile==='none'?'var(--warn)':'var(--info)';return '<span style="color:'+clr+'">'+n+'</span>';})())+
         ir(L?'Filter Mode':'Filtreleme',(function(){var m=S.filter_mode||'';if(m==='autohostlist')return '<span style="color:var(--good)">'+(L?'Auto Hostlist':'Otomatik Liste')+'</span>';if(m==='hostlist')return '<span style="color:var(--info)">'+(L?'Hostlist':'Manuel Liste')+'</span>';if(m==='none')return '<span style="color:var(--warn)">'+(L?'No Filter':'Listesiz')+'</span>';return m||'—';})())+
         ir(L?'Scope':'Kapsam Modu',(function(){var m=S.scope_mode||'';if(m==='smart')return '<span style="color:var(--good)">'+(L?'Smart':'Ak&#305;ll&#305;')+'</span>';if(m==='global')return '<span style="color:var(--warn)">'+(L?'Global':'Global')+'</span>';return m||'—';})())+
         ir(L?'IPSET Mode':'IPSET Modu',(function(){var m=S.ipset_mode||'all';var c=S.ipset_count||0;if(m==='list')return '<span style="color:var(--info)">'+(L?'Selected IPs':'Se&#231;ili IP')+' ('+c+')</span>';return '<span style="color:var(--good)">'+(L?'Whole Network':'T&#252;m A&#287;')+'</span>';})())+
@@ -17352,6 +17364,7 @@ var V={
               'multidisorder':'TT Altyap&#305;s&#305; (Superonline/Kablonet)',
               'vodafone':'Vodafone',
               'vodafone_tt':(L?'Vodafone (TT Infrastructure)':'Vodafone (TT Altyap&#305;s&#305;)'),
+              'vodafone_tt2':(L?'Vodafone (TT Infrastructure v2)':'Vodafone (TT Altyap&#305;s&#305; v2)'),
               'blockcheck_auto':(L?'Blockcheck Auto':'Blockcheck Otomatik (Auto)'),
               'custom':(L?'Custom NFQWS2_OPT':'&#214;zel NFQWS2_OPT'),
               'none':(L?'Passthrough (No Bypass)':'Ge&#231;i&#351; Modu (Bypass Yok)')
@@ -17369,6 +17382,7 @@ var V={
               ['multidisorder','TT Altyap&#305;s&#305; (Superonline/Kablonet)'],
               ['vodafone','Vodafone'],
               ['vodafone_tt',(L?'Vodafone (TT Infrastructure)':'Vodafone (TT Altyap&#305;s&#305;)')],
+              ['vodafone_tt2',(L?'Vodafone (TT Infrastructure v2)':'Vodafone (TT Altyap&#305;s&#305; v2)')],
               ['blockcheck_auto',(L?'Blockcheck Auto':'Blockcheck Otomatik (Auto)')],
               ['none',L?'Passthrough (No Bypass)':'Ge&#231;i&#351; Modu (Bypass Yok)']
             ];
