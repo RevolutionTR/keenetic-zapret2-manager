@@ -37,7 +37,7 @@
 # -------------------------------------------------------------------
 SCRIPT_NAME="keenetic_zapret2_manager.sh"
 # Version scheme: vYY.M.D[.N]  (YY=year, M=month, D=day, N=daily revision)
-SCRIPT_VERSION="v26.6.19"
+SCRIPT_VERSION="v26.6.20"
 SCRIPT_REPO="https://github.com/RevolutionTR/keenetic-zapret2-manager"
 KZM2_SCRIPT_PATH="/opt/lib/opkg/keenetic_zapret2_manager.sh"
 SCRIPT_AUTHOR="RevolutionTR"
@@ -8381,6 +8381,18 @@ run_health_check() {
     add_line "$HC_SYS" "$(T TXT_HEALTH_SWAP)" " $swap_msg" "$swap_ok"
     add_line "$HC_SYS" "$(T TXT_HEALTH_LOAD)" " $load_msg" "$load_ok"
     add_line "$HC_SYS" "$(T TXT_HEALTH_TEMP)" " $temp_msg" "$temp_ok"
+    local _hc_wm _hc_wmt _hc_wml
+    for _hc_wm in WifiMaster0 WifiMaster1 WifiMaster2; do
+        _hc_wmt=$(LD_LIBRARY_PATH= ndmc -c "show interface $_hc_wm" 2>/dev/null | grep -i temperature | tr -d ' ' | cut -d: -f2)
+        if [ -n "$_hc_wmt" ]; then
+            case "$_hc_wm" in
+                WifiMaster0) _hc_wml="$(T _ 'WiFi 2.4GHz Cip Sicakligi' 'WiFi 2.4GHz Chip Temp')" ;;
+                WifiMaster1) _hc_wml="$(T _ 'WiFi 5GHz Cip Sicakligi' 'WiFi 5GHz Chip Temp')" ;;
+                WifiMaster2) _hc_wml="$(T _ 'WiFi 6GHz Cip Sicakligi' 'WiFi 6GHz Chip Temp')" ;;
+            esac
+            add_line "$HC_SYS" "$_hc_wml" " ${_hc_wmt} $(T _ 'Santigrat Derece' 'Degrees Celsius')" "INFO"
+        fi
+    done
     add_line "$HC_SYS" "$(T TXT_HEALTH_DISK)" " $disk_msg" "$disk_ok"
     add_line "$HC_SYS" "$(T TXT_HEALTH_DISK_HEALTH)" " $disk_health_msg" "$disk_health_ok"
     add_line "$HC_SYS" "$(T TXT_HEALTH_DISK_TMP)" " $disk_tmp_msg" "$disk_tmp_ok"
@@ -13456,7 +13468,18 @@ DEOF
                     break
                 fi
             done
-            [ -n "$_hc_temp" ] && _add "sys" "$(T TXT_HEALTH_TEMP)" "$_hc_temp $(T _ 'Santigrat Derece' 'Degrees Celsius')" "INFO"
+            [ -n "$_hc_temp" ] && _add "sys" "$(T TXT_HEALTH_TEMP)" "${_hc_temp}°C" "INFO"
+            for _hc_wm in WifiMaster0 WifiMaster1 WifiMaster2; do
+                _hc_wmt=$(LD_LIBRARY_PATH= ndmc -c "show interface $_hc_wm" 2>/dev/null | grep -i temperature | tr -d ' ' | cut -d: -f2)
+                if [ -n "$_hc_wmt" ]; then
+                    case "$_hc_wm" in
+                        WifiMaster0) _hc_wml="$(T _ 'WiFi 2.4GHz Cip Sicakligi' 'WiFi 2.4GHz Chip Temp')" ;;
+                        WifiMaster1) _hc_wml="$(T _ 'WiFi 5GHz Cip Sicakligi' 'WiFi 5GHz Chip Temp')" ;;
+                        WifiMaster2) _hc_wml="$(T _ 'WiFi 6GHz Cip Sicakligi' 'WiFi 6GHz Chip Temp')" ;;
+                    esac
+                    _add "sys" "$_hc_wml" "${_hc_wmt}°C" "INFO"
+                fi
+            done
             # LAN IP
             _hc_lan="$(ip -4 addr show br0 2>/dev/null | awk '/inet /{print $2;exit}' | cut -d/ -f1)"
             [ -z "$_hc_lan" ] && _hc_lan="$(ip -4 addr show eth0 2>/dev/null | awk '/inet /{print $2;exit}' | cut -d/ -f1)"
@@ -13868,9 +13891,20 @@ healthmon_status() {
         fi
     done
     if [ -n "$_temp_simdi" ]; then
-        printf "  %-24s : %s
-" "$(T _ 'SoC Sicakligi' 'SoC Temperature')"             "$_temp_simdi $(T _ 'Santigrat Derece' 'Degrees Celsius')"
+        printf "  %-24s : %s\n" "$(T _ 'SoC Sicakligi' 'SoC Temperature')" "$_temp_simdi $(T _ 'Santigrat Derece' 'Degrees Celsius')"
     fi
+    local _wm _wmt _wml
+    for _wm in WifiMaster0 WifiMaster1 WifiMaster2; do
+        _wmt=$(LD_LIBRARY_PATH= ndmc -c "show interface $_wm" 2>/dev/null | grep -i temperature | tr -d ' ' | cut -d: -f2)
+        if [ -n "$_wmt" ]; then
+            case "$_wm" in
+                WifiMaster0) _wml="$(T _ 'WiFi 2.4GHz Cip Sicakligi' 'WiFi 2.4GHz Chip Temp')" ;;
+                WifiMaster1) _wml="$(T _ 'WiFi 5GHz Cip Sicakligi' 'WiFi 5GHz Chip Temp')" ;;
+                WifiMaster2) _wml="$(T _ 'WiFi 6GHz Cip Sicakligi' 'WiFi 6GHz Chip Temp')" ;;
+            esac
+            printf "  %-24s : %s\n" "$_wml" "$_wmt $(T _ 'Santigrat Derece' 'Degrees Celsius')"
+        fi
+    done
     # RAM / Swap / Buffer / Disk detay
     local _st_total_kb _st_used_kb _st_buf_kb _st_cached_kb _st_swap_total _st_swap_free _st_ram_total
     _st_total_kb="$(grep MemAvailable /proc/meminfo 2>/dev/null | awk '{print $2}')"
@@ -15103,6 +15137,17 @@ for _tf in /sys/class/thermal/thermal_zone*/temp; do
     fi
 done
 [ -z "$_cpu_temp" ] && _cpu_temp=0
+# WiFi sicaklik
+_wifi0_temp=0
+_wifi1_temp=0
+_wifi2_temp=0
+_wt=$(LD_LIBRARY_PATH= ndmc -c 'show interface WifiMaster0' 2>/dev/null | grep -i temperature | tr -d ' ' | cut -d: -f2)
+[ -n "$_wt" ] && _wifi0_temp="$_wt"
+_wt=$(LD_LIBRARY_PATH= ndmc -c 'show interface WifiMaster1' 2>/dev/null | grep -i temperature | tr -d ' ' | cut -d: -f2)
+[ -n "$_wt" ] && _wifi1_temp="$_wt"
+_wt=$(LD_LIBRARY_PATH= ndmc -c 'show interface WifiMaster2' 2>/dev/null | grep -i temperature | tr -d ' ' | cut -d: -f2)
+[ -n "$_wt" ] && _wifi2_temp="$_wt"
+unset _wt
 # LAN IP
 _lan_ip="$(ip -4 addr show br0 2>/dev/null | awk '/inet /{print $2;exit}' | cut -d/ -f1)"
 [ -z "$_lan_ip" ] && _lan_ip="$(ip -4 addr show eth0 2>/dev/null | awk '/inet /{print $2;exit}' | cut -d/ -f1)"
@@ -15269,7 +15314,7 @@ if [ -f /opt/zapret2/blockcheck_result.json ]; then
     [ -z "$_bc_tests_total" ] && _bc_tests_total=0
 
 fi
-printf '{\n  "ts": %s,\n  "lang": "%s",\n  "theme": "%s",\n  "kzm_version": "%s",\n  "model": "%s",\n  "firmware": "%s",\n  "wan_dev": "%s",\n  "wan_ip": "%s",\n  "lan_ip": "%s",\n  "keendns_fqdn": "%s",\n  "keendns_access": "%s",\n  "iss_name": "%s",\n  "isp_dns": "%s",\n  "zapret_running": %s,\n  "zapret_version": "%s",\n  "healthmon_running": %s,\n  "healthmon_enabled": %s,\n  "telegram_enabled": %s,\n  "telegram_running": %s,\n  "telegram_configured": %s,\n  "lighttpd_running": %s,\n  "curl_ok": %s,\n  "load1": "%s",\n  "load5": "%s",\n  "load15": "%s",\n  "ram_used_mb": %s,\n  "ram_free_mb": %s,\n  "ram_total_mb": %s,\n  "ram_buffer_mb": %s,\n  "swap_used_mb": %s,\n  "swap_total_mb": %s,\n  "disk_used_pct": %s,\n  "disk_used_mb": %s,\n  "disk_total_mb": %s,\n  "disk_tmp_pct": %s,\n  "disk_tmp_used_mb": %s,\n  "disk_tmp_total_mb": %s,\n  "storage_type": "%s",\n  "storage_label": "%s",\n  "disk_health_status": "%s",\n  "disk_health_msg": "%s",\n  "cpu_temp": %s,\n  "dpi_profile": "%s",\n  "dpi_origin": "%s",\n  "filter_mode": "%s",\n  "scope_mode": "%s",\n  "ipset_mode": "%s",\n  "ipset_count": %s,\n  "bc_score": %s,\n  "bc_dns_ok": %s,\n  "bc_tls12_ok": %s,\n  "bc_udp_weak": %s,\n  "bc_tests_ok": %s,\n  "bc_tests_total": %s,\n  "bc_ts": %s,\n  "sha_kzm": "%s",\n  "sha_zapret": "%s"\n}\n' \
+printf '{\n  "ts": %s,\n  "lang": "%s",\n  "theme": "%s",\n  "kzm_version": "%s",\n  "model": "%s",\n  "firmware": "%s",\n  "wan_dev": "%s",\n  "wan_ip": "%s",\n  "lan_ip": "%s",\n  "keendns_fqdn": "%s",\n  "keendns_access": "%s",\n  "iss_name": "%s",\n  "isp_dns": "%s",\n  "zapret_running": %s,\n  "zapret_version": "%s",\n  "healthmon_running": %s,\n  "healthmon_enabled": %s,\n  "telegram_enabled": %s,\n  "telegram_running": %s,\n  "telegram_configured": %s,\n  "lighttpd_running": %s,\n  "curl_ok": %s,\n  "load1": "%s",\n  "load5": "%s",\n  "load15": "%s",\n  "ram_used_mb": %s,\n  "ram_free_mb": %s,\n  "ram_total_mb": %s,\n  "ram_buffer_mb": %s,\n  "swap_used_mb": %s,\n  "swap_total_mb": %s,\n  "disk_used_pct": %s,\n  "disk_used_mb": %s,\n  "disk_total_mb": %s,\n  "disk_tmp_pct": %s,\n  "disk_tmp_used_mb": %s,\n  "disk_tmp_total_mb": %s,\n  "storage_type": "%s",\n  "storage_label": "%s",\n  "disk_health_status": "%s",\n  "disk_health_msg": "%s",\n  "cpu_temp": %s,\n  "wifi0_temp": %s,\n  "wifi1_temp": %s,\n  "wifi2_temp": %s,\n  "dpi_profile": "%s",\n  "dpi_origin": "%s",\n  "filter_mode": "%s",\n  "scope_mode": "%s",\n  "ipset_mode": "%s",\n  "ipset_count": %s,\n  "bc_score": %s,\n  "bc_dns_ok": %s,\n  "bc_tls12_ok": %s,\n  "bc_udp_weak": %s,\n  "bc_tests_ok": %s,\n  "bc_tests_total": %s,\n  "bc_ts": %s,\n  "sha_kzm": "%s",\n  "sha_zapret": "%s"\n}\n' \
     "$_ts" "$(cat /opt/zapret2/lang 2>/dev/null | tr -d '[:space:]' | head -c2)" "$(cat /opt/zapret2/theme 2>/dev/null | tr -d '[:space:]' | head -c5)" "$_kzmver" "$_model" "$_fw" "$_wan_display" "$_wip" "$_lan_ip" \
     "$_kdns_fqdn" "$_kdns_access" "$_iss_name" "$_isp_dns_json" \
     "$_zap" "$_zver" "$_hm" "$_hm_en" "$_tg_en" "$_tg" "$_tg_configured" \
@@ -15279,7 +15324,7 @@ printf '{\n  "ts": %s,\n  "lang": "%s",\n  "theme": "%s",\n  "kzm_version": "%s"
     "$_dpct" "$_dumb" "$_dtmb" \
     "$_tmp_pct" "$_tmp_used_mb" "$_tmp_total_mb" \
     "$_st_type" "$_st_label" "$_dh_status" "$_dh_msg" \
-    "$_cpu_temp" \
+    "$_cpu_temp" "$_wifi0_temp" "$_wifi1_temp" "$_wifi2_temp" \
     "$_dpi_profile" "$_dpi_origin" "$_filter_mode" "$_scope_mode" "$_ipset_mode" "$_ipset_count" \
     "$_bc_score" "$_bc_dns_ok" "$_bc_tls12_ok" "$_bc_udp_weak" "$_bc_tests_ok" "$_bc_tests_total" "$_bc_ts" \
     "$_sha_kzm" "$_sha_zapret" \
@@ -17286,11 +17331,11 @@ var V={
             '<button class="ghost" onclick="zapretAct(\'zapret_stop\',this,\'Stop OK\')">&#9646;&#9646; '+(L?'Stop':'Durdur')+'</button>'+
             '<button class="ok" onclick="zapretAct(\'zapret_start\',this,\'Start OK\')">&#9654; '+(L?'Start':'Ba&#351;lat')+'</button>'+
           '</div></div>'+
-        '<div class="card dash-card-span-2"><h3>CPU / RAM / Disk</h3>'+
+        '<div class="card dash-card-span-2"><h3>CPU / RAM / Disk / '+(L?'Temp':'S&#305;cakl&#305;k')+'</h3>'+
         '<table style="width:100%;border-collapse:collapse;font-size:12.5px;margin-top:6px">'+
           '<tr><td style="color:var(--muted);padding:3px 0;width:38%">'+(L?'CPU Load (1/5/15min)':'CPU Y&#252;k&#252; (1/5/15dk)')+'</td>'+
               '<td style="padding:3px 0"><b>'+S.load1+'</b> / '+S.load5+' / '+S.load15+'</td>'+
-              (S.cpu_temp>0?'<td style="padding:3px 0;text-align:right;color:var(--muted)">'+(L?'SoC Temp':'SoC S&#305;cakl&#305;k')+': <b>'+S.cpu_temp+'&#176;C</b></td>':'<td></td>')+
+              (S.cpu_temp>0?'<td class="temp-cell" style="padding:3px 0;text-align:right;color:var(--muted)"><div>SoC: <b>'+S.cpu_temp+'&#176;C</b></div>'+(S.wifi0_temp>0?'<div>2.4GHz: <b>'+S.wifi0_temp+'&#176;C</b></div>':'')+(S.wifi1_temp>0?'<div>5GHz: <b>'+S.wifi1_temp+'&#176;C</b></div>':'')+(S.wifi2_temp>0?'<div>6GHz: <b>'+S.wifi2_temp+'&#176;C</b></div>':'')+'</td>':'<td></td>')+
           '</tr>'+
           '<tr><td style="color:var(--muted);padding:3px 0">RAM</td>'+
               '<td colspan="2" style="padding:3px 0">'+
