@@ -37,7 +37,7 @@
 # -------------------------------------------------------------------
 SCRIPT_NAME="keenetic_zapret2_manager.sh"
 # Version scheme: vYY.M.D[.N]  (YY=year, M=month, D=day, N=daily revision)
-SCRIPT_VERSION="v26.6.20"
+SCRIPT_VERSION="v26.6.22"
 SCRIPT_REPO="https://github.com/RevolutionTR/keenetic-zapret2-manager"
 KZM2_SCRIPT_PATH="/opt/lib/opkg/keenetic_zapret2_manager.sh"
 SCRIPT_AUTHOR="RevolutionTR"
@@ -15145,8 +15145,9 @@ _wt=$(LD_LIBRARY_PATH= ndmc -c 'show interface WifiMaster0' 2>/dev/null | grep -
 [ -n "$_wt" ] && _wifi0_temp="$_wt"
 _wt=$(LD_LIBRARY_PATH= ndmc -c 'show interface WifiMaster1' 2>/dev/null | grep -i temperature | tr -d ' ' | cut -d: -f2)
 [ -n "$_wt" ] && _wifi1_temp="$_wt"
-_wt=$(LD_LIBRARY_PATH= ndmc -c 'show interface WifiMaster2' 2>/dev/null | grep -i temperature | tr -d ' ' | cut -d: -f2)
-[ -n "$_wt" ] && _wifi2_temp="$_wt"
+# WifiMaster2 yalnizca varsa sorgulanir (tri-band modeller icin)
+# _wt=$(LD_LIBRARY_PATH= ndmc -c 'show interface WifiMaster2' 2>/dev/null | grep -i temperature | tr -d ' ' | cut -d: -f2)
+# [ -n "$_wt" ] && _wifi2_temp="$_wt"
 unset _wt
 # LAN IP
 _lan_ip="$(ip -4 addr show br0 2>/dev/null | awk '/inet /{print $2;exit}' | cut -d/ -f1)"
@@ -17300,7 +17301,7 @@ function fmtBcCard(S){
   else if(Number(S.bc_tls12_ok)===0) warns+='<span class="badge bad" style="font-size:10px">TLS: WARN</span> ';
   if(Number(S.bc_udp_weak)===0) warns+='<span class="badge good" style="font-size:10px">UDP 443: OK</span> ';
   else if(Number(S.bc_udp_weak)===1) warns+='<span class="badge warn" style="font-size:10px">UDP 443: WARN</span> ';
-  if(S.bc_tests_total>0) warns+='<span class="badge off" style="font-size:10px">'+S.bc_tests_ok+'/'+S.bc_tests_total+' test</span>';
+  if(S.bc_tests_total>0) warns+='<span class="badge off" style="font-size:10px">'+S.bc_tests_ok+'/'+S.bc_tests_total+' Test</span>';
   return '<div class="card dash-card-span-2"><h3>'+(L?'DPI Health Score':'DPI Sa&#287;l&#305;k Skoru')+'</h3>'+
     '<div style="display:flex;align-items:flex-end;gap:8px;margin:8px 0 4px;flex-wrap:wrap">'+
       '<span style="font-size:2.4em;font-weight:800;color:'+clr+'">'+sc+'</span>'+
@@ -17311,7 +17312,7 @@ function fmtBcCard(S){
       '<div style="height:100%;width:'+pct+'%;background:linear-gradient(90deg,'+clr+',#4b7dff);border-radius:6px"></div>'+
     '</div>'+
     '<div style="font-size:12px;color:var(--muted);margin-bottom:4px">'+(L?'Active Profile: ':'Aktif Profil: ')+'<span style="color:var(--text)">'+profLabel+'</span></div>'+
-    '<div style="color:var(--muted);font-size:11px">'+(L?'Last blockcheck: ':'Son blockcheck: ')+dtStr+'</div>'+
+    '<div style="color:var(--muted);font-size:11px">'+(L?'Last Blockcheck: ':'Son Blockcheck: ')+dtStr+'</div>'+
   '</div>';
 }
 var V={
