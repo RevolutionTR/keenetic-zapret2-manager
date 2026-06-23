@@ -37,7 +37,7 @@
 # -------------------------------------------------------------------
 SCRIPT_NAME="keenetic_zapret2_manager.sh"
 # Version scheme: vYY.M.D[.N]  (YY=year, M=month, D=day, N=daily revision)
-SCRIPT_VERSION="v26.6.22"
+SCRIPT_VERSION="v26.6.24"
 SCRIPT_REPO="https://github.com/RevolutionTR/keenetic-zapret2-manager"
 KZM2_SCRIPT_PATH="/opt/lib/opkg/keenetic_zapret2_manager.sh"
 SCRIPT_AUTHOR="RevolutionTR"
@@ -4524,6 +4524,7 @@ check_zapret_version() {
 }
 # --- ZAPRET GUNCELLEME (6. MADDE) ---
 update_zapret2() {
+    local _source="${1:-ssh}"
     local repo="bol-van/zapret2"
     local api="https://api.github.com/repos/${repo}/releases/latest"
     local tmpdir="/opt/tmp/zapret_update_$$"
@@ -4535,6 +4536,8 @@ update_zapret2() {
     # Kurulu surum ile karsilastir
     local _installed_ver
     _installed_ver="$(cat /opt/zapret2/version 2>/dev/null | tr -d '[:space:]')"
+    local _upd_log_line="$(date '+%Y-%m-%d %H:%M:%S' 2>/dev/null) | zapret2_update | source=$_source | cur=${_installed_ver:-unknown} | target=$latest"
+    echo "$_upd_log_line" >> /tmp/kzm2_healthmon.log 2>/dev/null
     if [ -n "$_installed_ver" ]; then
         if [ "$_installed_ver" = "$latest" ]; then
             print_status INFO "$(T _ 'Zapret2 zaten guncel' 'Zapret2 is already up to date') ($_installed_ver)"
@@ -4685,7 +4688,7 @@ check_remote_update() {
         case "$ans" in
             e|E|y|Y)
                 echo ""
-                update_zapret2
+                update_zapret2 "ssh"
                 ;;
             *)
                 print_status INFO "$(T TXT_ZAP_UPDATE_CANCELLED)"
@@ -4700,7 +4703,7 @@ check_remote_update() {
         case "$ans" in
             e|E|y|Y)
                 echo ""
-                update_zapret2
+                update_zapret2 "ssh"
                 ;;
             *)
                 print_status INFO "$(T TXT_ZAP_UPDATE_CANCELLED)"
@@ -10880,7 +10883,7 @@ tgbot_handle_callback() {
             ;;
         zap_update)
             tgbot_edit "$chat_id" "$msg_id" "$(T TXT_TGBOT_UPDATE_STARTED)" ""
-            update_zapret2 >/dev/null 2>&1
+            update_zapret2 "telegram" >/dev/null 2>&1
             _zap_upd_rc=$?
             case "$_zap_upd_rc" in
                 0) tgbot_edit "$chat_id" "$msg_id"                     "$(T TXT_TGBOT_UPDATE_DONE) ($(cat /opt/zapret2/version 2>/dev/null | tr -d '[:space:]'))" "$(tgbot_kb_zapret)" ;;
@@ -10895,7 +10898,7 @@ tgbot_handle_callback() {
             # Versiyon dosyasini gecici olarak sil ki update_zapret2 geri cekilmis surumu kursun
             _zap_ver_bak="$(cat /opt/zapret2/version 2>/dev/null)"
             rm -f /opt/zapret2/version 2>/dev/null
-            if update_zapret2 >/dev/null 2>&1; then
+            if update_zapret2 "telegram" >/dev/null 2>&1; then
                 tgbot_edit "$chat_id" "$msg_id"                     "$(T TXT_TGBOT_UPDATE_DONE) ($(cat /opt/zapret2/version 2>/dev/null | tr -d '[:space:]'))" "$(tgbot_kb_zapret)"
             else
                 # Geri yukle
@@ -13034,6 +13037,10 @@ if [ "$1" = "--cgi-action" ]; then
         start_zapret2)    start_zapret2   2>/dev/null ;;
         stop_zapret2)     stop_zapret2 1  2>/dev/null ;;
         restart_zapret2)  restart_zapret2 2>/dev/null ;;
+        zapret2_update_run)
+            update_zapret2 "webpanel"
+            echo $? > /tmp/kzm2_zapret_update.rc
+            ;;
         healthmon_start)
             if [ -f "$KZM2_SCRIPT_PATH" ]; then
                 KZM2_SKIP_LOCK=1 sh "$KZM2_SCRIPT_PATH" --healthmon-daemon &
@@ -15873,6 +15880,33 @@ case "$ACTION" in
         [ -f "$_kzm" ] || { ok "Zapret2 yeniden baslatildi"; exit 0; }
         KZM2_SKIP_LOCK=1 sh "$_kzm" --cgi-action restart_zapret2 >/dev/null 2>&1
         sleep 2; wait_zapret2 up; sleep 2; refresh; ok "Zapret2 yeniden baslatildi" ;;
+    zapret2_check_update)
+        _cur="$(cat /opt/zapret2/version 2>/dev/null | tr -d '[:space:]')"
+        _lat="$(curl -fsS --max-time 10 'https://api.github.com/repos/bol-van/zapret2/releases/latest' 2>/dev/null | sed -n 's/.*"tag_name"[[:space:]]*:[[:space:]]*"\([^"]*\)".*/\1/p' | head -n1)"
+        if [ -z "$_lat" ]; then
+            printf '{"ok":0,"msg":"GitHub erisim hatasi"}'
+        elif [ "$_cur" = "$_lat" ]; then
+            printf '{"ok":1,"update":0,"current":"%s","latest":"%s","msg":"Guncel"}' "$_cur" "$_lat"
+        else
+            printf '{"ok":1,"update":1,"current":"%s","latest":"%s","msg":"Guncelleme mevcut"}' "$_cur" "$_lat"
+        fi ;;
+    zapret2_update)
+        _upd_log="/tmp/kzm2_zapret_update.log"
+        _upd_rc="/tmp/kzm2_zapret_update.rc"
+        rm -f "$_upd_log" "$_upd_rc" 2>/dev/null
+        _kzm2="/opt/lib/opkg/keenetic_zapret2_manager.sh"
+        KZM2_SKIP_LOCK=1 sh "$_kzm2" --cgi-action zapret2_update_run > "$_upd_log" 2>&1 &
+        printf '{"ok":1,"msg":"started"}' ;;
+    zapret2_update_poll)
+        _upd_rc_f="/tmp/kzm2_zapret_update.rc"
+        _upd_log_f="/tmp/kzm2_zapret_update.log"
+        if [ -f "$_upd_rc_f" ]; then
+            _rc="$(cat "$_upd_rc_f" 2>/dev/null | tr -d '[:space:]')"
+            _ver="$(cat /opt/zapret2/version 2>/dev/null | tr -d '[:space:]')"
+            printf '{"ok":1,"done":1,"rc":"%s","version":"%s"}' "$_rc" "$_ver"
+        else
+            printf '{"ok":1,"done":0}'
+        fi ;;
     fix_permissions)
         fix_zapret2_runtime_permissions 2>/dev/null
         ok "Izinler duzeltildi" ;;
@@ -16988,7 +17022,7 @@ function fetchS(){
   return fetch('/run/kzm_status.json?t='+Date.now())
     .then(function(r){return r.json();})
     .then(function(d){
-      S=d;syncLang();syncTheme();updHdr();if(curV==='dash'||curV==='healthmon'||curV==='telegram'||curV==='zapret'||curV==='dpi')render(curV);
+      S=d;syncLang();syncTheme();updHdr();if(curV==='dash'||curV==='healthmon'||curV==='telegram'||(curV==='zapret'&&!zapUpdState._updating)||curV==='dpi')render(curV);
       var dt=new Date(d.ts*1000);
       document.getElementById('tsLbl').textContent=dt.toLocaleTimeString('tr-TR');
     })
@@ -17065,6 +17099,7 @@ function ir(l,v){return '<div class="info-row"><div class="lbl">'+l+'</div><div 
 function nd(){return '<div class="empty">Y&#252;kleniyor...</div>';}
 function fmtKeenDns(a){var d=L?'Direct':'Do&#287;rudan';var c=L?'Cloud':'Cloud';var u=L?'Unknown':'Bilinmiyor';var m={'direct':'<span style="color:var(--good)">&#9679; '+d+'</span>','cloud':'<span style="color:var(--warn)">&#9679; '+c+'</span>'};return m[a]||'<span style="color:var(--bad)">&#9679; '+u+'</span>';}
 var opkgState={status:null,count:0,upgraded:false};
+var zapUpdState={checked:false,update:false,current:'',latest:'',statusHtml:'',updBtnEnabled:false};
 var hmConfCache=null;
 var dnsCache=null;
 function fmtOpkgCard(){
@@ -17396,6 +17431,13 @@ var V={
           '<button class="ghost" onclick="zapretAct(\'zapret_restart\',this,\'Yeniden ba&#351;lat&#305;ld&#305;\')">&#8635; '+(L?'Restart':'Yeniden Ba&#351;lat')+'</button>'+
         '</div>'+
         '<div class="hint" style="margin-top:8px">'+(L?'If HealthMon AUTORESTART=1, stop is not permanent.':'HealthMon AUTORESTART=1 ise durdurma kal&#305;c&#305; olmaz.')+'</div>'+
+      '</div>'+
+      '<div class="card"><h3>'+(L?'Zapret2 Update':'Zapret2 G&#252;ncelleme')+'</h3>'+
+        '<div id="zapUpdStatus" style="font-size:13px;color:var(--muted);margin-bottom:8px">'+(zapUpdState.statusHtml||(L?'Click to check for updates.':'G&#252;ncelleme kontrol etmek i&#231;in t&#305;klay&#305;n.'))+'</div>'+
+        '<div class="zapret-control-actions">'+
+          '<button class="ghost" id="zapChkBtn" onclick="zapCheckUpdate(this)">&#8635; '+(L?'Check':'Kontrol Et')+'</button>'+
+          '<button class="ok" id="zapUpdBtn" onclick="zapDoUpdate(this)"'+(zapUpdState.updBtnEnabled?'':' disabled style="opacity:0.4"')+'>&#8593; '+(L?'Update':'G&#252;ncelle')+'</button>'+
+        '</div>'+
       '</div></div>';
   }},
   dpi:{title:'DPI Profili',titleEn:'DPI Profile',sub:'Mevcut DPI profilini g&#246;r&#252;nt&#252;le ve de&#287;i&#351;tir.',subEn:'View and change current DPI profile.',html:function(){
@@ -18198,6 +18240,93 @@ function zapretAct(action,btn,msg){
     .then(function(){return fetchS();})
     .then(function(){render(curV);});
   }).catch(function(){toast('Ba&#287;lant&#305; hatas&#305;',false);if(btn){btn.disabled=false;btn.innerHTML=btn._o;}});
+}
+function zapCheckUpdate(btn){
+  var st=document.getElementById('zapUpdStatus');
+  var updBtn=document.getElementById('zapUpdBtn');
+  if(btn){btn._o=btn.innerHTML;btn.disabled=true;btn.innerHTML='<span class="spinner"></span>';}
+  if(st) st.innerHTML=L?'Checking...':'Kontrol ediliyor...';
+  fetch('/cgi-bin/action.sh',{method:'POST',headers:{'Content-Type':'application/x-www-form-urlencoded'},body:'action=zapret2_check_update'})
+  .then(function(r){return r.json();})
+  .then(function(res){
+    if(btn){btn.disabled=false;btn.innerHTML=btn._o;}
+    if(!res.ok){
+      if(st) st.innerHTML='<span style="color:var(--bad)">'+(L?'GitHub access error.':'GitHub eri&#351;im hatas&#305;.')+'</span>';
+      return;
+    }
+    if(res.update){
+      var html='<span style="color:var(--warn)">'+(L?'Update available: ':'G&#252;ncelleme mevcut: ')+'<b>'+res.latest+'</b> ('+(L?'Current: ':'Mevcut: ')+res.current+')</span>';
+      zapUpdState={checked:true,update:true,current:res.current,latest:res.latest,statusHtml:html,updBtnEnabled:true};
+      if(st) st.innerHTML=html;
+      if(updBtn){updBtn.disabled=false;updBtn.style.opacity='1';updBtn.setAttribute('data-latest',res.latest);}
+    } else {
+      var html='<span style="color:var(--good)">&#10003; '+(L?'Up to date: ':'G&#252;ncel: ')+'<b>'+res.current+'</b></span>';
+      zapUpdState={checked:true,update:false,current:res.current,latest:res.current,statusHtml:html,updBtnEnabled:false};
+      if(st) st.innerHTML=html;
+      if(updBtn){updBtn.disabled=true;updBtn.style.opacity='0.4';}
+    }
+  }).catch(function(){
+    if(btn){btn.disabled=false;btn.innerHTML=btn._o;}
+    if(st) st.innerHTML='<span style="color:var(--bad)">'+(L?'Connection error.':'Ba&#287;lant&#305; hatas&#305;.')+'</span>';
+  });
+}
+function zapDoUpdate(btn){
+  var st=document.getElementById('zapUpdStatus');
+  var chkBtn=document.getElementById('zapChkBtn');
+  if(btn){btn._o=btn.innerHTML;btn.disabled=true;btn.innerHTML='<span class="spinner"></span>';}
+  if(chkBtn) chkBtn.disabled=true;
+  if(st) st.innerHTML=L?'Updating, please wait...':'G&#252;ncelleniyor, l&#252;tfen bekleyin...';
+  zapUpdState._updating=true;
+  fetch('/cgi-bin/action.sh',{method:'POST',headers:{'Content-Type':'application/x-www-form-urlencoded'},body:'action=zapret2_update'})
+  .then(function(r){return r.json();})
+  .then(function(res){
+    if(!res.ok){
+      if(btn){btn.disabled=false;btn.innerHTML=btn._o;}
+      if(chkBtn) chkBtn.disabled=false;
+      if(st) st.innerHTML='<span style="color:var(--bad)">'+(L?'Failed to start update.':'G&#252;ncelleme ba&#351;lat&#305;lamad&#305;.')+'</span>';
+      return;
+    }
+    zapPollUpdate(btn,chkBtn,st,0);
+  }).catch(function(){
+    if(btn){btn.disabled=false;btn.innerHTML=btn._o;}
+    if(chkBtn) chkBtn.disabled=false;
+    if(st) st.innerHTML='<span style="color:var(--bad)">'+(L?'Connection error.':'Ba&#287;lant&#305; hatas&#305;.')+'</span>';
+  });
+}
+function zapPollUpdate(btn,chkBtn,st,tries){
+  if(tries>60){
+    if(btn){btn.disabled=false;btn.innerHTML=btn._o;}
+    if(chkBtn) chkBtn.disabled=false;
+    if(st) st.innerHTML='<span style="color:var(--bad)">'+(L?'Timeout.':'Zaman a&#351;&#305;m&#305;.')+'</span>';
+    return;
+  }
+  setTimeout(function(){
+    fetch('/cgi-bin/action.sh',{method:'POST',headers:{'Content-Type':'application/x-www-form-urlencoded'},body:'action=zapret2_update_poll'})
+    .then(function(r){return r.json();})
+    .then(function(res){
+      if(!res.done){zapPollUpdate(btn,chkBtn,st,tries+1);return;}
+      if(btn){btn.disabled=true;btn.innerHTML=btn._o;btn.style.opacity='0.4';}
+      if(chkBtn) chkBtn.disabled=false;
+      zapUpdState._updating=false;
+      var rc=String(res.rc);
+      if(rc==='0'){
+        var html='<span style="color:var(--good)">&#10003; '+(L?'Updated: ':'G&#252;ncellendi: ')+'<b>'+res.version+'</b></span>';
+        zapUpdState={checked:true,update:false,current:res.version,latest:res.version,statusHtml:html,updBtnEnabled:false};
+        if(st) st.innerHTML=html;
+        toast(L?'Zapret2 updated!':'Zapret2 g&#252;ncellendi!',true);
+        setTimeout(function(){fetchS();},5000);
+      } else if(rc==='2'){
+        var html='<span style="color:var(--good)">&#10003; '+(L?'Already up to date: ':'Zaten g&#252;ncel: ')+'<b>'+res.version+'</b></span>';
+        zapUpdState={checked:true,update:false,current:res.version,latest:res.version,statusHtml:html,updBtnEnabled:false};
+        if(st) st.innerHTML=html;
+      } else {
+        var html='<span style="color:var(--bad)">'+(L?'Update failed. Check SSH for details.':'G&#252;ncelleme ba&#351;ar&#305;s&#305;z. SSH\'den detay kontrol edin.')+'</span>';
+        zapUpdState.statusHtml=html;
+        if(st) st.innerHTML=html;
+        toast(L?'Update failed!':'G&#252;ncelleme ba&#351;ar&#305;s&#305;z!',false);
+      }
+    }).catch(function(){zapPollUpdate(btn,chkBtn,st,tries+1);});
+  },3000);
 }
 function tgStart(btn){
   if(btn){btn._o=btn.innerHTML;btn.disabled=true;btn.innerHTML='<span class="spinner"></span>';}
