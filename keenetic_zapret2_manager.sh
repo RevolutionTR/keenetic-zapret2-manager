@@ -37,7 +37,7 @@
 # -------------------------------------------------------------------
 SCRIPT_NAME="keenetic_zapret2_manager.sh"
 # Version scheme: vYY.M.D[.N]  (YY=year, M=month, D=day, N=daily revision)
-SCRIPT_VERSION="v26.6.24"
+SCRIPT_VERSION="v26.6.25"
 SCRIPT_REPO="https://github.com/RevolutionTR/keenetic-zapret2-manager"
 KZM2_SCRIPT_PATH="/opt/lib/opkg/keenetic_zapret2_manager.sh"
 SCRIPT_AUTHOR="RevolutionTR"
@@ -8010,17 +8010,10 @@ run_health_check() {
     [ -z "$WAN_IF" ] && WAN_IF="$(healthmon_detect_wan_iface_ndm 2>/dev/null)"
     [ -z "$WAN_IF" ] && WAN_IF="PPPoE0"
     local wan_link="" wan_conn="" wan_state=""
-    wan_link="$(hm_ndmc_cmd "show interface $WAN_IF" 2>/dev/null | awk '/^[ \t]*link:/ {print $2; exit}')"
-    wan_conn="$(hm_ndmc_cmd "show interface $WAN_IF" 2>/dev/null | awk '/^[ \t]*connected:/ {print $2; exit}')"
-    if [ -z "$wan_link" ] && [ -z "$wan_conn" ]; then
-        # fallback (best-effort)
-        if ip link show "$WAN_IF" >/dev/null 2>&1; then
-            wan_link="up"
-            wan_conn="yes"
-        else
-            wan_link="down"
-            wan_conn="no"
-        fi
+    if ip link show "$WAN_IF" >/dev/null 2>&1; then
+        wan_link="up"; wan_conn="yes"
+    else
+        wan_link="down"; wan_conn="no"
     fi
     if [ "$wan_link" = "up" ] && [ "$wan_conn" = "yes" ]; then
         wan_state="PASS"
@@ -8385,13 +8378,12 @@ run_health_check() {
     add_line "$HC_SYS" "$(T TXT_HEALTH_LOAD)" " $load_msg" "$load_ok"
     add_line "$HC_SYS" "$(T TXT_HEALTH_TEMP)" " $temp_msg" "$temp_ok"
     local _hc_wm _hc_wmt _hc_wml
-    for _hc_wm in WifiMaster0 WifiMaster1 WifiMaster2; do
+    for _hc_wm in WifiMaster0 WifiMaster1; do
         _hc_wmt=$(LD_LIBRARY_PATH= ndmc -c "show interface $_hc_wm" 2>/dev/null | grep -i temperature | tr -d ' ' | cut -d: -f2)
         if [ -n "$_hc_wmt" ]; then
             case "$_hc_wm" in
                 WifiMaster0) _hc_wml="$(T _ 'WiFi 2.4GHz Cip Sicakligi' 'WiFi 2.4GHz Chip Temp')" ;;
                 WifiMaster1) _hc_wml="$(T _ 'WiFi 5GHz Cip Sicakligi' 'WiFi 5GHz Chip Temp')" ;;
-                WifiMaster2) _hc_wml="$(T _ 'WiFi 6GHz Cip Sicakligi' 'WiFi 6GHz Chip Temp')" ;;
             esac
             add_line "$HC_SYS" "$_hc_wml" " ${_hc_wmt} $(T _ 'Santigrat Derece' 'Degrees Celsius')" "INFO"
         fi
@@ -13355,15 +13347,10 @@ DEOF
             _wan_if="$(get_wan_if 2>/dev/null)"
             [ -z "$_wan_if" ] && _wan_if="$(healthmon_detect_wan_iface_ndm 2>/dev/null)"
             [ -z "$_wan_if" ] && _wan_if="PPPoE0"
-            _wan_raw="$(LD_LIBRARY_PATH= ndmc -c "show interface $_wan_if" 2>/dev/null)"
-            _wan_link="$(printf '%s\n' "$_wan_raw" | awk '/link:/ {print $2; exit}')"
-            _wan_conn="$(printf '%s\n' "$_wan_raw" | awk '/connected:/ {print $2; exit}')"
-            if [ -z "$_wan_link" ] && [ -z "$_wan_conn" ]; then
-                if ip link show "$_wan_if" >/dev/null 2>&1; then
-                    _wan_link="up"; _wan_conn="yes"
-                else
-                    _wan_link="down"; _wan_conn="no"
-                fi
+            if ip link show "$_wan_if" >/dev/null 2>&1; then
+                _wan_link="up"; _wan_conn="yes"
+            else
+                _wan_link="down"; _wan_conn="no"
             fi
             if [ "$_wan_link" = "up" ] && [ "$_wan_conn" = "yes" ]; then _wan_st="PASS"; else _wan_st="FAIL"; fi
             _add "net" "$(T TXT_HEALTH_WAN_STATUS)" "$_wan_if" "$_wan_st"
@@ -13476,13 +13463,12 @@ DEOF
                 fi
             done
             [ -n "$_hc_temp" ] && _add "sys" "$(T TXT_HEALTH_TEMP)" "${_hc_temp}°C" "INFO"
-            for _hc_wm in WifiMaster0 WifiMaster1 WifiMaster2; do
+            for _hc_wm in WifiMaster0 WifiMaster1; do
                 _hc_wmt=$(LD_LIBRARY_PATH= ndmc -c "show interface $_hc_wm" 2>/dev/null | grep -i temperature | tr -d ' ' | cut -d: -f2)
                 if [ -n "$_hc_wmt" ]; then
                     case "$_hc_wm" in
                         WifiMaster0) _hc_wml="$(T _ 'WiFi 2.4GHz Cip Sicakligi' 'WiFi 2.4GHz Chip Temp')" ;;
                         WifiMaster1) _hc_wml="$(T _ 'WiFi 5GHz Cip Sicakligi' 'WiFi 5GHz Chip Temp')" ;;
-                        WifiMaster2) _hc_wml="$(T _ 'WiFi 6GHz Cip Sicakligi' 'WiFi 6GHz Chip Temp')" ;;
                     esac
                     _add "sys" "$_hc_wml" "${_hc_wmt}°C" "INFO"
                 fi
@@ -13901,13 +13887,12 @@ healthmon_status() {
         printf "  %-24s : %s\n" "$(T _ 'SoC Sicakligi' 'SoC Temperature')" "$_temp_simdi $(T _ 'Santigrat Derece' 'Degrees Celsius')"
     fi
     local _wm _wmt _wml
-    for _wm in WifiMaster0 WifiMaster1 WifiMaster2; do
+    for _wm in WifiMaster0 WifiMaster1; do
         _wmt=$(LD_LIBRARY_PATH= ndmc -c "show interface $_wm" 2>/dev/null | grep -i temperature | tr -d ' ' | cut -d: -f2)
         if [ -n "$_wmt" ]; then
             case "$_wm" in
                 WifiMaster0) _wml="$(T _ 'WiFi 2.4GHz Cip Sicakligi' 'WiFi 2.4GHz Chip Temp')" ;;
                 WifiMaster1) _wml="$(T _ 'WiFi 5GHz Cip Sicakligi' 'WiFi 5GHz Chip Temp')" ;;
-                WifiMaster2) _wml="$(T _ 'WiFi 6GHz Cip Sicakligi' 'WiFi 6GHz Chip Temp')" ;;
             esac
             printf "  %-24s : %s\n" "$_wml" "$_wmt $(T _ 'Santigrat Derece' 'Degrees Celsius')"
         fi
