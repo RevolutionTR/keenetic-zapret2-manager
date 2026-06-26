@@ -37,7 +37,7 @@
 # -------------------------------------------------------------------
 SCRIPT_NAME="keenetic_zapret2_manager.sh"
 # Version scheme: vYY.M.D[.N]  (YY=year, M=month, D=day, N=daily revision)
-SCRIPT_VERSION="v26.6.25"
+SCRIPT_VERSION="v26.6.26"
 SCRIPT_REPO="https://github.com/RevolutionTR/keenetic-zapret2-manager"
 KZM2_SCRIPT_PATH="/opt/lib/opkg/keenetic_zapret2_manager.sh"
 SCRIPT_AUTHOR="RevolutionTR"
@@ -17303,7 +17303,7 @@ function fmtBcCard(S){
   var profLabel=profileNames[S.dpi_profile]||S.dpi_profile||'—';
   if(!S.bc_ts){
     return '<div class="card dash-card-span-2"><h3>'+(L?'DPI Health Score':'DPI Sa&#287;l&#305;k Skoru')+'</h3>'+
-      '<div style="color:var(--muted);font-size:13px;margin:10px 0 6px">'+(L?'Blockcheck has not been run yet.':'Blockcheck hen&#252;z &#231;al&#305;&#351;t&#305;r&#305;lmad&#305;.')+'</div>'+
+      '<div style="color:var(--muted);font-size:13px;margin:10px 0 6px">'+(L?'Blockcheck has not been run yet. If your active profile is working fine, a score is not required.':'Blockcheck hen&#252;z &#231;al&#305;&#351;t&#305;r&#305;lmad&#305;. Aktif profil veya se&#231;ti&#287;iniz profil sorunsuz &#231;al&#305;&#351;&#305;yorsa skor gerekmez.')+'</div>'+
       '<div style="font-size:12px;color:var(--muted)">'+(L?'Active Profile: ':'Aktif Profil: ')+'<span style="color:var(--text)">'+profLabel+'</span></div>'+
       '<div style="margin-top:10px;font-size:11.5px;color:var(--muted)">'+(L?'Run SSH &rarr; Menu <b>B</b> (Blockcheck) to see score.':'Score g&#246;rmek i&#231;in SSH ile ba&#287;lan&#305;p<br><span style="color:var(--accent);font-family:monospace">kzm2</span> &rarr; Men&#252; <b>B</b> (Blockcheck) &#231;al&#305;&#351;t&#305;r&#305;n.')+'</div>'+
     '</div>';
