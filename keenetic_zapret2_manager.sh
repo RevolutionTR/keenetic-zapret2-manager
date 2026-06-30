@@ -37,7 +37,7 @@
 # -------------------------------------------------------------------
 SCRIPT_NAME="keenetic_zapret2_manager.sh"
 # Version scheme: vYY.M.D[.N]  (YY=year, M=month, D=day, N=daily revision)
-SCRIPT_VERSION="v26.6.26"
+SCRIPT_VERSION="v26.6.30"
 SCRIPT_REPO="https://github.com/RevolutionTR/keenetic-zapret2-manager"
 KZM2_SCRIPT_PATH="/opt/lib/opkg/keenetic_zapret2_manager.sh"
 SCRIPT_AUTHOR="RevolutionTR"
@@ -3985,9 +3985,8 @@ check_keenetic_components() {
             missing_optional=1
         elif echo "$opt_fstype" | grep -qE "^(overlay|overlayfs|ubifs)$" || \
              echo "$opt_dev" | grep -qE "^(overlay|ubi[0-9])"; then
-            print_status WARN "$(T TXT_COMP_STORAGE_INTERNAL_SD)"
+            print_status INFO "$(T TXT_COMP_STORAGE_INTERNAL_SD)"
             echo "$(T TXT_COMP_STORAGE_INTERNAL_HINT)"
-            missing_optional=1
         else
             print_status PASS "$(T TXT_COMP_STORAGE_GENERIC)"
         fi
@@ -3998,9 +3997,8 @@ check_keenetic_components() {
         _opt_mounton=$(df -P /opt 2>/dev/null | awk 'NR==2{print $NF}')
         if [ "$_opt_mounton" = "/" ]; then
             # /opt, kok dizinin altinda bir klasor = Keenetic dahili flash
-            print_status WARN "$(T TXT_COMP_STORAGE_INTERNAL_SD)"
+            print_status INFO "$(T TXT_COMP_STORAGE_INTERNAL_SD)"
             echo "$(T TXT_COMP_STORAGE_INTERNAL_HINT)"
-            missing_optional=1
         elif [ -n "$_opt_mounton" ]; then
             # Mount var ama /proc/mounts'ta gorunmedi (edge case)
             print_status PASS "$(T TXT_COMP_STORAGE_GENERIC)"
@@ -15031,7 +15029,7 @@ kzm_gui_gen_status() {
   "load15": "$_load15",
   "ram_used_mb": $_ram_used_mb,
   "ram_total_mb": $_ram_total_mb,
-  "disk_used_pct": $_disk_used_pct,
+  "disk_used_pct": $_dpct,
   "disk_used_mb": $_disk_used_mb,
   "disk_total_mb": $_disk_total_mb,
   "dpi_profile": "$_dpi_profile",
