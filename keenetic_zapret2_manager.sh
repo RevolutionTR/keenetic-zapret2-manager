@@ -37,7 +37,7 @@
 # -------------------------------------------------------------------
 SCRIPT_NAME="keenetic_zapret2_manager.sh"
 # Version scheme: vYY.M.D[.N]  (YY=year, M=month, D=day, N=daily revision)
-SCRIPT_VERSION="v26.6.30"
+SCRIPT_VERSION="v26.7.1"
 SCRIPT_REPO="https://github.com/RevolutionTR/keenetic-zapret2-manager"
 KZM2_SCRIPT_PATH="/opt/lib/opkg/keenetic_zapret2_manager.sh"
 SCRIPT_AUTHOR="RevolutionTR"
@@ -10638,7 +10638,7 @@ $(T TXT_TGBOT_DEVICE_TRAFFIC_LABEL)
 }
 # System status text
 tgbot_status_text() {
-    local zapret_st profile_name wan_if cpu_val ram_val disk_val uptime_val hm_st tgbot_st
+    local zapret_st profile_name wan_if cpu_val ram_val disk_val uptime_val temp_val hm_st tgbot_st
     # Device info header
     telegram_device_info_init >/dev/null 2>&1
     # DPI profili
@@ -10660,6 +10660,24 @@ tgbot_status_text() {
     [ -z "$disk_val" ] && disk_val="-"
     uptime_val="$(uptime 2>/dev/null | sed 's/.*up //' | cut -d',' -f1)"
     [ -z "$uptime_val" ] && uptime_val="-"
+    # Sicaklik: SoC + WiFi cipleri
+    local temp_val _soc_temp _wifi0_t _wifi1_t _tf _tv
+    _soc_temp=""
+    for _tf in /sys/class/thermal/thermal_zone*/temp; do
+        [ -f "$_tf" ] || continue
+        _tv="$(cat "$_tf" 2>/dev/null)"
+        if [ -n "$_tv" ]; then
+            _soc_temp="$(awk -v t="$_tv" 'BEGIN{printf "%.0f", t/1000}')"
+            break
+        fi
+    done
+    _wifi0_t="$(LD_LIBRARY_PATH= ndmc -c 'show interface WifiMaster0' 2>/dev/null | grep -i temperature | tr -d ' ' | cut -d: -f2)"
+    _wifi1_t="$(LD_LIBRARY_PATH= ndmc -c 'show interface WifiMaster1' 2>/dev/null | grep -i temperature | tr -d ' ' | cut -d: -f2)"
+    temp_val=""
+    [ -n "$_soc_temp" ] && temp_val="SoC ${_soc_temp}°C"
+    [ -n "$_wifi0_t" ] && temp_val="${temp_val}${temp_val:+ | }2.4GHz ${_wifi0_t}°C"
+    [ -n "$_wifi1_t" ] && temp_val="${temp_val}${temp_val:+ | }5GHz ${_wifi1_t}°C"
+    [ -z "$temp_val" ] && temp_val="-"
     # Disk sagligi
     local disk_health_val
     kzm2_disk_health_check
@@ -10719,10 +10737,11 @@ tgbot_status_text() {
         "${TG_DEVICE_WAN_IP:-$(T TXT_TGBOT_STATUS_UNKNOWN)}" \
         "${TG_DEVICE_MODEL:-$(T TXT_TGBOT_STATUS_UNKNOWN)}" \
         "${TG_DEVICE_FIRMWARE:-$(T TXT_TGBOT_STATUS_UNKNOWN)}"
-    printf "📊 DPI : %s\n💻 CPU : %s%% | RAM: %s\n💾 Disk : %s | Uptime: %s\n🩺 Disk Sagligi : %s\n❤️ HMon : %s\n🤖 TGBot : %s\n⚡ Zapret2 : %s\n🌐 KeenDNS : %s\n🔌 WAN : %s\n📦 KZM2 : %s | Zapret2: %s" \
+    printf "📊 DPI : %s\n💻 CPU : %s%% | RAM: %s\n💾 Disk : %s | Uptime: %s\n🌡 Sicaklik : %s\n🩺 Disk Sagligi : %s\n❤️ HMon : %s\n🤖 TGBot : %s\n⚡ Zapret2 : %s\n🌐 KeenDNS : %s\n🔌 WAN : %s\n📦 KZM2 : %s | Zapret2: %s" \
         "$profile_name" \
         "$cpu_val" "$ram_val" \
         "$disk_val" "$uptime_val" \
+        "$temp_val" \
         "$disk_health_val" \
         "$hm_st" \
         "$tgbot_st" \
