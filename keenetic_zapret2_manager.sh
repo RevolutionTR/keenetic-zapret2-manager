@@ -37,7 +37,7 @@
 # -------------------------------------------------------------------
 SCRIPT_NAME="keenetic_zapret2_manager.sh"
 # Version scheme: vYY.M.D[.N]  (YY=year, M=month, D=day, N=daily revision)
-SCRIPT_VERSION="v26.7.1"
+SCRIPT_VERSION="v26.7.2"
 SCRIPT_REPO="https://github.com/RevolutionTR/keenetic-zapret2-manager"
 KZM2_SCRIPT_PATH="/opt/lib/opkg/keenetic_zapret2_manager.sh"
 SCRIPT_AUTHOR="RevolutionTR"
@@ -1191,8 +1191,8 @@ TXT_TG_WAN_LABEL_TR="WAN IP"
 TXT_TG_WAN_LABEL_EN="WAN IP"
 TXT_TG_LAN_LABEL_TR="LAN IP"
 TXT_TG_LAN_LABEL_EN="LAN IP"
-TXT_TG_DEVICE_LABEL_TR="Cihaz"
-TXT_TG_DEVICE_LABEL_EN="Router"
+TXT_TG_DEVICE_LABEL_TR="Sistem Adi"
+TXT_TG_DEVICE_LABEL_EN="System Name"
 TXT_TG_EVENT_LABEL_TR="Olay"
 TXT_TG_EVENT_LABEL_EN="Event"
 TXT_TG_STATUS_ACTIVE_TR="Bildirimler: AKTIF (Token ve ChatID kayitli)"
@@ -1460,41 +1460,41 @@ TXT_HM_PROMPT_UPDATECHECK_ENABLE_EN="Update check (1=on,0=off) [e.g. 1]:"
 TXT_HM_PROMPT_UPDATECHECK_SEC_TR="Update check araligi (sn) [or: 21600]:"
 TXT_HM_PROMPT_UPDATECHECK_SEC_EN="Update check interval (sec) [e.g. 21600]:"
 TXT_UPD_ZKM_NEW_TR="[Guncelleme]
-📦 Paket  : KZM2
-🔖 Mevcut : %CUR%
-🆕 Yeni   : %NEW%
-🔗 Link   : %URL%
+📦 Paket          : KZM2
+🔖 Mevcut Surum   : %CUR%
+🆕 Guncellenen Surum : %NEW%
+🔗 Link           : %URL%
 Simdi kur? (menu 10)"
 TXT_UPD_ZKM_NEW_EN="[Update]
-📦 Package : KZM2
-🔖 Current : %CUR%
-🆕 Latest  : %NEW%
-🔗 Link    : %URL%
+📦 Package        : KZM2
+🔖 Current Version: %CUR%
+🆕 Updated Version: %NEW%
+🔗 Link           : %URL%
 Install now? (menu 10)"
 TXT_UPD_ZAPRET_NEW_TR="[Guncelleme]
 Zapret2 guncellemesi icin Ana Menu > 6 secenegi kullanin
-📦 Paket  : Zapret2
-🔖 Kurulu : %CUR%
-🆕 Yeni   : %NEW%
-🔗 Link   : %URL%"
+📦 Paket          : Zapret2
+🔖 Mevcut Surum   : %CUR%
+🆕 Guncellenen Surum : %NEW%
+🔗 Link           : %URL%"
 TXT_UPD_ZAPRET_NEW_EN="[Update]
 Use Main Menu > Option 6 to update Zapret2
-📦 Package  : Zapret2
-🔖 Installed: %CUR%
-🆕 Latest   : %NEW%
-🔗 Link     : %URL%"
+📦 Package        : Zapret2
+🔖 Current Version: %CUR%
+🆕 Updated Version: %NEW%
+🔗 Link           : %URL%"
 TXT_UPD_ZAPRET_ROLLED_TR="[Uyari] Zapret2 geri cekilmis surum
 Ana Menu > 6 ile GitHub surumunu yeniden yukleyin
-📦 Paket  : Zapret2
-⚠️ Kurulu : %CUR% (geri cekilmis)
-✅ Stabil : %NEW%"
+📦 Paket          : Zapret2
+⚠️ Mevcut Surum   : %CUR% (geri cekilmis)
+✅ Stabil         : %NEW%"
 TXT_UPD_ZAPRET_ROLLED_EN="[Warning] Zapret2 pulled release
 Use Main Menu > 6 to reinstall from GitHub
-📦 Package  : Zapret2
-⚠️ Installed: %CUR% (pulled)
-✅ Stable  : %NEW%"
-TXT_UPD_ZKM_AUTO_OK_TR="[OtoGuncelleme]\nKZM2 otomatik kurulum basarili.\nBetigi yeniden calistirin.\n\n📦 Paket  : KZM2\n🔖 Mevcut : %CUR%\n🆕 Yeni   : %NEW%\n🔗 Link   : %URL%"
-TXT_UPD_ZKM_AUTO_OK_EN="[AutoUpdate]\nKZM2 auto install OK.\nPlease re-run the script.\n\n📦 Package  : KZM2\n🔖 Current  : %CUR%\n🆕 Latest   : %NEW%\n🔗 Link     : %URL%"
+📦 Package        : Zapret2
+⚠️ Current Version: %CUR% (pulled)
+✅ Stable         : %NEW%"
+TXT_UPD_ZKM_AUTO_OK_TR="[OtoGuncelleme]\nKZM2 otomatik kurulum basarili.\nBetigi yeniden calistirin.\n\n📦 Paket          : KZM2\n🔖 Mevcut Surum   : %CUR%\n🆕 Guncellenen Surum : %NEW%\n🔗 Link           : %URL%"
+TXT_UPD_ZKM_AUTO_OK_EN="[AutoUpdate]\nKZM2 auto install OK.\nPlease re-run the script.\n\n📦 Package        : KZM2\n🔖 Current Version: %CUR%\n🆕 Updated Version: %NEW%\n🔗 Link           : %URL%"
 TXT_UPD_ZKM_UP_TO_DATE_TR="[Guncelleme]
 📦 Paket : KZM2
 🔄 Durum : Guncel ✅
@@ -1709,8 +1709,8 @@ TXT_TGBOT_WIFI_TITLE_TR="Wifi Durumu"
 TXT_TGBOT_WIFI_TITLE_EN="Wifi Status"
 TXT_TGBOT_WIFI_NO_IF_TR="Wifi arayuzu bulunamadi."
 TXT_TGBOT_WIFI_NO_IF_EN="No wifi interface found."
-TXT_TGBOT_SISTEM_HEADER_ISIM_TR="Isim"
-TXT_TGBOT_SISTEM_HEADER_ISIM_EN="Name"
+TXT_TGBOT_SISTEM_HEADER_ISIM_TR="Sistem Adi"
+TXT_TGBOT_SISTEM_HEADER_ISIM_EN="System Name"
 TXT_TGBOT_SISTEM_HEADER_MODEL_TR="Model"
 TXT_TGBOT_SISTEM_HEADER_MODEL_EN="Model"
 TXT_TGBOT_DEVICE_KEENDNS_LABEL_TR="KeenDNS"
@@ -9949,7 +9949,8 @@ $event"
 🔧 $(T TXT_TG_MODEL_LABEL) : $TG_DEVICE_MODEL
 
 $event
-🕒 $(T TXT_TG_TIME_LABEL) : $(date '+%Y-%m-%d %H:%M:%S')
+🕒 $(T _ 'Tarih' 'Date') : $(date '+%Y-%m-%d')
+🕒 $(T _ 'Saat ' 'Time') : $(date '+%H:%M:%S')
 EOF
 }
 telegram_ready() {
