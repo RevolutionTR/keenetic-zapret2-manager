@@ -37,7 +37,7 @@
 # -------------------------------------------------------------------
 SCRIPT_NAME="keenetic_zapret2_manager.sh"
 # Version scheme: vYY.M.D[.N]  (YY=year, M=month, D=day, N=daily revision)
-SCRIPT_VERSION="v26.7.2"
+SCRIPT_VERSION="v26.7.3"
 SCRIPT_REPO="https://github.com/RevolutionTR/keenetic-zapret2-manager"
 KZM2_SCRIPT_PATH="/opt/lib/opkg/keenetic_zapret2_manager.sh"
 SCRIPT_AUTHOR="RevolutionTR"
@@ -1183,8 +1183,6 @@ TXT_MENU_16_EN="16. System Health and Monitoring (CPU/RAM/Disk/Load/Zapret2)"
 # -------------------------------------------------------------------
 TXT_TG_SETTINGS_TITLE_TR="Telegram Bildirim Ayarlari"
 TXT_TG_SETTINGS_TITLE_EN="Telegram Notification Settings"
-TXT_TG_TIME_LABEL_TR="Zaman "
-TXT_TG_TIME_LABEL_EN="Time  "
 TXT_TG_MODEL_LABEL_TR="Model "
 TXT_TG_MODEL_LABEL_EN="Model "
 TXT_TG_WAN_LABEL_TR="WAN IP"
@@ -7235,9 +7233,9 @@ display_menu() {
     [ "$_zap_sha_state" = "ok" ] && _clr_zap="${CLR_GREEN}" || _clr_zap="${CLR_ORANGE}"
     printf "  %b%-*s%b : %b%b%s%b\n"      "${CLR_BOLD}" "$_lw" "$(T _ 'KZM2 Surum'   'KZM2 Version'    )"        "${CLR_RESET}" "${CLR_BOLD}" "$_clr_kzm" "${SCRIPT_VERSION}"                               "${CLR_RESET}"
     printf "  %b%-*s%b : %b%b%s%b\n"      "${CLR_BOLD}" "$_lw" "$(T _ 'Zapret2 Surum' 'Zapret2 Version'  )"       "${CLR_RESET}" "${CLR_BOLD}" "$_clr_zap" "$(kzm2_get_zapret_version)"                       "${CLR_RESET}"
-    # ISS tespiti - cache kullan
+    # ISS tespiti - cache kullan (1 gunden eskiyse yenile)
     local _iss_cache="/opt/var/run/kzm2_iss.cache"
-    if [ -f "$_iss_cache" ]; then
+    if [ -f "$_iss_cache" ] && [ -z "$(find "$_iss_cache" -mtime +1 2>/dev/null)" ]; then
         _iss_domain="$(cat "$_iss_cache" 2>/dev/null | tr -d '[:space:]')"
     else
         _iss_domain="$(LD_LIBRARY_PATH= ndmc -c 'show running-config' 2>/dev/null | grep 'authentication identity' | grep -o '@[^[:space:]]*' | head -1)"
@@ -15266,7 +15264,13 @@ fi
 [ -z "$_kdns_access" ] && _kdns_access="none"
 _isp_dns_json="$(LD_LIBRARY_PATH= ndmc -c 'show ip name-server' 2>/dev/null | awk '/address:/{print $2}' | tr '\n' ' ' | sed 's/ $//;s/ / - /g')"
 _iss_name=""
-_iss_domain="$(cat /opt/var/run/kzm2_iss.cache 2>/dev/null | tr -d '[:space:]')"
+_iss_cache="/opt/var/run/kzm2_iss.cache"
+if [ -f "$_iss_cache" ] && [ -z "$(find "$_iss_cache" -mtime +1 2>/dev/null)" ]; then
+    _iss_domain="$(cat "$_iss_cache" 2>/dev/null | tr -d '[:space:]')"
+else
+    _iss_domain="$(LD_LIBRARY_PATH= ndmc -c 'show running-config' 2>/dev/null | grep 'authentication identity' | grep -o '@[^[:space:]]*' | head -1)"
+    [ -n "$_iss_domain" ] && printf '%s' "$_iss_domain" > "$_iss_cache" 2>/dev/null
+fi
 case "$_iss_domain" in
     @ttnet)      _iss_name="Turk Telekom (TT Net)" ;;
     @superonline|@fiber) _iss_name="Superonline (SOL)" ;;
