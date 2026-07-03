@@ -37,7 +37,7 @@
 # -------------------------------------------------------------------
 SCRIPT_NAME="keenetic_zapret2_manager.sh"
 # Version scheme: vYY.M.D[.N]  (YY=year, M=month, D=day, N=daily revision)
-SCRIPT_VERSION="v26.7.3"
+SCRIPT_VERSION="v26.7.4"
 SCRIPT_REPO="https://github.com/RevolutionTR/keenetic-zapret2-manager"
 KZM2_SCRIPT_PATH="/opt/lib/opkg/keenetic_zapret2_manager.sh"
 SCRIPT_AUTHOR="RevolutionTR"
@@ -7235,7 +7235,7 @@ display_menu() {
     printf "  %b%-*s%b : %b%b%s%b\n"      "${CLR_BOLD}" "$_lw" "$(T _ 'Zapret2 Surum' 'Zapret2 Version'  )"       "${CLR_RESET}" "${CLR_BOLD}" "$_clr_zap" "$(kzm2_get_zapret_version)"                       "${CLR_RESET}"
     # ISS tespiti - cache kullan (1 gunden eskiyse yenile)
     local _iss_cache="/opt/var/run/kzm2_iss.cache"
-    if [ -f "$_iss_cache" ] && [ -z "$(find "$_iss_cache" -mtime +1 2>/dev/null)" ]; then
+    if [ -f "$_iss_cache" ] && [ -z "$(find "$_iss_cache" -mmin +1440 2>/dev/null)" ]; then
         _iss_domain="$(cat "$_iss_cache" 2>/dev/null | tr -d '[:space:]')"
     else
         _iss_domain="$(LD_LIBRARY_PATH= ndmc -c 'show running-config' 2>/dev/null | grep 'authentication identity' | grep -o '@[^[:space:]]*' | head -1)"
@@ -7416,6 +7416,9 @@ _dns_master_list() {
         "149.112.112.112@dns.quad9.net|DoT|dns-proxy tls upstream 149.112.112.112 sni dns.quad9.net|no dns-proxy tls upstream 149.112.112.112|Quad9|Gizlilik" \
         "94.140.14.14@dns.adguard-dns.com|DoT|dns-proxy tls upstream 94.140.14.14 sni dns.adguard-dns.com|no dns-proxy tls upstream 94.140.14.14|AdGuard|Reklam" \
         "94.140.15.15@dns.adguard-dns.com|DoT|dns-proxy tls upstream 94.140.15.15 sni dns.adguard-dns.com|no dns-proxy tls upstream 94.140.15.15|AdGuard|Reklam" \
+        "94.140.14.140@unfiltered.adguard-dns.com|DoT|dns-proxy tls upstream 94.140.14.140 sni unfiltered.adguard-dns.com|no dns-proxy tls upstream 94.140.14.140|AdGuardUnfiltered|Filtresiz" \
+        "94.140.14.141@unfiltered.adguard-dns.com|DoT|dns-proxy tls upstream 94.140.14.141 sni unfiltered.adguard-dns.com|no dns-proxy tls upstream 94.140.14.141|AdGuardUnfiltered|Filtresiz" \
+        "unfiltered.adguard-dns.com/dns-query|DoH|dns-proxy https upstream https://unfiltered.adguard-dns.com/dns-query dnsm|no dns-proxy https upstream https://unfiltered.adguard-dns.com/dns-query|AdGuardUnfiltered|Filtresiz" \
         "dns.mullvad.net/dns-query|DoH|dns-proxy https upstream https://dns.mullvad.net/dns-query dnsm|no dns-proxy https upstream https://dns.mullvad.net/dns-query|Mullvad|Gizlilik" \
         "185.228.168.9@family-filter-dns.cleanbrowsing.org|DoT|dns-proxy tls upstream 185.228.168.9 sni family-filter-dns.cleanbrowsing.org|no dns-proxy tls upstream 185.228.168.9|CleanBrowsing|Aile" \
         "185.228.169.9@family-filter-dns.cleanbrowsing.org|DoT|dns-proxy tls upstream 185.228.169.9 sni family-filter-dns.cleanbrowsing.org|no dns-proxy tls upstream 185.228.169.9|CleanBrowsing|Aile"
@@ -7442,7 +7445,7 @@ dns_show_current() {
         local _matched=0
         case "$_type" in
             DoT) echo "$_raw" | grep -qF "# ${_grep_key}@" && _matched=1 ;;
-            DoH) echo "$_raw" | grep -qF "uri: https://${_grep_key}" && _matched=1 ;;
+            DoH) echo "$_raw" | grep -qF "uri: https://${_grep_key%%/*}" && _matched=1 ;;
         esac
         if [ "$_matched" = "1" ]; then
             # Grup rengi ve cevirisi
@@ -7493,6 +7496,7 @@ dns_add_preset_menu() {
         printf " %b 2.%b %-28s%s\n" "${CLR_BOLD}" "${CLR_RESET}" "$(T _ 'Gizlilik Odakli' 'Privacy Focused')" "Quad9 + Mullvad"
         printf " %b 3.%b %-28s%s\n" "${CLR_BOLD}" "${CLR_RESET}" "$(T _ 'Reklam Engelleyici' 'Ad Blocker')" "AdGuard DoT"
         printf " %b 4.%b %-28s%s\n" "${CLR_BOLD}" "${CLR_RESET}" "$(T _ 'Aile Filtresi' 'Family Filter')" "CF Families + CleanBrowsing"
+        printf " %b 5.%b %-28s%s\n" "${CLR_BOLD}" "${CLR_RESET}" "$(T _ 'Filtresiz (AdGuard)' 'Unfiltered (AdGuard)')" "AdGuard Unfiltered DoT/DoH"
         printf " %b 0.%b %s\n" "${CLR_BOLD}" "${CLR_RESET}" "$(T _ 'Geri' 'Back')"
         echo ""
         printf '%s ' "$(T _ 'Secim:' 'Choice:')"
@@ -7509,6 +7513,8 @@ dns_add_preset_menu() {
                press_enter_to_continue ;;
             4) _dns_add_package "CF_Families" "$_raw"
                _dns_add_package "CleanBrowsing" "$_raw"
+               press_enter_to_continue ;;
+            5) _dns_add_package "AdGuardUnfiltered" "$_raw"
                press_enter_to_continue ;;
             0) return 0 ;;
         esac
@@ -7532,7 +7538,7 @@ _dns_add_package() {
         _apmatch=0
         case "$_type" in
             DoT) echo "$_raw" | grep -qF "# ${_grep_key}@" && _apmatch=1 ;;
-            DoH) echo "$_raw" | grep -qF "uri: https://${_grep_key}" && _apmatch=1 ;;
+            DoH) echo "$_raw" | grep -qF "uri: https://${_grep_key%%/*}" && _apmatch=1 ;;
         esac
         if [ "$_apmatch" = "1" ]; then
             printf "  %b%-5s%b %-40s : %b%s%b
@@ -7575,7 +7581,7 @@ dns_delete_menu() {
         _dmatch=0
         case "$_type" in
             DoT) echo "$_raw" | grep -qF "# ${_grep_key}@" && _dmatch=1 ;;
-            DoH) echo "$_raw" | grep -qF "uri: https://${_grep_key}" && _dmatch=1 ;;
+            DoH) echo "$_raw" | grep -qF "uri: https://${_grep_key%%/*}" && _dmatch=1 ;;
         esac
         if [ "$_dmatch" = "1" ]; then
             _num=$((_num+1))
@@ -7653,7 +7659,7 @@ dns_delete_all() {
         _damatch=0
         case "$_type2" in
             DoT) echo "$_raw" | grep -qF "# ${_grep_key}@" && _damatch=1 ;;
-            DoH) echo "$_raw" | grep -qF "uri: https://${_grep_key}" && _damatch=1 ;;
+            DoH) echo "$_raw" | grep -qF "uri: https://${_grep_key%%/*}" && _damatch=1 ;;
         esac
         if [ "$_damatch" = "1" ]; then
             LD_LIBRARY_PATH= ndmc -c "$_del" >/dev/null 2>&1
@@ -13087,7 +13093,7 @@ if [ "$1" = "--cgi-action" ]; then
                         printf '%s' "$_dnsraw" | grep -qF "# ${_gk}@" && _found=1
                         ;;
                     DoH)
-                        printf '%s' "$_dnsraw" | grep -qF "uri: https://${_gk}" && _found=1
+                        printf '%s' "$_dnsraw" | grep -qF "uri: https://${_gk%%/*}" && _found=1
                         ;;
                 esac
                 if [ "$_found" = "1" ]; then
@@ -13106,7 +13112,7 @@ if [ "$1" = "--cgi-action" ]; then
             # $3: paket adi — exit 0: eklendi, exit 2: zaten mevcut
             _cgi_pkg="$3"
             case "$_cgi_pkg" in
-                Google|Cloudflare|CF_Families|Quad9|AdGuard|Mullvad|Dns0eu|CleanBrowsing)
+                Google|Cloudflare|CF_Families|Quad9|AdGuard|AdGuardUnfiltered|Mullvad|Dns0eu|CleanBrowsing)
                     _raw="$(LD_LIBRARY_PATH= ndmc -c 'show dns-proxy' 2>/dev/null)"
                     # Paketin tumu mevcut mu kontrol et
                     _all_exist=1
@@ -15265,7 +15271,7 @@ fi
 _isp_dns_json="$(LD_LIBRARY_PATH= ndmc -c 'show ip name-server' 2>/dev/null | awk '/address:/{print $2}' | tr '\n' ' ' | sed 's/ $//;s/ / - /g')"
 _iss_name=""
 _iss_cache="/opt/var/run/kzm2_iss.cache"
-if [ -f "$_iss_cache" ] && [ -z "$(find "$_iss_cache" -mtime +1 2>/dev/null)" ]; then
+if [ -f "$_iss_cache" ] && [ -z "$(find "$_iss_cache" -mmin +1440 2>/dev/null)" ]; then
     _iss_domain="$(cat "$_iss_cache" 2>/dev/null | tr -d '[:space:]')"
 else
     _iss_domain="$(LD_LIBRARY_PATH= ndmc -c 'show running-config' 2>/dev/null | grep 'authentication identity' | grep -o '@[^[:space:]]*' | head -1)"
@@ -16589,6 +16595,9 @@ case "$ACTION" in
             "149.112.112.112@dns.quad9.net|DoT|Gizlilik" \
             "94.140.14.14@dns.adguard-dns.com|DoT|Reklam" \
             "94.140.15.15@dns.adguard-dns.com|DoT|Reklam" \
+            "94.140.14.140@unfiltered.adguard-dns.com|DoT|Filtresiz" \
+            "94.140.14.141@unfiltered.adguard-dns.com|DoT|Filtresiz" \
+            "unfiltered.adguard-dns.com/dns-query|DoH|Filtresiz" \
             "dns.mullvad.net/dns-query|DoH|Gizlilik" \
             "185.228.168.9@family-filter-dns.cleanbrowsing.org|DoT|Aile" \
             "185.228.169.9@family-filter-dns.cleanbrowsing.org|DoT|Aile"
@@ -16604,7 +16613,7 @@ case "$ACTION" in
                     printf '%s' "$_dnsraw" | grep -qF "# ${_gk}@" && _found=1
                     ;;
                 DoH)
-                    printf '%s' "$_dnsraw" | grep -qF "uri: https://${_gk}" && _found=1
+                    printf '%s' "$_dnsraw" | grep -qF "uri: https://${_gk%%/*}" && _found=1
                     ;;
             esac
             if [ "$_found" = "1" ]; then
@@ -16616,7 +16625,7 @@ case "$ACTION" in
 ' "$_items" "$_rebind" ;;
     dns_add_preset)
         _pkg=$(get_param pkg)
-        case "$_pkg" in Google|Cloudflare|CF_Families|Quad9|AdGuard|Mullvad|Dns0eu|CleanBrowsing) ;; *) fail "Gecersiz paket"; exit 0 ;; esac
+        case "$_pkg" in Google|Cloudflare|CF_Families|Quad9|AdGuard|AdGuardUnfiltered|Mullvad|Dns0eu|CleanBrowsing) ;; *) fail "Gecersiz paket"; exit 0 ;; esac
         _kzm="/opt/lib/opkg/keenetic_zapret2_manager.sh"
         [ -f "$_kzm" ] || { fail "KZM2 bulunamadi"; exit 0; }
         # Zaten mevcut mu inline kontrol et
@@ -16628,6 +16637,7 @@ case "$ACTION" in
             CF_Families)   _pkg_keys="1.1.1.2 1.0.0.2" ;;
             Quad9)         _pkg_keys="9.9.9.9 149.112.112.112" ;;
             AdGuard)       _pkg_keys="94.140.14.14 94.140.15.15" ;;
+            AdGuardUnfiltered) _pkg_keys="94.140.14.140 94.140.14.141 unfiltered.adguard-dns.com" ;;
             Mullvad)       _pkg_keys="dns.mullvad.net" ;;
             CleanBrowsing) _pkg_keys="185.228.168.9 185.228.169.9" ;;
         esac
@@ -17189,6 +17199,7 @@ function dnsPresetHtml(){
     ['Standard','Standard (No Filter)','Standart (Filtresiz)','Google + Cloudflare DoT/DoH'],
     ['Privacy','Privacy Focused','Gizlilik Odakl&#305;','Quad9 + Mullvad'],
     ['AdGuard','Ad Blocker','Reklam Engelleyici','AdGuard DoT'],
+    ['AdGuardUnfiltered','Unfiltered (AdGuard)','Filtresiz (AdGuard)','AdGuard Unfiltered DoT/DoH'],
     ['Family','Family Filter','Aile Filtresi','CF Families + CleanBrowsing DoT']
   ];
   var h='<div style="margin-top:8px;display:flex;flex-direction:column;gap:8px">';
@@ -17204,6 +17215,7 @@ function dnsAddPreset(pkg,btn){
     'Standard':['Google','Cloudflare'],
     'Privacy':['Quad9','Mullvad','Dns0eu'],
     'AdGuard':['AdGuard'],
+    'AdGuardUnfiltered':['AdGuardUnfiltered'],
     'Family':['CF_Families','CleanBrowsing']
   };
   var pkgs=profiles[pkg]||[pkg];
