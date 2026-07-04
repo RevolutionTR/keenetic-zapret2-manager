@@ -391,6 +391,7 @@ Manual list of blocked domains (`zapret-hosts-user.txt`).
 ✔ Exclude (Domain): Remove  
 ✔ Show Lists  
 ✔ Clear Autohostlist  
+✔ Clear User hostlist — deletes all manually added domains at once, with confirmation  
 ✔ Change Scope Mode (Global/Smart)  
 
 👉 Use this to manually add services that autohostlist has not yet detected.
@@ -524,6 +525,7 @@ Performs a comprehensive analysis of system and network health.
 ✔ RAM usage  
 ✔ CPU load average  
 ✔ Disk usage (/opt)  
+✔ SoC and WiFi chip temperatures (2.4GHz / 5GHz)  
 ✔ Time / NTP synchronisation  
 
 **Services**  
@@ -563,9 +565,10 @@ Commands can be sent to the router directly from Telegram.
 ✔ Restart Bot  
 
 **Available actions via bot buttons:**  
-✔ Status — Shows Zapret2 and system status  
+✔ Status — Shows Zapret2 and system status (including SoC/WiFi temperatures)  
 ✔ Zapret2 — Start / Stop / Restart / Update  
 ✔ System — Update KZM2 / Reboot Router  
+✔ Wifi Management — toggle 2.4GHz and 5GHz bands separately per network (Home/Guest)  
 ✔ Logs — KZM2 Log / System Log  
 
 👉 When the bot is active, it shows "ACTIVE - 2-way communication running".
@@ -626,6 +629,13 @@ An alert is sent if CPU exceeds this percentage for this duration.
 ### CPU CRITICAL (HM_CPU_CRIT / HM_CPU_CRIT_DUR)
 Emergency threshold triggered more quickly.
 - Default: `90%` / `60` seconds
+
+### Temperature WARNING / CRITICAL (HM_TEMP_WARN / HM_TEMP_CRIT)
+A Telegram notification is sent if SoC temperature exceeds the configured threshold for this long.
+- Default: Warning `75°C` / `180` seconds, Critical `85°C` / `60` seconds
+- Ships **disabled by default** to avoid confusion on devices without a temperature sensor
+- If no sensor is found, the feature silently stays inactive with no errors
+- On/off, threshold and duration are all managed from a single screen
 
 ### Disk(/opt) WARNING (HM_DISK_WARN)
 An alert is sent if `/opt` usage exceeds this threshold.
@@ -715,7 +725,7 @@ All Zapret2 restart events are written to `/tmp/healthmon.log`:
 
 ## [NOW]
 
-Shows the current system state: CPU percentage, load average (1/5/15 min), free RAM, disk usage and Zapret2 status.
+Shows the current system state: CPU percentage, load average (1/5/15 min), free RAM, disk usage, SoC and WiFi chip temperatures (2.4GHz / 5GHz), and Zapret2 status.
 
 ---
 
