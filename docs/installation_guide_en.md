@@ -14,12 +14,34 @@ Zapret2 literally means "Prohibition" in Russian. It is a piece of software deve
 ## Is Zapret2 the only way to bypass access restrictions?
 DPI is the most sophisticated and up-to-date access-blocking method used by ISPs. On some ISPs, access restrictions can be bypassed simply by changing the DNS server. For that reason, if you are unsure which blocking method your ISP uses, try changing your DNS before installing Zapret2.
 
-Example DNS addresses: 
+Example DNS addresses (for manual entry via the Keenetic interface):
 
-1. Google DNS: 8.8.8.8 and 8.8.4.4  
-2. Cloudflare DNS: 1.1.1.1 and 1.0.0.1  
-3. Quad9 DNS: 9.9.9.9 and 149.112.112.112  
-4. OpenDNS: 208.67.222.222 and 208.67.220.220
+**1- Google DNS**
+
+DNS server type: `DNS-over-HTTPS`
+DNS server URL: `https://dns.google/dns-query`
+
+DNS server type: `DNS-over-TLS`
+DNS server URL: `8.8.8.8` (or `8.8.4.4`)
+Domain: `dns.google`
+
+**2- Cloudflare DNS**
+
+DNS server type: `DNS-over-HTTPS`
+DNS server URL: `https://cloudflare-dns.com/dns-query`
+
+DNS server type: `DNS-over-TLS`
+DNS server URL: `1.1.1.1` (or `1.0.0.1`)
+Domain: `one.one.one.one`
+
+**3- AdGuard Unfiltered DNS**
+
+DNS server type: `DNS-over-HTTPS`
+DNS server URL: `https://unfiltered.adguard-dns.com/dns-query`
+
+DNS server type: `DNS-over-TLS`
+DNS server URL: `94.140.14.140` (or `94.140.14.141`)
+Domain: `unfiltered.adguard-dns.com`
 
 You can also add these DNS addresses as DoT or DoH directly to your Keenetic device via KZM2 Menu 14 → 3.
   
