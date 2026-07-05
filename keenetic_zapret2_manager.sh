@@ -37,7 +37,7 @@
 # -------------------------------------------------------------------
 SCRIPT_NAME="keenetic_zapret2_manager.sh"
 # Version scheme: vYY.M.D[.N]  (YY=year, M=month, D=day, N=daily revision)
-SCRIPT_VERSION="v26.7.4"
+SCRIPT_VERSION="v26.7.5"
 SCRIPT_REPO="https://github.com/RevolutionTR/keenetic-zapret2-manager"
 KZM2_SCRIPT_PATH="/opt/lib/opkg/keenetic_zapret2_manager.sh"
 SCRIPT_AUTHOR="RevolutionTR"
@@ -1363,6 +1363,10 @@ TXT_HM_CPU_WARN_MSG_TR="📌 HealthMon %TS%\n⚠️ CPU UYARI: %CPU%%\n🧠 CPU:
 TXT_HM_CPU_WARN_MSG_EN="📌 HealthMon %TS%\n⚠️ CPU WARN: %CPU%%\n🧠 CPU: %CPU%%\n📊 Load: %LOAD%\n🧮 RAM free: %RAM% MB\n💾 Disk(/opt): %DISK%%"
 TXT_HM_CPU_CRIT_MSG_TR="📌 HealthMon %TS%\n🚨 CPU KRITIK: %CPU%%\n🧠 CPU: %CPU%%\n📊 Yuk: %LOAD%\n🧮 RAM bos: %RAM% MB\n💾 Disk(/opt): %DISK%%"
 TXT_HM_CPU_CRIT_MSG_EN="📌 HealthMon %TS%\n🚨 CPU CRIT: %CPU%%\n🧠 CPU: %CPU%%\n📊 Load: %LOAD%\n🧮 RAM free: %RAM% MB\n💾 Disk(/opt): %DISK%%"
+TXT_HM_TEMP_WARN_MSG_TR="📌 HealthMon %TS%\n⚠️ Sicaklik uyarisi: %TEMP%°C\n🌡 SoC: %TEMP%°C\n🧠 CPU: %CPU%%\n📊 Yuk: %LOAD%\n🧮 RAM bos: %RAM% MB\n💾 Disk(/opt): %DISK%%"
+TXT_HM_TEMP_WARN_MSG_EN="📌 HealthMon %TS%\n⚠️ Temperature warning: %TEMP%°C\n🌡 SoC: %TEMP%°C\n🧠 CPU: %CPU%%\n📊 Load: %LOAD%\n🧮 RAM free: %RAM% MB\n💾 Disk(/opt): %DISK%%"
+TXT_HM_TEMP_CRIT_MSG_TR="📌 HealthMon %TS%\n🚨 Sicaklik KRITIK: %TEMP%°C\n🌡 SoC: %TEMP%°C\n🧠 CPU: %CPU%%\n📊 Yuk: %LOAD%\n🧮 RAM bos: %RAM% MB\n💾 Disk(/opt): %DISK%%"
+TXT_HM_TEMP_CRIT_MSG_EN="📌 HealthMon %TS%\n🚨 Temperature CRITICAL: %TEMP%°C\n🌡 SoC: %TEMP%°C\n🧠 CPU: %CPU%%\n📊 Load: %LOAD%\n🧮 RAM free: %RAM% MB\n💾 Disk(/opt): %DISK%%"
 TXT_HM_DISK_WARN_MSG_TR="📌 HealthMon %TS%\n⚠️ Disk dolu: /opt %DISK%%%\n🧠 CPU: %CPU%%\n📊 Yuk: %LOAD%\n🧮 RAM bos: %RAM% MB"
 TXT_HM_DISK_WARN_MSG_EN="📌 HealthMon %TS%\n⚠️ Disk high: /opt %DISK%%%\n🧠 CPU: %CPU%%\n📊 Load: %LOAD%\n🧮 RAM free: %RAM% MB"
 TXT_HM_RAM_WARN_MSG_TR="📌 HealthMon %TS%\n⚠️ RAM dusuk: %RAM% MB\n🧠 CPU: %CPU%%\n📊 Yuk: %LOAD%\n💾 Disk(/opt): %DISK%%"
@@ -1405,6 +1409,10 @@ TXT_HM_STATUS_CPU_WARN_TR="CPU UYARI"
 TXT_HM_STATUS_CPU_WARN_EN="CPU WARN"
 TXT_HM_STATUS_CPU_CRIT_TR="CPU KRITIK"
 TXT_HM_STATUS_CPU_CRIT_EN="CPU CRIT"
+TXT_HM_STATUS_TEMP_WARN_TR="Sicaklik UYARI"
+TXT_HM_STATUS_TEMP_WARN_EN="Temp WARN"
+TXT_HM_STATUS_TEMP_CRIT_TR="Sicaklik KRITIK"
+TXT_HM_STATUS_TEMP_CRIT_EN="Temp CRIT"
 TXT_HM_STATUS_DISK_WARN_TR="Disk(/opt) UYARI"
 TXT_HM_STATUS_DISK_WARN_EN="Disk(/opt) WARN"
 TXT_HM_STATUS_RAM_WARN_TR="RAM UYARI"
@@ -1509,10 +1517,10 @@ TXT_UPD_ZKM_UP_TO_DATE_EN="[Update]
 💾 Disk (/opt) : %DISK_HEALTH%"
 TXT_UPD_ZKM_AUTO_FAIL_TR="[OtoGuncelleme]\n❌ KZM2 otomatik kurulum BASARISIZ.\n⚠️ Lutfen elle guncelleyin (menu 10).\n\n📦 Paket  : KZM2\n🔖 Mevcut : %CUR%\n🆕 Yeni   : %NEW%\n🔗 Link   : %URL%"
 TXT_UPD_ZKM_AUTO_FAIL_EN="[AutoUpdate]\n❌ KZM2 auto install FAILED.\n⚠️ Please update manually (menu 10).\n\n📦 Package : KZM2\n🔖 Current : %CUR%\n🆕 Latest  : %NEW%\n🔗 Link    : %URL%"
-TXT_HM_PROMPT_AUTOUPDATE_MODE_TR="Otomatik guncelleme modu (0=KAPALI,1=BILDIR,2=OTO KUR) [or: 2]:"
-TXT_HM_PROMPT_AUTOUPDATE_MODE_EN="Auto update mode (0=OFF,1=Notify,2=Auto install) [e.g. 2]:"
-TXT_HM_AUTOUPDATE_MODE_HINT_TR="0=KAPALI,1=BILDIR,2=OTO KUR"
-TXT_HM_AUTOUPDATE_MODE_HINT_EN="0=OFF,1=Notify,2=Auto install"
+TXT_HM_PROMPT_AUTOUPDATE_MODE_TR="Otomatik guncelleme modu (0=Kapali, 1=Bildir, 2=Otomatik Kur) [or: 2]:"
+TXT_HM_PROMPT_AUTOUPDATE_MODE_EN="Auto update mode (0=Off, 1=Notify, 2=Auto Install) [e.g. 2]:"
+TXT_HM_AUTOUPDATE_MODE_HINT_TR="0=Kapali, 1=Bildir, 2=Otomatik Kur"
+TXT_HM_AUTOUPDATE_MODE_HINT_EN="0=Off, 1=Notify, 2=Auto Install"
 TXT_HM_AUTOUPDATE_WARN_TITLE_TR="UYARI:"
 TXT_HM_AUTOUPDATE_WARN_TITLE_EN="WARNING:"
 TXT_HM_AUTOUPDATE_WARN_L1_TR="Auto install modu betigi otomatik gunceller."
@@ -2221,6 +2229,8 @@ TXT_HL_OPT_7_TR="Otomatik Listeyi Temizle"
 TXT_HL_OPT_7_EN="Clear Auto List"
 TXT_HL_WARN_AUTOCLEAR_1_TR="UYARI: Otomatik listeyi temizlemek tum ogrenilen domainleri silecek!"
 TXT_HL_WARN_AUTOCLEAR_1_EN="WARNING: Clearing the auto list will delete all learned domains!"
+TXT_HL_WARN_USERCLEAR_1_TR="UYARI: User hostlist'i temizlemek tum elle girilen domainleri silecek!"
+TXT_HL_WARN_USERCLEAR_1_EN="WARNING: Clearing the User hostlist will delete all manually added domains!"
 TXT_HL_WARN_AUTOCLEAR_2_TR="Bu islem geri alinamaz."
 TXT_HL_WARN_AUTOCLEAR_2_EN="This action cannot be undone."
 TXT_HL_BULK_HINT_TR="Birden fazla domain girebilirsiniz (virgul/noktalivirgul/bosluk ile ayirin)."
@@ -2229,8 +2239,10 @@ TXT_HL_BULK_HINT2_TR="Alt alta yapistirabilirsiniz. Yapistirma veya giris bittik
 TXT_HL_BULK_HINT2_EN="You can paste multiple lines. After pasting or typing, press ENTER once more on an empty line to finish."
 TXT_HL_CANCELLED_TR="Iptal edildi."
 TXT_HL_CANCELLED_EN="Cancelled."
-TXT_HL_OPT_8_TR="Kapsam Modunu Degistir (Global/Akilli)"
-TXT_HL_OPT_8_EN="Change Scope Mode (Global/Smart)"
+TXT_HL_OPT_8_TR="User hostlist Temizle"
+TXT_HL_OPT_8_EN="Clear User hostlist"
+TXT_HL_OPT_9_TR="Kapsam Modunu Degistir (Global/Akilli)"
+TXT_HL_OPT_9_EN="Change Scope Mode (Global/Smart)"
 TXT_HL_OPT_0_TR="Geri"
 TXT_HL_OPT_0_EN="Back"
 # Hostlist / Autohostlist (MODE_FILTER) sub-menu
@@ -2276,6 +2288,8 @@ TXT_HL_DOMAIN_DEL_TR="Domain silindi: "
 TXT_HL_DOMAIN_DEL_EN="Domain removed: "
 TXT_HL_CLEARED_TR="Auto list temizlendi."
 TXT_HL_CLEARED_EN="Auto list cleared."
+TXT_HL_CLEARED_USER_TR="User hostlist temizlendi."
+TXT_HL_CLEARED_USER_EN="User hostlist cleared."
 # Hostlist prompts & messages
 TXT_HL_ERR_NOT_INSTALLED_TR="HATA: Zapret2 yuklu degil."
 TXT_HL_ERR_NOT_INSTALLED_EN="ERROR: Zapret2 is not installed."
@@ -6544,6 +6558,7 @@ manage_hostlist_menu() {
         echo " 6. $(T TXT_HL_OPT_5)"
         echo " 7. $(T TXT_HL_OPT_7)"
         echo " 8. $(T TXT_HL_OPT_8)"
+        echo " 9. $(T TXT_HL_OPT_9)"
         echo " 0. $(T TXT_HL_OPT_0)"
         print_line "-"
         printf "%s" "$(T TXT_HL_PICK)"
@@ -6756,6 +6771,34 @@ clear
                 clear
                 ;;
             8)
+                print_line "-"
+                printf '%b
+' "${CLR_BOLD}${CLR_RED}$(T TXT_HL_WARN_USERCLEAR_1)${CLR_RESET}"
+                printf '%b
+' "${CLR_BOLD}${CLR_RED}$(T _ 'Bu islem tum kullanici hostlist girdilerini kalici olarak siler.' 'This will permanently delete all user hostlist entries.')${CLR_RESET}"
+                print_line "-"
+                printf "%s" "$(T confirm_autolist_q 'Onayliyor musunuz? (e=Evet, h=Hayir, 0=Geri): ' 'Confirm? (y=Yes, n=No, 0=Back): ')"
+                read -r ans
+                case "$ans" in
+                    0) ;;
+                    e|E|y|Y)
+                        : > "$HOSTLIST_USER"
+                        echo "$(T TXT_HL_CLEARED_USER)"
+                        update_nfqws_parameters >/dev/null 2>&1
+                        restart_zapret2
+                        ;;
+                    *)
+                        echo "$(T cancelled 'Islem iptal edildi.' 'Cancelled.')"
+                        ;;
+                esac
+                if type press_enter_to_continue >/dev/null 2>&1; then
+                    press_enter_to_continue
+                else
+                    press_enter_to_continue
+                fi
+                clear
+                ;;
+            9)
                 print_line "-"
                 printf '%b
 ' "${CLR_BOLD}${CLR_CYAN}$(T TXT_SCOPE_MODE): $(pretty_scope_mode)${CLR_RESET}"
@@ -11544,6 +11587,11 @@ HM_CPU_WARN="70"
 HM_CPU_WARN_DUR="180"
 HM_CPU_CRIT="90"
 HM_CPU_CRIT_DUR="60"
+HM_TEMP_ENABLE="0"
+HM_TEMP_WARN="75"
+HM_TEMP_WARN_DUR="180"
+HM_TEMP_CRIT="85"
+HM_TEMP_CRIT_DUR="60"
 HM_DISK_WARN="90"          # percent used on /opt
 HM_RAM_WARN_MB="40"        # free+buffers+cached approximation in MB
 HM_ZAPRET_WATCHDOG="1"
@@ -11584,6 +11632,11 @@ healthmon_load_config() {
     HM_CPU_WARN_DUR="180"
     HM_CPU_CRIT="90"
     HM_CPU_CRIT_DUR="60"
+    HM_TEMP_ENABLE="0"
+    HM_TEMP_WARN="75"
+    HM_TEMP_WARN_DUR="180"
+    HM_TEMP_CRIT="85"
+    HM_TEMP_CRIT_DUR="60"
     HM_DISK_WARN="90"
     HM_RAM_WARN_MB="40"
     HM_ZAPRET_WATCHDOG="1"
@@ -11627,6 +11680,11 @@ HM_CPU_WARN="$HM_CPU_WARN"
 HM_CPU_WARN_DUR="$HM_CPU_WARN_DUR"
 HM_CPU_CRIT="$HM_CPU_CRIT"
 HM_CPU_CRIT_DUR="$HM_CPU_CRIT_DUR"
+HM_TEMP_ENABLE="$HM_TEMP_ENABLE"
+HM_TEMP_WARN="$HM_TEMP_WARN"
+HM_TEMP_WARN_DUR="$HM_TEMP_WARN_DUR"
+HM_TEMP_CRIT="$HM_TEMP_CRIT"
+HM_TEMP_CRIT_DUR="$HM_TEMP_CRIT_DUR"
 HM_DISK_WARN="$HM_DISK_WARN"
 HM_RAM_WARN_MB="$HM_RAM_WARN_MB"
 HM_ZAPRET_WATCHDOG="$HM_ZAPRET_WATCHDOG"
@@ -12399,6 +12457,8 @@ healthmon_loop() {
     # state files for duration tracking
     local cpu_warn_start="/tmp/healthmon_cpu_warn.start"
     local cpu_crit_start="/tmp/healthmon_cpu_crit.start"
+    local temp_warn_start="/tmp/healthmon_temp_warn.start"
+    local temp_crit_start="/tmp/healthmon_temp_crit.start"
     local disk_start="/tmp/healthmon_disk.start"
     local ram_start="/tmp/healthmon_ram.start"
     local zapret_start="/tmp/healthmon_zapret_down.start"
@@ -12446,6 +12506,49 @@ healthmon_loop() {
             fi
         else
             rm -f "$cpu_crit_start" 2>/dev/null
+        fi
+        # ---- TEMP (SoC) ----
+        if [ "${HM_TEMP_ENABLE:-0}" = "1" ]; then
+            local temp_c="" temp_raw
+            temp_raw="$(cat /sys/class/thermal/thermal_zone0/temp 2>/dev/null)"
+            if [ -n "$temp_raw" ]; then
+                temp_c=$((temp_raw/1000))
+            fi
+            if [ -n "$temp_c" ]; then
+                # ---- TEMP CRIT ----
+                if [ "$temp_c" -ge "${HM_TEMP_CRIT:-85}" ]; then
+                    [ -f "$temp_crit_start" ] || echo "$now" >"$temp_crit_start"
+                    local stt=$(cat "$temp_crit_start" 2>/dev/null)
+                    local elt=$((now-stt))
+                    if [ "$elt" -ge "${HM_TEMP_CRIT_DUR:-60}" ]; then
+                        if healthmon_should_alert "temp_crit" "$HM_COOLDOWN_SEC"; then
+                            telegram_send "$(tpl_render "$(T TXT_HM_TEMP_CRIT_MSG)" TEMP "$temp_c" CPU "$cpu" LOAD "$load" RAM "$ram" DISK "$disk")" &
+                                healthmon_log "$now | temp_crit | temp=${temp_c}C cpu=$cpu load=$load ram=${ram}MB disk=${disk}%"
+                        fi
+                        rm -f "$temp_crit_start" "$temp_warn_start" 2>/dev/null
+                    fi
+                else
+                    rm -f "$temp_crit_start" 2>/dev/null
+                    # ---- TEMP WARN ----
+                    if [ "$temp_c" -ge "${HM_TEMP_WARN:-75}" ]; then
+                        [ -f "$temp_warn_start" ] || echo "$now" >"$temp_warn_start"
+                        local stw=$(cat "$temp_warn_start" 2>/dev/null)
+                        local elw=$((now-stw))
+                        if [ "$elw" -ge "${HM_TEMP_WARN_DUR:-180}" ]; then
+                            if healthmon_should_alert "temp_warn" "$HM_COOLDOWN_SEC"; then
+                                telegram_send "$(tpl_render "$(T TXT_HM_TEMP_WARN_MSG)" TEMP "$temp_c" CPU "$cpu" LOAD "$load" RAM "$ram" DISK "$disk")" &
+                                    healthmon_log "$now | temp_warn | temp=${temp_c}C cpu=$cpu load=$load ram=${ram}MB disk=${disk}%"
+                            fi
+                            rm -f "$temp_warn_start" 2>/dev/null
+                        fi
+                    else
+                        rm -f "$temp_warn_start" 2>/dev/null
+                    fi
+                fi
+            else
+                # Sensor okunamadi - sessizce gec, state temizle
+                rm -f "$temp_warn_start" "$temp_crit_start" 2>/dev/null
+            fi
         fi
         # ---- DISK ----
         if [ -n "$disk_num" ] && [ "$disk_num" -ge "$HM_DISK_WARN" ]; then
@@ -13834,7 +13937,7 @@ healthmon_status() {
     else
         upd_word="$(T TXT_HM_WORD_OFF)"
     fi
-    local _w=24
+    local _w=26
     local _lbl
     hm_kv() {
         # $1=label, $2=value
@@ -13863,6 +13966,8 @@ healthmon_status() {
     print_line "-"
     hm_kv "$(T TXT_HM_STATUS_CPU_WARN)" "${HM_CPU_WARN}% / ${HM_CPU_WARN_DUR}s"
     hm_kv "$(T TXT_HM_STATUS_CPU_CRIT)" "${HM_CPU_CRIT}% / ${HM_CPU_CRIT_DUR}s"
+    hm_kv "$(T TXT_HM_STATUS_TEMP_WARN)" "${HM_TEMP_WARN}C / ${HM_TEMP_WARN_DUR}s"
+    hm_kv "$(T TXT_HM_STATUS_TEMP_CRIT)" "${HM_TEMP_CRIT}C / ${HM_TEMP_CRIT_DUR}s"
     hm_kv "$(T TXT_HM_STATUS_DISK_WARN)" "${HM_DISK_WARN}%"
     hm_kv "$(T TXT_HM_STATUS_RAM_WARN)" "<= ${HM_RAM_WARN_MB} MB"
     echo
@@ -13885,15 +13990,15 @@ healthmon_status() {
     _load15="$(awk '{print $3}' /proc/loadavg 2>/dev/null)"
     _nproc="$(grep -c '^processor' /proc/cpuinfo 2>/dev/null)"
     [ -z "$_nproc" ] || [ "$_nproc" -eq 0 ] 2>/dev/null && _nproc=1
-    printf "  %-24s : %s%%
+    printf "  %-26s : %s%%
 " "$(T _ 'CPU Kullanimi' 'CPU Usage')" "$cpu"
-    printf "  %-24s : %s: %s  | %s: %s  | %s: %s
+    printf "  %-26s : %s: %s  | %s: %s  | %s: %s
 " \
         "$(T _ 'CPU Yuku' 'CPU Load')" \
         "$(T _ '1dk' '1min')" "$_load1" \
         "$(T _ '5dk' '5min')" "$_load5" \
         "$(T _ '15dk' '15min')" "$_load15"
-    printf "  %-24s : %s MB | %s %s%% | %s %s
+    printf "  %-26s : %s MB | %s %s%% | %s %s
 "         "$(T TXT_HM_STATUS_RAM_FREE)" "$ram"         "$(T TXT_HM_STATUS_DISK_OPT)" "$disk"         "$(T TXT_HM_STATUS_ZAPRET)" "$zst"
     # CPU sicakligi
     local _temp_simdi=""
@@ -13906,7 +14011,7 @@ healthmon_status() {
         fi
     done
     if [ -n "$_temp_simdi" ]; then
-        printf "  %-24s : %s\n" "$(T _ 'SoC Sicakligi' 'SoC Temperature')" "$_temp_simdi $(T _ 'Santigrat Derece' 'Degrees Celsius')"
+        printf "  %-26s : %s\n" "$(T _ 'SoC Sicakligi' 'SoC Temperature')" "$_temp_simdi $(T _ 'Santigrat Derece' 'Degrees Celsius')"
     fi
     local _wm _wmt _wml
     for _wm in WifiMaster0 WifiMaster1; do
@@ -13916,7 +14021,7 @@ healthmon_status() {
                 WifiMaster0) _wml="$(T _ 'WiFi 2.4GHz Cip Sicakligi' 'WiFi 2.4GHz Chip Temp')" ;;
                 WifiMaster1) _wml="$(T _ 'WiFi 5GHz Cip Sicakligi' 'WiFi 5GHz Chip Temp')" ;;
             esac
-            printf "  %-24s : %s\n" "$_wml" "$_wmt $(T _ 'Santigrat Derece' 'Degrees Celsius')"
+            printf "  %-26s : %s\n" "$_wml" "$_wmt $(T _ 'Santigrat Derece' 'Degrees Celsius')"
         fi
     done
     # RAM / Swap / Buffer / Disk detay
@@ -13928,7 +14033,7 @@ healthmon_status() {
     _st_cached_kb="$(grep '^Cached:' /proc/meminfo 2>/dev/null | awk '{print $2}' | head -1)"
     _st_swap_total="$(grep SwapTotal /proc/meminfo 2>/dev/null | awk '{print $2}')"
     _st_swap_free="$(grep SwapFree /proc/meminfo 2>/dev/null | awk '{print $2}')"
-    local _w2=24
+    local _w2=26
     printf "  %-*s : %s/%s MB
 " "$_w2" "$(T _ 'RAM Kullanilan' 'RAM Used')" "$(( _st_used_kb/1024 ))" "$(( _st_ram_total/1024 ))"
     printf "  %-*s : %s MB
@@ -14022,6 +14127,22 @@ healthmon_config_menu() {
             esac
         fi
     }
+    hm_ask_plain_num() {
+        local _label="$1" _var="$2" _cur _v
+        eval _cur="\${$_var}"
+        printf "%s [%s]: " "$_label" "${_cur:-}"
+        read -r _v
+        [ -z "$_v" ] && return 0
+        case "$_v" in
+            *[!0-9]*)
+                print_status WARN "$(T _ 'Gecersiz deger, atlandi.' 'Invalid value, skipped.')"
+                ;;
+            *)
+                eval "$_var=\"$_v\""
+                print_status INFO "$(T _ 'Kaydedildi' 'Saved'): ${_v}"
+                ;;
+        esac
+    }
     while true; do
         clear
         print_line "="
@@ -14047,12 +14168,13 @@ healthmon_config_menu() {
         printf " %2s) %-*s : %s\n" "13" "$_w" "$(T _ 'Sistem log izleme' 'System log watch')" "$(T _ "ac=${HM_SYSLOG_WATCH} cd=${HM_SYSLOG_COOLDOWN_SEC}s ike_cd=${HM_SYSLOG_IKE_COOLDOWN_SEC}s" "on=${HM_SYSLOG_WATCH} cd=${HM_SYSLOG_COOLDOWN_SEC}s ike_cd=${HM_SYSLOG_IKE_COOLDOWN_SEC}s")"
         printf " %2s) %-*s : %s\n" "14" "$_w" "$(T TXT_HM_CFG_ITEM14)" "${HM_DEBUG:-0}"
         printf " %2s) %-*s : %s\n" "15" "$_w" "$(T TXT_HM_NFQWS_ALERT_ITEM)" "${HM_NFQWS_ALERT:-1}"
+        printf " %2s) %-*s : %s\n" "16" "$_w" "$(T _ 'Sicaklik esigi' 'Temperature threshold')" "$(T _ 'Uyari' 'Warn')=${HM_TEMP_WARN}C/${HM_TEMP_WARN_DUR}s $(T _ 'Kritik' 'Crit')=${HM_TEMP_CRIT}C/${HM_TEMP_CRIT_DUR}s $(T _ 'ac' 'on')=${HM_TEMP_ENABLE:-0}"
         if [ -f "/opt/zapret2/wan_if" ]; then
-            printf " %2s) %b%s%b\n" "16" "${CLR_BOLD}" "$(T TXT_HM_CFG_ITEM15)" "${CLR_RESET}"
+            printf " %2s) %b%s%b\n" "17" "${CLR_BOLD}" "$(T TXT_HM_CFG_ITEM15)" "${CLR_RESET}"
         fi
 echo
         printf "  %s) %s\n" "S" "$(T _ 'Kaydet ve uygula' 'Save & apply')"
-        printf "  %s) %s\n" "0" "$(T _ 'Geri (kaydetmeden)' 'Back (without saving)')"
+        printf "  %s) %s\n" "0" "$(T _ 'Geri (Kaydetmeden Cik)' 'Back (Exit without Saving)')"
         echo
         printf '%s' "$(T _ 'Secim: ' 'Choice: ')"; read -r _c || return 0
         case "$_c" in
@@ -14149,6 +14271,13 @@ esac
                 hm_ask_01 "$(T _ 'nfqws2 kuyruk alarmi (0=kapat 1=ac)' 'nfqws2 queue alert (0=off 1=on)')" HM_NFQWS_ALERT
                 ;;
             16)
+                hm_ask_plain_num "$(T _ 'Sicaklik uyari esigi (C)' 'Temperature warning threshold (C)')" HM_TEMP_WARN
+                hm_ask_num "$(T _ 'Sicaklik uyari suresi (s)' 'Temperature warning duration (s)')" HM_TEMP_WARN_DUR
+                hm_ask_plain_num "$(T _ 'Sicaklik kritik esigi (C)' 'Temperature critical threshold (C)')" HM_TEMP_CRIT
+                hm_ask_num "$(T _ 'Sicaklik kritik suresi (s)' 'Temperature critical duration (s)')" HM_TEMP_CRIT_DUR
+                hm_ask_01 "$(T _ 'Sicaklik izleme (0=kapat 1=ac)' 'Temperature monitoring (0=off 1=on)')" HM_TEMP_ENABLE
+                ;;
+            17)
                 if [ ! -f "/opt/zapret2/wan_if" ]; then return 0; fi
                 _wan_if_rec="$(cat /opt/zapret2/wan_if 2>/dev/null | tr -d '[:space:]')"
                 print_line "-"
@@ -16046,6 +16175,8 @@ case "$ACTION" in
         _rows="${_rows}$(_s "THRESHOLDS")"
         _rows="${_rows}$(_r "CPU Warning" "${HM_CPU_WARN}% / ${HM_CPU_WARN_DUR}s")"
         _rows="${_rows}$(_r "CPU Critical" "${HM_CPU_CRIT}% / ${HM_CPU_CRIT_DUR}s")"
+        _rows="${_rows}$(_r "Temperature Warning" "${HM_TEMP_WARN}&#176;C / ${HM_TEMP_WARN_DUR}s")"
+        _rows="${_rows}$(_r "Temperature Critical" "${HM_TEMP_CRIT}&#176;C / ${HM_TEMP_CRIT_DUR}s")"
         _rows="${_rows}$(_r "Disk /opt Warning" "at ${HM_DISK_WARN}% full")"
         _rows="${_rows}$(_r "RAM Warning" "below ${HM_RAM_WARN_MB} MB")"
         _rows="${_rows}$(_s "ZAPRET2")"
@@ -16073,6 +16204,8 @@ case "$ACTION" in
         _rows="${_rows}$(_s "E&#350;&#304;KLER")"
         _rows="${_rows}$(_r "CPU Uyar&#305;" "${HM_CPU_WARN}% / ${HM_CPU_WARN_DUR}s")"
         _rows="${_rows}$(_r "CPU Kritik" "${HM_CPU_CRIT}% / ${HM_CPU_CRIT_DUR}s")"
+        _rows="${_rows}$(_r "S&#305;cakl&#305;k Uyar&#305;" "${HM_TEMP_WARN}&#176;C / ${HM_TEMP_WARN_DUR}s")"
+        _rows="${_rows}$(_r "S&#305;cakl&#305;k Kritik" "${HM_TEMP_CRIT}&#176;C / ${HM_TEMP_CRIT_DUR}s")"
         _rows="${_rows}$(_r "Disk /opt Uyar&#305;" "%${HM_DISK_WARN} dolulukta")"
         _rows="${_rows}$(_r "RAM Uyar&#305;" "${HM_RAM_WARN_MB} MB alt&#305;nda")"
         _rows="${_rows}$(_s "ZAPRET2")"
