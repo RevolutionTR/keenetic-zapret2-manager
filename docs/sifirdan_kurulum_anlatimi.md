@@ -12,12 +12,34 @@ Zapret2 kelime olarak Rusca “Yasak” anlamına gelir. Rus bir programcının 
 ## Erişim engelini aşmanın Zapret2’den başka yolu yok mu?
 ISS’larının en güncel sofistike erişim engelleme metodu DPI’dır. Bazı ISS’lerde DNS değişikliği ile erişim engeli aşılabilir. O sebepten ISS’nızın erişim engelleme metodunu bilmiyorsanız Zapret2’yi kurmadan önce DNS değişikliğini deneyin.
 
-Örnek DNS adresleri:
+Örnek DNS adresleri (Keenetic arayüzünden elle eklemek için):
 
-1-    Google DNS: 8.8.8.8 ve 8.8.4.4  
-2-    Cloudflare DNS: 1.1.1.1 ve 1.0.0.1  
-3-    Quad9 DNS: 9.9.9.9 ve 149.112.112.112  
-4-    OpenDNS: 208.67.222.222 ve 208.67.220.220
+**1- Google DNS**
+
+DNS sunucu türü: `DNS-over-HTTPS`
+DNS sunucu URLsi: `https://dns.google/dns-query`
+
+DNS sunucu türü: `DNS-over-TLS`
+DNS sunucu URLsi: `8.8.8.8` (veya `8.8.4.4`)
+Domain: `dns.google`
+
+**2- Cloudflare DNS**
+
+DNS sunucu türü: `DNS-over-HTTPS`
+DNS sunucu URLsi: `https://cloudflare-dns.com/dns-query`
+
+DNS sunucu türü: `DNS-over-TLS`
+DNS sunucu URLsi: `1.1.1.1` (veya `1.0.0.1`)
+Domain: `one.one.one.one`
+
+**3- AdGuard Filtresiz DNS**
+
+DNS sunucu türü: `DNS-over-HTTPS`
+DNS sunucu URLsi: `https://unfiltered.adguard-dns.com/dns-query`
+
+DNS sunucu türü: `DNS-over-TLS`
+DNS sunucu URLsi: `94.140.14.140` (veya `94.140.14.141`)
+Domain: `unfiltered.adguard-dns.com`
 
 Bu DNS adreslerini DoT veya DoH olarak KZM2'de Menü 14 - 3'ten ayrıca Keenetic cihazınıza otomatik ekleyebilirsiniz.
   
