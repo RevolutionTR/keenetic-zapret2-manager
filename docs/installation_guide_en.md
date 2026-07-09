@@ -64,7 +64,7 @@ In your router's web interface, go to **MANAGEMENT / System Settings / Component
 
 ## === DNS Settings ===
 
-In your router's web interface, go to **NETWORK RULES / Internet Security / DNS Configuration**. Use the "+ Add Server" button to add DoT and DoH DNS servers. Sample DoH DNS providers: Google, Cloudflare, Adguard, Quad9. Before enabling "Ignore ISP-provided DNS" in the next step, make sure DoT, DoH, and the ISP's DNS are all already configured.
+In your router's web interface, go to **NETWORK RULES / Internet Security / DNS Configuration**. Use the "+ Add Server" button to add DoT and DoH DNS servers. Sample DoH DNS providers: Google, Cloudflare, Adguard. Before enabling "Ignore ISP-provided DNS" in the next step, make sure DoT, DoH, and the ISP's DNS are all already configured.
 
 You can also add these DNS addresses as DoT or DoH directly to your Keenetic device via KZM2 Menu 14 → 3.
 
