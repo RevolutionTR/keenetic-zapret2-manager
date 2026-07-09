@@ -37,7 +37,7 @@
 # -------------------------------------------------------------------
 SCRIPT_NAME="keenetic_zapret2_manager.sh"
 # Version scheme: vYY.M.D[.N]  (YY=year, M=month, D=day, N=daily revision)
-SCRIPT_VERSION="v26.7.8"
+SCRIPT_VERSION="v26.7.9"
 SCRIPT_REPO="https://github.com/RevolutionTR/keenetic-zapret2-manager"
 KZM2_SCRIPT_PATH="/opt/lib/opkg/keenetic_zapret2_manager.sh"
 SCRIPT_AUTHOR="RevolutionTR"
@@ -12339,7 +12339,8 @@ hm_syslog_watch_tick() {
             _sample="$(printf '%s\n' "$_log" | grep -E 'unexpectedly stopped|too many failed requests|AUTH_TOPEER_FAILED|invalid password|access to.*denied' | tail -n 3 | sed 's/^[[:space:]]*//' | sed 's/^/• /')"
             echo "$_now" > /tmp/healthmon_syslog_crit.ts
             healthmon_log "$(date +%s 2>/dev/null) | syslog_alert | critical | new=${_new_crit}"
-            telegram_send "$(tpl_render "$(T TXT_HM_SYSLOG_CRIT_MSG)" CNT "$_new_crit" LOG "$_sample")" &
+            telegram_send "$(tpl_render "$(T TXT_HM_SYSLOG_CRIT_MSG)" CNT "$_new_crit" LOG "$_sample")
+" &
         fi
     fi
 
@@ -12376,7 +12377,8 @@ hm_syslog_watch_tick() {
         if [ "$_diff_ike" -ge "$_ike_cd" ] 2>/dev/null; then
             echo "$_now" > /tmp/healthmon_syslog_ike.ts
             healthmon_log "$(date +%s 2>/dev/null) | syslog_alert | ike | new=${_new_ike}"
-            telegram_send "$(tpl_render "$(T TXT_HM_SYSLOG_IKE_MSG)" CNT "$_new_ike")" &
+            telegram_send "$(tpl_render "$(T TXT_HM_SYSLOG_IKE_MSG)" CNT "$_new_ike")
+" &
         fi
     fi
 }
@@ -13380,12 +13382,18 @@ DEOF
                     kzm2_export_active_dpi_profile >/dev/null 2>&1 || true
                     ;;
                 none)
+                    # Onceki profili yakala: rebuild kaynakli cagride (zaten none) kozmetik log atlanir
+                    _prev_p="$(cat /opt/zapret2/dpi_profile 2>/dev/null | tr -d '[:space:]')"
                     set_dpi_profile none
                     set_dpi_origin "manual"
                     update_nfqws_parameters >/dev/null 2>&1
+                    # restart her durumda: none'da nozapret/exclude kurallari burada uygulanir
                     restart_zapret2 >/dev/null 2>&1
                     kzm2_export_active_dpi_profile >/dev/null 2>&1 || true
-                    healthmon_log "$(date '+%Y-%m-%d %H:%M:%S') | dpi_profile_change | profile=none | scope=$(get_scope_mode) | src=webpanel"
+                    # Log yalnizca gercek profil degisiminde (onceki profil none degilken)
+                    if [ "$_prev_p" != "none" ]; then
+                        healthmon_log "$(date '+%Y-%m-%d %H:%M:%S') | dpi_profile_change | profile=none | scope=$(get_scope_mode) | src=webpanel"
+                    fi
                     ;;
                 custom)
                     # Manuel NFQWS2_OPT korunur: config yeniden yazilmaz, sadece restart.
@@ -16437,13 +16445,11 @@ case "$ACTION" in
     hl_add)
         _d=$(get_param domain); [ -z "$_d" ] && { fail "Domain bos"; exit 0; }
         grep -qxF "$_d" "$HL_USER" 2>/dev/null || printf '%s\n' "$_d" >> "$HL_USER"
-        echo "$(date '+%Y-%m-%d %H:%M:%S') | zapret_restart | triggered (web)" >> /tmp/kzm2_healthmon.log 2>/dev/null
         kzm_rebuild_profile_restart
         ok "Eklendi: $_d" ;;
     hl_del)
         _d=$(get_param domain); [ -z "$_d" ] && { fail "Domain bos"; exit 0; }
         sed -i "/^$(printf '%s' "$_d" | sed 's/[.[\*^$]/\\&/g')$/d" "$HL_USER" 2>/dev/null
-        echo "$(date '+%Y-%m-%d %H:%M:%S') | zapret_restart | triggered (web)" >> /tmp/kzm2_healthmon.log 2>/dev/null
         kzm_rebuild_profile_restart
         ok "Silindi: $_d" ;;
     ex_get)
@@ -16451,13 +16457,11 @@ case "$ACTION" in
     ex_add)
         _d=$(get_param domain); [ -z "$_d" ] && { fail "Domain bos"; exit 0; }
         grep -qxF "$_d" "$HL_EXCL" 2>/dev/null || printf '%s\n' "$_d" >> "$HL_EXCL"
-        echo "$(date '+%Y-%m-%d %H:%M:%S') | zapret_restart | triggered (web)" >> /tmp/kzm2_healthmon.log 2>/dev/null
         kzm_rebuild_profile_restart
         ok "Eklendi: $_d" ;;
     ex_del)
         _d=$(get_param domain); [ -z "$_d" ] && { fail "Domain bos"; exit 0; }
         sed -i "/^$(printf '%s' "$_d" | sed 's/[.[\*^$]/\\&/g')$/d" "$HL_EXCL" 2>/dev/null
-        echo "$(date '+%Y-%m-%d %H:%M:%S') | zapret_restart | triggered (web)" >> /tmp/kzm2_healthmon.log 2>/dev/null
         kzm_rebuild_profile_restart
         ok "Silindi: $_d" ;;
     auto_get)
@@ -16465,7 +16469,6 @@ case "$ACTION" in
     auto_del)
         _d=$(get_param domain); [ -z "$_d" ] && { fail "Domain bos"; exit 0; }
         sed -i "/^$(printf '%s' "$_d" | sed 's/[.[\\*^$]/\\&/g')$/d" "/opt/zapret2/ipset/zapret-hosts-auto.txt" 2>/dev/null
-        echo "$(date '+%Y-%m-%d %H:%M:%S') | zapret_restart | triggered (web)" >> /tmp/kzm2_healthmon.log 2>/dev/null
         kzm_rebuild_profile_restart
         ok "Silindi: $_d" ;;
     nozapret_get)
@@ -16475,13 +16478,11 @@ case "$ACTION" in
         # Cakisma korumasi: ipset_clients.txt'den cikar
         sed -i "\|^$(printf '%s' "$_ip" | sed 's/[.[*^$]/\\&/g')$|d" "$IPSET_FILE" 2>/dev/null
         kzm_append_unique_line "/opt/zapret2/ipset/nozapret.txt" "$_ip"
-        echo "$(date '+%Y-%m-%d %H:%M:%S') | zapret_restart | triggered (web)" >> /tmp/kzm2_healthmon.log 2>/dev/null
         kzm_rebuild_profile_restart
         ok "Eklendi: $_ip" ;;
     nozapret_del)
         _ip=$(get_param ip); [ -z "$_ip" ] && { fail "IP bos"; exit 0; }
         sed -i "\|^$(printf '%s' "$_ip" | sed 's/[.[*^$]/\\&/g')$|d" "/opt/zapret2/ipset/nozapret.txt" 2>/dev/null
-        echo "$(date '+%Y-%m-%d %H:%M:%S') | zapret_restart | triggered (web)" >> /tmp/kzm2_healthmon.log 2>/dev/null
         kzm_rebuild_profile_restart
         ok "Silindi: $_ip" ;;
     ipset_active_get)
@@ -16491,13 +16492,11 @@ case "$ACTION" in
     ip_add)
         _ip=$(get_param ip); [ -z "$_ip" ] && { fail "IP bos"; exit 0; }
         kzm_append_unique_line "$IPSET_FILE" "$_ip"
-        echo "$(date '+%Y-%m-%d %H:%M:%S') | zapret_restart | triggered (web)" >> /tmp/kzm2_healthmon.log 2>/dev/null
         kzm_rebuild_profile_restart
         ok "Eklendi: $_ip" ;;
     ip_del)
         _ip=$(get_param ip); [ -z "$_ip" ] && { fail "IP bos"; exit 0; }
         sed -i "\|^$(printf '%s' "$_ip" | sed 's/[.[*^$]/\\&/g')$|d" "$IPSET_FILE" 2>/dev/null
-        echo "$(date '+%Y-%m-%d %H:%M:%S') | zapret_restart | triggered (web)" >> /tmp/kzm2_healthmon.log 2>/dev/null
         kzm_rebuild_profile_restart
         ok "Silindi: $_ip" ;;
     sched_get)
