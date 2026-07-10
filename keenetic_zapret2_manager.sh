@@ -37,7 +37,7 @@
 # -------------------------------------------------------------------
 SCRIPT_NAME="keenetic_zapret2_manager.sh"
 # Version scheme: vYY.M.D[.N]  (YY=year, M=month, D=day, N=daily revision)
-SCRIPT_VERSION="v26.7.9"
+SCRIPT_VERSION="v26.7.10"
 SCRIPT_REPO="https://github.com/RevolutionTR/keenetic-zapret2-manager"
 KZM2_SCRIPT_PATH="/opt/lib/opkg/keenetic_zapret2_manager.sh"
 SCRIPT_AUTHOR="RevolutionTR"
@@ -10727,10 +10727,12 @@ tgbot_status_text() {
     _wifi0_t="$(LD_LIBRARY_PATH= ndmc -c 'show interface WifiMaster0' 2>/dev/null | grep -i temperature | tr -d ' ' | cut -d: -f2)"
     _wifi1_t="$(LD_LIBRARY_PATH= ndmc -c 'show interface WifiMaster1' 2>/dev/null | grep -i temperature | tr -d ' ' | cut -d: -f2)"
     temp_val=""
-    [ -n "$_soc_temp" ] && temp_val="SoC ${_soc_temp}°C"
-    [ -n "$_wifi0_t" ] && temp_val="${temp_val}${temp_val:+ | }2.4GHz ${_wifi0_t}°C"
-    [ -n "$_wifi1_t" ] && temp_val="${temp_val}${temp_val:+ | }5GHz ${_wifi1_t}°C"
-    [ -z "$temp_val" ] && temp_val="-"
+    [ -n "$_soc_temp" ] && temp_val="$(T _ '🌡 SoC Sicaklik' '🌡 SoC Temp') : ${_soc_temp}°C"
+    [ -n "$_wifi0_t" ] && temp_val="${temp_val}${temp_val:+
+}$(T _ '🌡 WiFi 2.4GHz Sicaklik' '🌡 WiFi 2.4GHz Temp') : ${_wifi0_t}°C"
+    [ -n "$_wifi1_t" ] && temp_val="${temp_val}${temp_val:+
+}$(T _ '🌡 WiFi 5GHz Sicaklik' '🌡 WiFi 5GHz Temp') : ${_wifi1_t}°C"
+    [ -z "$temp_val" ] && temp_val="$(T _ '🌡 Sicaklik' '🌡 Temp') : -"
     # Disk sagligi
     local disk_health_val
     kzm2_disk_health_check
@@ -10790,7 +10792,7 @@ tgbot_status_text() {
         "${TG_DEVICE_WAN_IP:-$(T TXT_TGBOT_STATUS_UNKNOWN)}" \
         "${TG_DEVICE_MODEL:-$(T TXT_TGBOT_STATUS_UNKNOWN)}" \
         "${TG_DEVICE_FIRMWARE:-$(T TXT_TGBOT_STATUS_UNKNOWN)}"
-    printf "📊 DPI : %s\n💻 CPU : %s%% | RAM: %s\n💾 Disk : %s | Uptime: %s\n🌡 Sicaklik : %s\n🩺 Disk Sagligi : %s\n❤️ HMon : %s\n🤖 TGBot : %s\n⚡ Zapret2 : %s\n🌐 KeenDNS : %s\n🔌 WAN : %s\n📦 KZM2 : %s | Zapret2: %s" \
+    printf "📊 DPI : %s\n💻 CPU : %s%% | RAM: %s\n💾 Disk : %s | Uptime: %s\n%s\n🩺 Disk Sagligi : %s\n❤️ HMon : %s\n🤖 TGBot : %s\n⚡ Zapret2 : %s\n🌐 KeenDNS : %s\n🔌 WAN : %s\n📦 KZM2 : %s | Zapret2: %s" \
         "$profile_name" \
         "$cpu_val" "$ram_val" \
         "$disk_val" "$uptime_val" \
@@ -12939,7 +12941,8 @@ healthmon_loop() {
                             if [ "$kdns_can_direct2" = "no" ]; then
                                 telegram_send "$(printf "$(T TXT_KEENDNS_CGN_BACK)" "$kdns_fqdn")" &
                             else
-                                telegram_send "$(printf "$(T TXT_KEENDNS_REACH)" "$kdns_fqdn")" &
+                                telegram_send "$(printf "$(T TXT_KEENDNS_REACH)" "$kdns_fqdn")
+" &
                             fi
                             healthmon_log "$now | keendns_reachable | $kdns_fqdn"
                         fi
@@ -12948,7 +12951,8 @@ healthmon_loop() {
                             if [ "$kdns_can_direct2" = "no" ]; then
                                 telegram_send "$(printf "$(T TXT_KEENDNS_CGN_LOST)" "$kdns_fqdn")" &
                             else
-                                telegram_send "$(printf "$(T TXT_KEENDNS_FAIL)" "$kdns_fqdn")" &
+                                telegram_send "$(printf "$(T TXT_KEENDNS_FAIL)" "$kdns_fqdn")
+" &
                             fi
                             healthmon_log "$now | keendns_unreachable | $kdns_fqdn port=$kdns_port2 http=$kdns_http2"
                         fi
