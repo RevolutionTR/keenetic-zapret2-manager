@@ -3100,7 +3100,8 @@ fi
         0) return 1 ;;
         *) return 1 ;;
     esac
-    # DPI profiline gore NFQWS parametrelerini guncelle
+    # NOT: Bu fonksiyon config'i (NFQWS2_OPT) YAZMAZ, sadece dpi_profile dosyasini set eder.
+    # NFQWS parametrelerini config'e yazmak icin cagiran apply_dpi_profile_now'i cagirmali.
     return 0
 }
 apply_dpi_profile_now() {
@@ -16384,7 +16385,7 @@ case "$ACTION" in
         esac
         _kzm="/opt/lib/opkg/keenetic_zapret2_manager.sh"
         [ -f "$_kzm" ] || { fail "KZM2 script bulunamadi"; exit 0; }
-        echo "$(date '+%Y-%m-%d %H:%M:%S') | dpi_profile_change | profile=$_p | scope=$(cat /opt/zapret2/scope_mode 2>/dev/null | tr -d '[:space:]') | new_opt=$(grep '^NFQWS2_OPT=' /opt/zapret2/config 2>/dev/null | cut -d'"' -f2) | src=webpanel" >> /tmp/kzm2_healthmon.log 2>/dev/null
+        echo "$(date '+%Y-%m-%d %H:%M:%S') | dpi_profile_change | profile=$_p | scope=$(cat /opt/zapret2/scope_mode 2>/dev/null | tr -d '[:space:]') | src=webpanel" >> /tmp/kzm2_healthmon.log 2>/dev/null
         KZM2_SKIP_LOCK=1 sh "$_kzm" --cgi-action dpi_set "$_p" >/dev/null 2>&1 &
         sleep 3; refresh; ok "Profil ${_p} ayarlandi ve Zapret2 yeniden baslatildi" ;;
     manual_dpi_export|manualdpi_export)
