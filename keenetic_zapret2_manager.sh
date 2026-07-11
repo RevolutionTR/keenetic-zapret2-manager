@@ -37,7 +37,7 @@
 # -------------------------------------------------------------------
 SCRIPT_NAME="keenetic_zapret2_manager.sh"
 # Version scheme: vYY.M.D[.N]  (YY=year, M=month, D=day, N=daily revision)
-SCRIPT_VERSION="v26.7.11"
+SCRIPT_VERSION="v26.7.11.1"
 SCRIPT_REPO="https://github.com/RevolutionTR/keenetic-zapret2-manager"
 KZM2_SCRIPT_PATH="/opt/lib/opkg/keenetic_zapret2_manager.sh"
 SCRIPT_AUTHOR="RevolutionTR"
@@ -1499,8 +1499,8 @@ Use Main Menu > 6 to reinstall from GitHub
 📦 Package        : Zapret2
 ⚠️ Current Version: %CUR% (pulled)
 ✅ Stable         : %NEW%"
-TXT_UPD_ZKM_AUTO_OK_TR="[OtoGuncelleme]\nKZM2 otomatik kurulum basarili.\nBetigi yeniden calistirin.\n\n📦 Paket          : KZM2\n🔖 Mevcut Surum   : %CUR%\n🆕 Guncellenen Surum : %NEW%\n🔗 Link           : %URL%"
-TXT_UPD_ZKM_AUTO_OK_EN="[AutoUpdate]\nKZM2 auto install OK.\nPlease re-run the script.\n\n📦 Package        : KZM2\n🔖 Current Version: %CUR%\n🆕 Updated Version: %NEW%\n🔗 Link           : %URL%"
+TXT_UPD_ZKM_AUTO_OK_TR="[OtoGuncelleme]\nKZM2 otomatik kurulum basarili.\nBetigi yeniden calistirin.\n\n📦 Paket : KZM2\n🔖 Mevcut Surum : %CUR%\n🆕 Guncellenen Surum : %NEW%\n🔗 Link : %URL%"
+TXT_UPD_ZKM_AUTO_OK_EN="[AutoUpdate]\nKZM2 auto install OK.\nPlease re-run the script.\n\n📦 Package : KZM2\n🔖 Current Version: %CUR%\n🆕 Updated Version: %NEW%\n🔗 Link : %URL%"
 TXT_UPD_ZKM_UP_TO_DATE_TR="[Guncelleme]
 📦 Paket : KZM2
 🔄 Durum : Guncel ✅
@@ -1515,8 +1515,8 @@ TXT_UPD_ZKM_UP_TO_DATE_EN="[Update]
 
 [Health]
 💾 Disk (/opt) : %DISK_HEALTH%"
-TXT_UPD_ZKM_AUTO_FAIL_TR="[OtoGuncelleme]\n❌ KZM2 otomatik kurulum BASARISIZ.\n⚠️ Lutfen elle guncelleyin (menu 10).\n\n📦 Paket  : KZM2\n🔖 Mevcut : %CUR%\n🆕 Yeni   : %NEW%\n🔗 Link   : %URL%"
-TXT_UPD_ZKM_AUTO_FAIL_EN="[AutoUpdate]\n❌ KZM2 auto install FAILED.\n⚠️ Please update manually (menu 10).\n\n📦 Package : KZM2\n🔖 Current : %CUR%\n🆕 Latest  : %NEW%\n🔗 Link    : %URL%"
+TXT_UPD_ZKM_AUTO_FAIL_TR="[OtoGuncelleme]\n❌ KZM2 otomatik kurulum BASARISIZ.\n⚠️ Lutfen elle guncelleyin (menu 10).\n\n📦 Paket : KZM2\n🔖 Mevcut : %CUR%\n🆕 Yeni : %NEW%\n🔗 Link : %URL%"
+TXT_UPD_ZKM_AUTO_FAIL_EN="[AutoUpdate]\n❌ KZM2 auto install FAILED.\n⚠️ Please update manually (menu 10).\n\n📦 Package : KZM2\n🔖 Current : %CUR%\n🆕 Latest : %NEW%\n🔗 Link : %URL%"
 TXT_HM_PROMPT_AUTOUPDATE_MODE_TR="Otomatik guncelleme modu (0=Kapali, 1=Bildir, 2=Otomatik Kur) [or: 2]:"
 TXT_HM_PROMPT_AUTOUPDATE_MODE_EN="Auto update mode (0=Off, 1=Notify, 2=Auto Install) [e.g. 2]:"
 TXT_HM_AUTOUPDATE_MODE_HINT_TR="0=Kapali, 1=Bildir, 2=Otomatik Kur"
