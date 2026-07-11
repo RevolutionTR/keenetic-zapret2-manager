@@ -37,7 +37,7 @@
 # -------------------------------------------------------------------
 SCRIPT_NAME="keenetic_zapret2_manager.sh"
 # Version scheme: vYY.M.D[.N]  (YY=year, M=month, D=day, N=daily revision)
-SCRIPT_VERSION="v26.7.10"
+SCRIPT_VERSION="v26.7.11"
 SCRIPT_REPO="https://github.com/RevolutionTR/keenetic-zapret2-manager"
 KZM2_SCRIPT_PATH="/opt/lib/opkg/keenetic_zapret2_manager.sh"
 SCRIPT_AUTHOR="RevolutionTR"
@@ -12324,6 +12324,17 @@ hm_syslog_watch_tick() {
     _ike_cd="${HM_SYSLOG_IKE_COOLDOWN_SEC:-3600}"
     _log="$(LD_LIBRARY_PATH= ndmc -c 'show log 50' 2>/dev/null)"
     [ -z "$_log" ] && return 0
+    # ndmc uzun satirlari ortadan boler (wrap) — devam satirlarini girdiye geri birlestir.
+    # Aksi halde desen bolunurse olay hic yakalanmaz, bolunmezse bildirim parcali gider.
+    _log="$(printf '%s\n' "$_log" | awk '
+        /^=+$/ { next }
+        /^[[:space:]]*Time[[:space:]]+Message/ { next }
+        /^[A-Z] \[/ { if (buf != "") print buf; buf = $0; next }
+        buf != "" { sub(/^[[:space:]]+/, ""); buf = buf " " $0; next }
+        { next }
+        END { if (buf != "") print buf }
+    ')"
+    [ -z "$_log" ] && return 0
 
     # Kritik pattern'lar: unexpectedly stopped, too many failed, AUTH_TOPEER_FAILED
     local _crit_count _prev_crit _new_crit
@@ -12339,7 +12350,7 @@ hm_syslog_watch_tick() {
         _diff_crit=$((_now - _last_crit))
         if [ "$_diff_crit" -ge "$_cd" ] 2>/dev/null; then
             local _sample
-            _sample="$(printf '%s\n' "$_log" | grep -E 'unexpectedly stopped|too many failed requests|AUTH_TOPEER_FAILED|invalid password|access to.*denied' | tail -n 3 | sed 's/^[[:space:]]*//' | sed 's/^/• /')"
+            _sample="$(printf '%s\n' "$_log" | grep -E 'unexpectedly stopped|too many failed requests|AUTH_TOPEER_FAILED|invalid password|access to.*denied' | tail -n 3 | sed 's/^[[:space:]]*//' | sed 's/\[[A-Za-z]\{3\} \{1,2\}[0-9]\{1,2\} /[/' | sed 's/^/• /')"
             echo "$_now" > /tmp/healthmon_syslog_crit.ts
             healthmon_log "$(date +%s 2>/dev/null) | syslog_alert | critical | new=${_new_crit}"
             telegram_send "$(tpl_render "$(T TXT_HM_SYSLOG_CRIT_MSG)" CNT "$_new_crit" LOG "$_sample")
@@ -12399,6 +12410,16 @@ healthmon_loop() {
     rm -f /tmp/kzm2_nfqws_mon.pid 2>/dev/null
     # Syslog state: silme, mevcut sayiyi yaz — restart sonrasi eski olaylar "yeni" sayilmasin
     _sl_log="$(LD_LIBRARY_PATH= ndmc -c 'show log' 2>/dev/null)"
+    # Ayni unwrap tick tarafinda da uygulaniyor — baseline ve tick ayni gozle saymali,
+    # yoksa wrap'li satirlar baseline'da sayilamaz ve ilk tick'te sahte "yeni olay" olur.
+    _sl_log="$(printf '%s\n' "$_sl_log" | awk '
+        /^=+$/ { next }
+        /^[[:space:]]*Time[[:space:]]+Message/ { next }
+        /^[A-Z] \[/ { if (buf != "") print buf; buf = $0; next }
+        buf != "" { sub(/^[[:space:]]+/, ""); buf = buf " " $0; next }
+        { next }
+        END { if (buf != "") print buf }
+    ')"
     printf '%s\n' "${_sl_log}" | grep -cE 'unexpectedly stopped|too many failed requests|AUTH_TOPEER_FAILED|invalid password|access to.*denied' > /tmp/healthmon_syslog_crit.prev 2>/dev/null
     printf '%s\n' "${_sl_log}" | grep -c 'no IKE config found' > /tmp/healthmon_syslog_ike.prev 2>/dev/null
     printf '%s\n' "${_sl_log}" | grep -cE 'CURLINFO_SSL_VERIFYRESULT|unable to establish TLS|SSL.*connect error|TLS.*handshake.*fail' > /tmp/healthmon_syslog_tls.prev 2>/dev/null
