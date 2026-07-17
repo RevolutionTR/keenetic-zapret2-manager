@@ -37,7 +37,7 @@
 # -------------------------------------------------------------------
 SCRIPT_NAME="keenetic_zapret2_manager.sh"
 # Version scheme: vYY.M.D[.N]  (YY=year, M=month, D=day, N=daily revision)
-SCRIPT_VERSION="v26.7.11.1"
+SCRIPT_VERSION="v26.7.17"
 SCRIPT_REPO="https://github.com/RevolutionTR/keenetic-zapret2-manager"
 KZM2_SCRIPT_PATH="/opt/lib/opkg/keenetic_zapret2_manager.sh"
 SCRIPT_AUTHOR="RevolutionTR"
@@ -17706,6 +17706,10 @@ var V={
         '<button class="ghost" onclick="mdpiExport(this)">'+(L?'Export Current':'Mevcut Profili D&#305;&#351;a Aktar')+'</button>'+
         '<button class="ok" onclick="mdpiSave(this)">'+(L?'Apply and Restart Zapret2':'Uygula ve Zapret2&#8217;yi Yeniden Ba&#351;lat')+'</button>'+
       '</div>'+
+      '<div style="margin-top:10px">'+
+        '<div style="font-size:14px;color:var(--muted);font-weight:600;letter-spacing:.04em;margin-bottom:6px">'+(L?'Effective profile (read-only)':'Uygulanacak profil (salt okunur)')+'</div>'+
+        '<pre id="mdpiPreview" style="margin:0;padding:8px;border:1px solid var(--bd);border-radius:8px;background:rgba(0,0,0,.25);font-size:11px;line-height:1.5;white-space:pre-wrap;word-break:break-all;min-height:150px;max-height:280px;overflow:auto;color:var(--muted)">-</pre>'+
+      '</div>'+
       '<div id="mdpiExportInfo" class="hint" style="margin-top:8px;display:none"></div>'+
       '<div class="hint" style="margin-top:10px">'+(L?'Blocked parameters: --lua-init, --qnum, --fwmark, --user, --hostlist= and legacy --dpi-desync*.':'Engellenen parametreler: --lua-init, --qnum, --fwmark, --user, --hostlist= ve eski --dpi-desync*.')+'</div>'+
       '</div>'+
@@ -17725,7 +17729,7 @@ var V={
           '<button class="ok" onclick="mdpiAdvSave(this)">'+(L?'Apply and Restart Zapret2':'Uygula ve Zapret2&#8217;yi Yeniden Ba&#351;lat')+'</button>'+
         '</div>'+
       '</div>';
-    setTimeout(function(){var t=document.getElementById('mdpiTls');if(!t||!t.value){mdpiLoad('config');mdpiAdvLoad('config');}},100);return h;
+    setTimeout(function(){var t=document.getElementById('mdpiTls');if(!t||!t.value){mdpiLoad('config');mdpiAdvLoad('config');}['mdpiHttp','mdpiTls','mdpiQuic'].forEach(function(id){var e=document.getElementById(id);if(e&&!e._pvb){e._pvb=1;e.addEventListener('input',mdpiUpdatePreview);}});mdpiUpdatePreview();},100);return h;
   }},
   hostlist:{title:'Hostlist Y&#246;netimi',titleEn:'Hostlist Management',sub:'Domain ekle, sil, listele.',subEn:'Add, remove, list domains.',html:function(){
     var h='<div class="grid">'+
@@ -18104,6 +18108,7 @@ function mdpiSetBlocks(opt){
   var p=mdpiSplitProfile(opt||'');
   var h=document.getElementById('mdpiHttp'),t=document.getElementById('mdpiTls'),q=document.getElementById('mdpiQuic');
   if(h)h.value=p.http.join('\n');if(t)t.value=p.tls.join('\n');if(q)q.value=p.quic.join('\n');
+  mdpiUpdatePreview();
 }
 function mdpiBlockValue(id){
   var el=document.getElementById(id);
@@ -18116,6 +18121,12 @@ function mdpiJoinBlocks(){
   if(tls)parts.push('--filter-tcp=443 <HOSTLIST>\n'+tls);
   if(quic)parts.push('--filter-udp=443 <HOSTLIST>\n'+quic);
   return parts.join('\n--new\n');
+}
+function mdpiUpdatePreview(){
+  var el=document.getElementById('mdpiPreview');
+  if(!el)return;
+  var v=mdpiJoinBlocks();
+  el.textContent=v||'-';
 }
 function mdpiSetAdv(data){
   var d=data||{};
@@ -18317,7 +18328,7 @@ function syncLang(){
   if(brandTitle)brandTitle.textContent=L?'KZM2 Control Panel':'KZM2 Kontrol Paneli';
   document.title=L?'KZM2 Control Panel':'KZM2 Kontrol Paneli';
   var langBadge=document.getElementById('langBadge');
-  if(langBadge){langBadge.onclick=function(){var nl=L?'tr':'en';fetch('/cgi-bin/action.sh',{method:'POST',headers:{'Content-Type':'application/x-www-form-urlencoded'},body:'action=lang_set&lang='+nl}).then(function(){setTimeout(function(){hmConfCache=null;fetchS().then(function(){if(curV==='manualdpi'){var vals={http:(document.getElementById('mdpiHttp')||{}).value,tls:(document.getElementById('mdpiTls')||{}).value,quic:(document.getElementById('mdpiQuic')||{}).value,ptcp:(document.getElementById('mdpiPortsTcp')||{}).value,pudp:(document.getElementById('mdpiPortsUdp')||{}).value,tout:(document.getElementById('mdpiTcpOut')||{}).value,tin:(document.getElementById('mdpiTcpIn')||{}).value,uout:(document.getElementById('mdpiUdpOut')||{}).value,uin:(document.getElementById('mdpiUdpIn')||{}).value};render(curV);setTimeout(function(){if(vals.http!==undefined&&document.getElementById('mdpiHttp'))document.getElementById('mdpiHttp').value=vals.http||'';if(vals.tls!==undefined&&document.getElementById('mdpiTls'))document.getElementById('mdpiTls').value=vals.tls||'';if(vals.quic!==undefined&&document.getElementById('mdpiQuic'))document.getElementById('mdpiQuic').value=vals.quic||'';if(vals.ptcp!==undefined&&document.getElementById('mdpiPortsTcp'))document.getElementById('mdpiPortsTcp').value=vals.ptcp||'';if(vals.pudp!==undefined&&document.getElementById('mdpiPortsUdp'))document.getElementById('mdpiPortsUdp').value=vals.pudp||'';if(vals.tout!==undefined&&document.getElementById('mdpiTcpOut'))document.getElementById('mdpiTcpOut').value=vals.tout||'';if(vals.tin!==undefined&&document.getElementById('mdpiTcpIn'))document.getElementById('mdpiTcpIn').value=vals.tin||'';if(vals.uout!==undefined&&document.getElementById('mdpiUdpOut'))document.getElementById('mdpiUdpOut').value=vals.uout||'';if(vals.uin!==undefined&&document.getElementById('mdpiUdpIn'))document.getElementById('mdpiUdpIn').value=vals.uin||'';},120);}else{render(curV);}});},300);});};}
+  if(langBadge){langBadge.onclick=function(){var nl=L?'tr':'en';fetch('/cgi-bin/action.sh',{method:'POST',headers:{'Content-Type':'application/x-www-form-urlencoded'},body:'action=lang_set&lang='+nl}).then(function(){setTimeout(function(){hmConfCache=null;fetchS().then(function(){if(curV==='manualdpi'){var vals={http:(document.getElementById('mdpiHttp')||{}).value,tls:(document.getElementById('mdpiTls')||{}).value,quic:(document.getElementById('mdpiQuic')||{}).value,ptcp:(document.getElementById('mdpiPortsTcp')||{}).value,pudp:(document.getElementById('mdpiPortsUdp')||{}).value,tout:(document.getElementById('mdpiTcpOut')||{}).value,tin:(document.getElementById('mdpiTcpIn')||{}).value,uout:(document.getElementById('mdpiUdpOut')||{}).value,uin:(document.getElementById('mdpiUdpIn')||{}).value};render(curV);setTimeout(function(){if(vals.http!==undefined&&document.getElementById('mdpiHttp'))document.getElementById('mdpiHttp').value=vals.http||'';if(vals.tls!==undefined&&document.getElementById('mdpiTls'))document.getElementById('mdpiTls').value=vals.tls||'';if(vals.quic!==undefined&&document.getElementById('mdpiQuic'))document.getElementById('mdpiQuic').value=vals.quic||'';if(vals.ptcp!==undefined&&document.getElementById('mdpiPortsTcp'))document.getElementById('mdpiPortsTcp').value=vals.ptcp||'';if(vals.pudp!==undefined&&document.getElementById('mdpiPortsUdp'))document.getElementById('mdpiPortsUdp').value=vals.pudp||'';if(vals.tout!==undefined&&document.getElementById('mdpiTcpOut'))document.getElementById('mdpiTcpOut').value=vals.tout||'';if(vals.tin!==undefined&&document.getElementById('mdpiTcpIn'))document.getElementById('mdpiTcpIn').value=vals.tin||'';if(vals.uout!==undefined&&document.getElementById('mdpiUdpOut'))document.getElementById('mdpiUdpOut').value=vals.uout||'';if(vals.uin!==undefined&&document.getElementById('mdpiUdpIn'))document.getElementById('mdpiUdpIn').value=vals.uin||'';mdpiUpdatePreview();},120);}else{render(curV);}});},300);});};}
   if(langBadge)langBadge.innerHTML=L?'<img src="data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjQiIGhlaWdodD0iMjQiIHZpZXdCb3g9IjAgMCAzNiAzNiIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cGF0aCBmaWxsPSIjMDAyNDdEIiBkPSJNMCA5LjA1OVYxM2g1LjYyOHpNNC42NjQgMzFIMTN2LTUuODM3ek0yMyAyNS4xNjRWMzFoOC4zMzV6TTAgMjN2My45NDFMNS42MyAyM3pNMzEuMzM3IDVIMjN2NS44Mzd6TTM2IDI2Ljk0MlYyM2gtNS42MzF6TTM2IDEzVjkuMDU5TDMwLjM3MSAxM3pNMTMgNUg0LjY2NEwxMyAxMC44Mzd6Ii8+PHBhdGggZmlsbD0iI0NGMUIyQiIgZD0iTTI1LjE0IDIzbDkuNzEyIDYuODAxYTMuOTc3IDMuOTc3IDAgMCAwIC45OS0xLjc0OUwyOC42MjcgMjNIMjUuMTR6TTEzIDIzaC0yLjE0MWwtOS43MTEgNi44Yy41MjEuNTMgMS4xODkuOTA5IDEuOTM4IDEuMDg1TDEzIDIzLjk0M1YyM3ptMTAtMTBoMi4xNDFsOS43MTEtNi44YTMuOTg4IDMuOTg4IDAgMCAwLTEuOTM3LTEuMDg1TDIzIDEyLjA1N1YxM3ptLTEyLjE0MSAwTDEuMTQ4IDYuMmEzLjk5NCAzLjk5NCAwIDAgMC0uOTkxIDEuNzQ5TDcuMzcyIDEzaDMuNDg3eiIvPjxwYXRoIGZpbGw9IiNFRUUiIGQ9Ik0zNiAyMUgyMXYxMGgydi01LjgzNkwzMS4zMzUgMzFIMzJhMy45OSAzLjk5IDAgMCAwIDIuODUyLTEuMTk5TDI1LjE0IDIzaDMuNDg3bDcuMjE1IDUuMDUyYy4wOTMtLjMzNy4xNTgtLjY4Ni4xNTgtMS4wNTJ2LS4wNThMMzAuMzY5IDIzSDM2di0yek0wIDIxdjJoNS42M0wwIDI2Ljk0MVYyN2MwIDEuMDkxLjQzOSAyLjA3OCAxLjE0OCAyLjhsOS43MTEtNi44SDEzdi45NDNsLTkuOTE0IDYuOTQxYy4yOTQuMDcuNTk4LjExNi45MTQuMTE2aC42NjRMMTMgMjUuMTYzVjMxaDJWMjFIMHpNMzYgOWEzLjk4MyAzLjk4MyAwIDAgMC0xLjE0OC0yLjhMMjUuMTQxIDEzSDIzdi0uOTQzbDkuOTE1LTYuOTQyQTQuMDAxIDQuMDAxIDAgMCAwIDMyIDVoLS42NjNMMjMgMTAuODM3VjVoLTJ2MTBoMTV2LTJoLTUuNjI5TDM2IDkuMDU5Vjl6TTEzIDV2NS44MzdMNC42NjQgNUg0YTMuOTg1IDMuOTg1IDAgMCAwLTIuODUyIDEuMmw5LjcxMSA2LjhINy4zNzJMLjE1NyA3Ljk0OUEzLjk2OCAzLjk2OCAwIDAgMCAwIDl2LjA1OUw1LjYyOCAxM0gwdjJoMTVWNWgtMnoiLz48cGF0aCBmaWxsPSIjQ0YxQjJCIiBkPSJNMjEgMTVWNWgtNnYxMEgwdjZoMTV2MTBoNlYyMWgxNXYtNnoiLz48L3N2Zz4=" width="24" height="24" style="vertical-align:middle"> EN':'<img src="data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjQiIGhlaWdodD0iMjQiIHZpZXdCb3g9IjAgMCAzNiAzNiIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIiB4bWxuczp4bGluaz0iaHR0cDovL3d3dy53My5vcmcvMTk5OS94bGluayI+PHBhdGggZmlsbD0iI0UzMDkxNyIgZD0iTTM2IDI3YTQgNCAwIDAgMS00IDRINGE0IDQgMCAwIDEtNC00VjlhNCA0IDAgMCAxIDQtNGgyOGE0IDQgMCAwIDEgNCA0djE4eiIvPjxwYXRoIGZpbGw9IiNFRUUiIGQ9Ik0xNiAyNGE2IDYgMCAxIDEgMC0xMmMxLjMxIDAgMi41Mi40MjUgMy41MDcgMS4xMzhBNy4zMzIgNy4zMzIgMCAwIDAgMTQgMTAuNjQ3QTcuMzUzIDcuMzUzIDAgMCAwIDYuNjQ3IDE4QTcuMzUzIDcuMzUzIDAgMCAwIDE0IDI1LjM1NGMyLjE5NSAwIDQuMTYtLjk2NyA1LjUwNy0yLjQ5MkE1Ljk2MyA1Ljk2MyAwIDAgMSAxNiAyNHptMy45MTMtNS43N2wyLjQ0LjU2MmwuMjIgMi40OTNsMS4yODgtMi4xNDZsMi40NC41NjFsLTEuNjQ0LTEuODg4bDEuMjg3LTIuMTQ3bC0yLjMwMy45OGwtMS42NDQtMS44ODlsLjIyIDIuNDk0eiIvPjwvc3ZnPg==" width="24" height="24" style="vertical-align:middle"> TR';
 }
 function fixTR(s){if(!s)return s;
