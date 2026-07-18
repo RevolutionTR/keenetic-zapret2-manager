@@ -37,7 +37,7 @@
 # -------------------------------------------------------------------
 SCRIPT_NAME="keenetic_zapret2_manager.sh"
 # Version scheme: vYY.M.D[.N]  (YY=year, M=month, D=day, N=daily revision)
-SCRIPT_VERSION="v26.7.17"
+SCRIPT_VERSION="v26.7.18"
 SCRIPT_REPO="https://github.com/RevolutionTR/keenetic-zapret2-manager"
 KZM2_SCRIPT_PATH="/opt/lib/opkg/keenetic_zapret2_manager.sh"
 SCRIPT_AUTHOR="RevolutionTR"
@@ -111,17 +111,22 @@ kzm2_self_test() {
     else
         _fail "syntax: sh -n FAILED (see /tmp/kzm2_selftest_syntax.err)"
     fi
-    # 2) Turkish letters (byte-level) — HTML/CGI heredoc bolumlerini atla
+    # 2) Turkish letters (byte-level)
+    # NOT: Eski kod IKI sebepten calismiyordu: (1) $'\xNN' bashism'dir, BusyBox ash
+    # desteklemez, pat literal metin olurdu; (2) 'grep -qoba' kullaniyordu ama BusyBox
+    # v1.37.0 grep'te -a ve -b bayraklari YOK, grep hata verir ve 2>/dev/null gizlerdi.
+    # Ikisi de taramayi DAIMA "PASS" yapardi. Duzeltme: POSIX printf-octal ile gercek
+    # byte uret + yalnizca -qF kullan (router'da BusyBox v1.37.0 ile dogrulandi).
     local found_tr=0 pat
     for pat in \
-      $'\xC5\x9E' $'\xC5\x9F' \
-      $'\xC4\x9E' $'\xC4\x9F' \
-      $'\xC4\xB0' $'\xC4\xB1' \
-      $'\xC3\x96' $'\xC3\xB6' \
-      $'\xC3\x87' $'\xC3\xA7' \
-      $'\xC3\x9C' $'\xC3\xBC'
+      "$(printf '\305\236')" "$(printf '\305\237')" \
+      "$(printf '\304\236')" "$(printf '\304\237')" \
+      "$(printf '\304\260')" "$(printf '\304\261')" \
+      "$(printf '\303\226')" "$(printf '\303\266')" \
+      "$(printf '\303\207')" "$(printf '\303\247')" \
+      "$(printf '\303\234')" "$(printf '\303\274')"
     do
-      if grep -qoba "$pat" "$f" >/dev/null 2>&1; then
+      if grep -qF "$pat" "$f" >/dev/null 2>&1; then
         found_tr=1
         break
       fi
