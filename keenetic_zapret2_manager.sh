@@ -37,7 +37,7 @@
 # -------------------------------------------------------------------
 SCRIPT_NAME="keenetic_zapret2_manager.sh"
 # Version scheme: vYY.M.D[.N]  (YY=year, M=month, D=day, N=daily revision)
-SCRIPT_VERSION="v26.7.18"
+SCRIPT_VERSION="v26.7.19"
 SCRIPT_REPO="https://github.com/RevolutionTR/keenetic-zapret2-manager"
 KZM2_SCRIPT_PATH="/opt/lib/opkg/keenetic_zapret2_manager.sh"
 SCRIPT_AUTHOR="RevolutionTR"
@@ -117,7 +117,12 @@ kzm2_self_test() {
     # v1.37.0 grep'te -a ve -b bayraklari YOK, grep hata verir ve 2>/dev/null gizlerdi.
     # Ikisi de taramayi DAIMA "PASS" yapardi. Duzeltme: POSIX printf-octal ile gercek
     # byte uret + yalnizca -qF kullan (router'da BusyBox v1.37.0 ile dogrulandi).
+    # Isaretli bloklar (asagidaki sed) Telegram-only sozluktur, taramadan atlanir.
+    # Desen [I]/[D] karakter sinifiyla yazildi; boylece BU satir isaretle eslesmez
+    # (aksi halde sed buradan itibaren dosyayi taramadan cikarirdi).
     local found_tr=0 pat
+    local _trscan="/tmp/kzm2_selftest_trscan.txt"
+    sed '/# TG-UTF8-BEG[I]N/,/# TG-UTF8-EN[D]/d' "$f" > "$_trscan" 2>/dev/null || cp "$f" "$_trscan"
     for pat in \
       "$(printf '\305\236')" "$(printf '\305\237')" \
       "$(printf '\304\236')" "$(printf '\304\237')" \
@@ -126,11 +131,12 @@ kzm2_self_test() {
       "$(printf '\303\207')" "$(printf '\303\247')" \
       "$(printf '\303\234')" "$(printf '\303\274')"
     do
-      if grep -qF "$pat" "$f" >/dev/null 2>&1; then
+      if grep -qF "$pat" "$_trscan" >/dev/null 2>&1; then
         found_tr=1
         break
       fi
     done
+    rm -f "$_trscan" 2>/dev/null
     if [ "$found_tr" -eq 1 ]; then
         _fail "TR letters detected - keep ASCII for menus"
     else
@@ -1194,8 +1200,11 @@ TXT_TG_WAN_LABEL_TR="WAN IP"
 TXT_TG_WAN_LABEL_EN="WAN IP"
 TXT_TG_LAN_LABEL_TR="LAN IP"
 TXT_TG_LAN_LABEL_EN="LAN IP"
-TXT_TG_DEVICE_LABEL_TR="Sistem Adi"
+# TG-UTF8-BEGIN  --- Telegram-only sozluk: SSH terminaline CIKMAZ, UTF-8 TR karakter serbest.
+# UYARI: Buraya SSH/menu/ekran metni EKLEME. --self-test bu blokta TR karakter taramaz.
+TXT_TG_DEVICE_LABEL_TR="Sistem Adı"
 TXT_TG_DEVICE_LABEL_EN="System Name"
+# TG-UTF8-END
 TXT_TG_EVENT_LABEL_TR="Olay"
 TXT_TG_EVENT_LABEL_EN="Event"
 TXT_TG_STATUS_ACTIVE_TR="Bildirimler: AKTIF (Token ve ChatID kayitli)"
@@ -1224,6 +1233,10 @@ TXT_TG_RESET_OK_TR="Ayarlar sifirlandi."
 TXT_TG_RESET_OK_EN="Settings reset."
 TXT_TG_TEST_FAIL_CONFIG_FIRST_TR="Test gonderilemedi. Once Token/ChatID ayarlayin."
 TXT_TG_TEST_FAIL_CONFIG_FIRST_EN="Test failed. Configure Token/ChatID first."
+TXT_TG_DELETE_CONFIRM_TR="Telegram ayar dosyasi (token + chat ID) silinecek. Emin misiniz? (e/H): "
+TXT_TG_DELETE_CONFIRM_EN="Telegram config (token + chat ID) will be deleted. Are you sure? (y/N): "
+TXT_TG_DELETE_CANCELLED_TR="Iptal edildi. Ayar dosyasi korundu."
+TXT_TG_DELETE_CANCELLED_EN="Cancelled. Config file kept."
 TXT_TG_CONFIG_DELETED_TR="Ayar dosyasi silindi."
 TXT_TG_CONFIG_DELETED_EN="Config deleted."
 TXT_TG_TEST_SAVED_MSG_TR="✅ Telegram Test: Ayarlar kaydedildi"
@@ -1504,14 +1517,16 @@ Use Main Menu > 6 to reinstall from GitHub
 📦 Package        : Zapret2
 ⚠️ Current Version: %CUR% (pulled)
 ✅ Stable         : %NEW%"
-TXT_UPD_ZKM_AUTO_OK_TR="[OtoGuncelleme]\nKZM2 otomatik kurulum basarili.\nBetigi yeniden calistirin.\n\n📦 Paket : KZM2\n🔖 Mevcut Surum : %CUR%\n🆕 Guncellenen Surum : %NEW%\n🔗 Link : %URL%"
-TXT_UPD_ZKM_AUTO_OK_EN="[AutoUpdate]\nKZM2 auto install OK.\nPlease re-run the script.\n\n📦 Package : KZM2\n🔖 Current Version: %CUR%\n🆕 Updated Version: %NEW%\n🔗 Link : %URL%"
-TXT_UPD_ZKM_UP_TO_DATE_TR="[Guncelleme]
+# TG-UTF8-BEGIN  --- Telegram-only sozluk: SSH terminaline CIKMAZ, UTF-8 TR karakter serbest.
+# UYARI: Buraya SSH/menu/ekran metni EKLEME. --self-test bu blokta TR karakter taramaz.
+TXT_UPD_ZKM_AUTO_OK_TR="[Oto Güncelleme]\nKZM2 otomatik kurulum başarılı.\nBetiği yeniden çalıştırın.\n\n📦 Paket : KZM2\n🔖 Mevcut Sürüm : %CUR%\n🆕 Güncellenen Sürüm : %NEW%\n🔗 Link : %URL%"
+TXT_UPD_ZKM_AUTO_OK_EN="[Auto Update]\nKZM2 auto install OK.\nPlease re-run the script.\n\n📦 Package : KZM2\n🔖 Current Version: %CUR%\n🆕 Updated Version: %NEW%\n🔗 Link : %URL%"
+TXT_UPD_ZKM_UP_TO_DATE_TR="[Güncelleme]
 📦 Paket : KZM2
-🔄 Durum : Guncel ✅
-🔖 Surum : %CUR%
+🔄 Durum : Güncel ✅
+🔖 Sürüm : %CUR%
 
-[Saglik]
+[Sağlık]
 💾 Disk (/opt) : %DISK_HEALTH%"
 TXT_UPD_ZKM_UP_TO_DATE_EN="[Update]
 📦 Package : KZM2
@@ -1520,6 +1535,7 @@ TXT_UPD_ZKM_UP_TO_DATE_EN="[Update]
 
 [Health]
 💾 Disk (/opt) : %DISK_HEALTH%"
+# TG-UTF8-END
 TXT_UPD_ZKM_AUTO_FAIL_TR="[OtoGuncelleme]\n❌ KZM2 otomatik kurulum BASARISIZ.\n⚠️ Lutfen elle guncelleyin (menu 10).\n\n📦 Paket : KZM2\n🔖 Mevcut : %CUR%\n🆕 Yeni : %NEW%\n🔗 Link : %URL%"
 TXT_UPD_ZKM_AUTO_FAIL_EN="[AutoUpdate]\n❌ KZM2 auto install FAILED.\n⚠️ Please update manually (menu 10).\n\n📦 Package : KZM2\n🔖 Current : %CUR%\n🆕 Latest : %NEW%\n🔗 Link : %URL%"
 TXT_HM_PROMPT_AUTOUPDATE_MODE_TR="Otomatik guncelleme modu (0=Kapali, 1=Bildir, 2=Otomatik Kur) [or: 2]:"
@@ -1536,12 +1552,15 @@ TXT_HM_AUTOUPDATE_WARN_L3_TR="Devam? (e/h): "
 TXT_HM_AUTOUPDATE_WARN_L3_EN="Continue? (y/n): "
 TXT_HM_AUTOUPDATE_SET_MSG_TR="Otomatik guncelleme modu ayarlandi: %MODE%"
 TXT_HM_AUTOUPDATE_SET_MSG_EN="Auto update mode set: %MODE%"
-TXT_HM_SYSLOG_CRIT_MSG_TR="📌 Keenetic Sistem Log Uyarisi\n🔐 %CNT% yeni kritik olay:\n%LOG%\n\n📎 Not: Bu mesajin KZM2 veya Zapret2 ile ilgisi yoktur. Keenetic sistem log'undan gelen onemli bir olay oldugu icin bilgi amacli yollanmistir."
+# TG-UTF8-BEGIN  --- Telegram-only sozluk: SSH terminaline CIKMAZ, UTF-8 TR karakter serbest.
+# UYARI: Buraya SSH/menu/ekran metni EKLEME. --self-test bu blokta TR karakter taramaz.
+TXT_HM_SYSLOG_CRIT_MSG_TR="📌 Keenetic Sistem Log Uyarısı\n🔐 %CNT% yeni kritik olay:\n%LOG%\n\n📎 Not: Bu mesajın KZM2 veya Zapret2 ile ilgisi yoktur. Keenetic sistem log'undan gelen önemli bir olay olduğu için bilgi amaçlı yollanmıştır."
 TXT_HM_SYSLOG_CRIT_MSG_EN="📌 Keenetic System Log Alert\n🔐 %CNT% new critical event:\n%LOG%\n\n📎 Note: This message is not related to KZM2 or Zapret2. It is sent for informational purposes as an important event detected in the Keenetic system log."
-TXT_HM_SYSLOG_IKE_MSG_TR="📌 Keenetic Sistem Log Uyarisi\n🛡️ IKE baglanti denemesi: %CNT% yeni girisim\n\n📎 Not: Bu mesajin KZM2 veya Zapret2 ile ilgisi yoktur. Keenetic sistem log'undan gelen onemli bir olay oldugu icin bilgi amacli yollanmistir."
+TXT_HM_SYSLOG_IKE_MSG_TR="📌 Keenetic Sistem Log Uyarısı\n🛡️ IKE bağlantı denemesi: %CNT% yeni girişim\n\n📎 Not: Bu mesajın KZM2 veya Zapret2 ile ilgisi yoktur. Keenetic sistem log'undan gelen önemli bir olay olduğu için bilgi amaçlı yollanmıştır."
 TXT_HM_SYSLOG_IKE_MSG_EN="📌 Keenetic System Log Alert\n🛡️ IKE connection attempt: %CNT% new\n\n📎 Note: This message is not related to KZM2 or Zapret2. It is sent for informational purposes as an important event detected in the Keenetic system log."
-TXT_HM_SYSLOG_TLS_MSG_TR="⚠️ Zapret2 TLS Mudahalesi Uyarisi\n🔒 Son %MIN% dakikada %CNT% adet TLS baglanti hatasi tespit edildi.\n\nBu hata Zapret2 bypass'inin TLS baglantilarini bozdugunun isareti olabilir. ISS'inizde DPI olmayabilir veya TTL degeriniz cok yuksek olabilir.\n\nOneri: Blockcheck2 calistirin (Menu B) veya Zapret2'yi gecici olarak durdurun (Menu 4) ve baglantinizi test edin."
+TXT_HM_SYSLOG_TLS_MSG_TR="⚠️ Zapret2 TLS Müdahalesi Uyarısı\n🔒 Son %MIN% dakikada %CNT% adet TLS bağlantı hatası tespit edildi.\n\nBu hata Zapret2 bypass'inin TLS bağlantılarını bozduğunun işareti olabilir. ISS'inizde DPI olmayabilir veya TTL değeriniz çok yüksek olabilir.\n\nÖneri: Blockcheck2 çalıştırın (Menu B) veya Zapret2'yi geçici olarak durdurun (Menu 4) ve bağlantınızı test edin."
 TXT_HM_SYSLOG_TLS_MSG_EN="⚠️ Zapret2 TLS Interference Warning\n🔒 %CNT% TLS connection errors detected in the last %MIN% minutes.\n\nThis may indicate that Zapret2 bypass is interfering with TLS connections. Your ISP may not have DPI or your TTL value may be too high.\n\nSuggestion: Run Blockcheck2 (Menu B) or temporarily stop Zapret2 (Menu 4) and test your connection."
+# TG-UTF8-END
 TXT_HM_NFQWS_ALERT_MSG_TR="⚠️ nfqws2 Kuyruk Uyarisi\n📦 queue=%QL% drops=%DR%\n\nNFQUEUE kuyrugundan paket dusuyor veya kuyruk dolmaya basladi. Bu ag yavaslamasi veya DPI bypass sorununa isaret edebilir.\n\nDetay icin Menu 16 - 4 uzerinden Debug modunu acin."
 TXT_HM_NFQWS_ALERT_MSG_EN="⚠️ nfqws2 Queue Alert\n📦 queue=%QL% drops=%DR%\n\nPackets are being dropped or the NFQUEUE is starting to fill up. This may indicate network slowdown or DPI bypass issues.\n\nFor details enable Debug mode via Menu 16 - 4."
 TXT_HM_NFQWS_ALERT_OK_MSG_TR="✅ nfqws2 Kuyruk Normal\n📦 queue=0 drops=0\n\nNFQUEUE kuyrugu normale dondu."
@@ -2542,18 +2561,24 @@ TXT_KEENDNS_NONE_TR="KeenDNS kaydi yok"
 TXT_KEENDNS_NONE_EN="No KeenDNS record"
 TXT_KEENDNS_UNKNOWN_TR="Bilinmiyor"
 TXT_KEENDNS_UNKNOWN_EN="Unknown"
-TXT_KEENDNS_LOST_TR="⚠️ KeenDNS Uyari\n🔗 %s\n☁️ Dogrudan erisim kesildi, yalnizca cloud aktif."
-TXT_KEENDNS_CGN_LOST_TR="⚠️ KeenDNS Uyari\n🔗 %s\n☁️ Cloud erisimi kesildi (CGN/direkt erisim yok)."
+# TG-UTF8-BEGIN  --- Telegram-only sozluk: SSH terminaline CIKMAZ, UTF-8 TR karakter serbest.
+# UYARI: Buraya SSH/menu/ekran metni EKLEME. --self-test bu blokta TR karakter taramaz.
+TXT_KEENDNS_LOST_TR="⚠️ KeenDNS Uyarı\n🔗 %s\n☁️ Doğrudan erişim kesildi, yalnızca cloud aktif."
+TXT_KEENDNS_CGN_LOST_TR="⚠️ KeenDNS Uyarı\n🔗 %s\n☁️ Cloud erişimi kesildi (CGN/direkt erişim yok)."
 TXT_KEENDNS_CGN_LOST_EN="⚠️ KeenDNS Alert\n🔗 %s\n☁️ Cloud access lost (CGN / no direct access)."
-TXT_KEENDNS_CGN_BACK_TR="✅ KeenDNS Geri Geldi\n🔗 %s\n☁️ Cloud erisimi yeniden aktif."
+TXT_KEENDNS_CGN_BACK_TR="✅ KeenDNS Geri Geldi\n🔗 %s\n☁️ Cloud erişimi yeniden aktif."
 TXT_KEENDNS_CGN_BACK_EN="✅ KeenDNS Restored\n🔗 %s\n☁️ Cloud access is active again."
 TXT_KEENDNS_LOST_EN="⚠️ KeenDNS Alert\n🔗 %s\n☁️ Direct access lost, cloud only."
-TXT_KEENDNS_BACK_TR="✅ KeenDNS Geri Geldi\n🔗 %s\n🌐 Dogrudan erisim yeniden aktif."
+TXT_KEENDNS_BACK_TR="✅ KeenDNS Geri Geldi\n🔗 %s\n🌐 Doğrudan erişim yeniden aktif."
 TXT_KEENDNS_BACK_EN="✅ KeenDNS Restored\n🔗 %s\n🌐 Direct access is active again."
-TXT_KEENDNS_FAIL_TR="❌ KeenDNS Erisim Yok\n🔗 %s\n🚫 Domain disaridan erisilebilir degil."
+# TG-UTF8-END
+# TG-UTF8-BEGIN  --- Telegram-only sozluk: SSH terminaline CIKMAZ, UTF-8 TR karakter serbest.
+# UYARI: Buraya SSH/menu/ekran metni EKLEME. --self-test bu blokta TR karakter taramaz.
+TXT_KEENDNS_FAIL_TR="❌ KeenDNS Erişim Yok\n🔗 %s\n🚫 Domain dışarıdan erişilebilir değil."
 TXT_KEENDNS_FAIL_EN="❌ KeenDNS Unreachable\n🔗 %s\n🚫 Domain is not accessible from outside."
-TXT_KEENDNS_REACH_TR="✅ KeenDNS Erisim Geri Geldi\n%s\nDomain tekrar disaridan erisilebilir."
+TXT_KEENDNS_REACH_TR="✅ KeenDNS Erişim Geri Geldi\n%s\nDomain tekrar dışarıdan erişilebilir."
 TXT_KEENDNS_REACH_EN="✅ KeenDNS Reachable Again\n%s\nDomain is accessible from outside again."
+# TG-UTF8-END
 # Component Check translations
 TXT_COMP_CHECK_TITLE_TR="=== Keenetic Bilesenler Kontrolu ==="
 TXT_COMP_CHECK_TITLE_EN="=== Keenetic Components Check ==="
@@ -10175,8 +10200,17 @@ telegram_notifications_menu() {
                 press_enter_to_continue
                 ;;
             3)
-                rm -f "$TG_CONF_FILE" 2>/dev/null
-                print_status PASS "$(T TXT_TG_CONFIG_DELETED)"
+                printf "%s" "$(T TXT_TG_DELETE_CONFIRM)"
+                read -r _del_confirm </dev/tty
+                case "$_del_confirm" in
+                    e|E|y|Y)
+                        rm -f "$TG_CONF_FILE" 2>/dev/null
+                        print_status PASS "$(T TXT_TG_CONFIG_DELETED)"
+                        ;;
+                    *)
+                        print_status INFO "$(T TXT_TG_DELETE_CANCELLED)"
+                        ;;
+                esac
                 press_enter_to_continue
                 ;;
             4) telegram_bot_menu ;;
@@ -12379,7 +12413,8 @@ hm_syslog_watch_tick() {
             local _min_win=$(( (_cd > 1800 ? _cd : 1800) / 60 ))
             echo "$_now" > /tmp/healthmon_syslog_tls.ts
             healthmon_log "$(date +%s 2>/dev/null) | syslog_alert | tls_interference | new=${_new_tls}"
-            telegram_send "$(tpl_render "$(T TXT_HM_SYSLOG_TLS_MSG)" CNT "$_new_tls" MIN "$_min_win")" &
+            telegram_send "$(tpl_render "$(T TXT_HM_SYSLOG_TLS_MSG)" CNT "$_new_tls" MIN "$_min_win")
+" &
         fi
     fi
     local _ike_count _prev_ike _new_ike
@@ -12910,13 +12945,15 @@ healthmon_loop() {
                 if [ "$kdns_access2" = "direct" ]; then
                     # direct'e dondu
                     if healthmon_should_alert "keendns_up" "$HM_COOLDOWN_SEC"; then
-                        telegram_send "$(printf "$(T TXT_KEENDNS_BACK)" "$kdns_fqdn")" &
+                        telegram_send "$(printf "$(T TXT_KEENDNS_BACK)" "$kdns_fqdn")
+" &
                         healthmon_log "$now | keendns_up | $kdns_fqdn"
                     fi
                 elif [ "$kdns_can_direct2" = "no" ]; then
                     # CGN: cloud'a dustu, direct imkansiz > kritik alarm
                     if healthmon_should_alert "keendns_down" "$HM_COOLDOWN_SEC"; then
-                        telegram_send "$(printf "$(T TXT_KEENDNS_CGN_LOST)" "$kdns_fqdn")" &
+                        telegram_send "$(printf "$(T TXT_KEENDNS_CGN_LOST)" "$kdns_fqdn")
+" &
                         healthmon_log "$now | keendns_cgn_lost | $kdns_fqdn"
                     fi
                 fi
@@ -12966,7 +13003,8 @@ healthmon_loop() {
                     if [ "$kdns_reach2" = "yes" ]; then
                         if healthmon_should_alert "keendns_reach" "$HM_COOLDOWN_SEC"; then
                             if [ "$kdns_can_direct2" = "no" ]; then
-                                telegram_send "$(printf "$(T TXT_KEENDNS_CGN_BACK)" "$kdns_fqdn")" &
+                                telegram_send "$(printf "$(T TXT_KEENDNS_CGN_BACK)" "$kdns_fqdn")
+" &
                             else
                                 telegram_send "$(printf "$(T TXT_KEENDNS_REACH)" "$kdns_fqdn")
 " &
@@ -12976,7 +13014,8 @@ healthmon_loop() {
                     else
                         if healthmon_should_alert "keendns_unreach" "$HM_COOLDOWN_SEC"; then
                             if [ "$kdns_can_direct2" = "no" ]; then
-                                telegram_send "$(printf "$(T TXT_KEENDNS_CGN_LOST)" "$kdns_fqdn")" &
+                                telegram_send "$(printf "$(T TXT_KEENDNS_CGN_LOST)" "$kdns_fqdn")
+" &
                             else
                                 telegram_send "$(printf "$(T TXT_KEENDNS_FAIL)" "$kdns_fqdn")
 " &
@@ -19486,7 +19525,8 @@ if [ "$1" = "--test-tls-alert" ]; then
         exit 1
     fi
     echo "Telegram TLS uyari mesaji gonderiliyor..."
-    telegram_send "$(tpl_render "$(T TXT_HM_SYSLOG_TLS_MSG)" CNT "5" MIN "30")"
+    telegram_send "$(tpl_render "$(T TXT_HM_SYSLOG_TLS_MSG)" CNT "5" MIN "30")
+"
     echo "Gonderildi. Telegram'i kontrol edin."
     exit 0
 fi
