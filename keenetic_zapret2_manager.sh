@@ -37,7 +37,7 @@
 # -------------------------------------------------------------------
 SCRIPT_NAME="keenetic_zapret2_manager.sh"
 # Version scheme: vYY.M.D[.N]  (YY=year, M=month, D=day, N=daily revision)
-SCRIPT_VERSION="v26.7.19"
+SCRIPT_VERSION="v26.7.20"
 SCRIPT_REPO="https://github.com/RevolutionTR/keenetic-zapret2-manager"
 KZM2_SCRIPT_PATH="/opt/lib/opkg/keenetic_zapret2_manager.sh"
 SCRIPT_AUTHOR="RevolutionTR"
@@ -1274,8 +1274,8 @@ TXT_HM_CFG_ITEM5_TR="Zapret2 denetimi"
 TXT_HM_CFG_ITEM5_EN="Zapret2 watchdog"
 TXT_HM_CFG_ITEM6_TR="Guncelleme kontrolu"
 TXT_HM_CFG_ITEM6_EN="Update check"
-TXT_HM_CFG_ITEM7_TR="Oto guncelleme modu"
-TXT_HM_CFG_ITEM7_EN="Auto update mode"
+TXT_HM_CFG_ITEM7_TR="KZM2 Oto guncelleme modu"
+TXT_HM_CFG_ITEM7_EN="KZM2 Auto update mode"
 TXT_HM_CFG_ITEM8_TR="Aralik (sn)"
 TXT_HM_CFG_ITEM8_EN="Interval (sec)"
 TXT_HM_CFG_ITEM9_TR="Cooldown (sn)"
@@ -1339,8 +1339,8 @@ TXT_HM_STATUS_SECTION_NOW_TR="Anlik Durum"
 TXT_HM_STATUS_SECTION_NOW_EN="Live Status"
 TXT_HM_STATUS_UPDATECHECK_TR="Guncelleme kontrolu"
 TXT_HM_STATUS_UPDATECHECK_EN="Update check"
-TXT_HM_STATUS_AUTOUPDATE_TR="Oto guncelleme"
-TXT_HM_STATUS_AUTOUPDATE_EN="Auto update"
+TXT_HM_STATUS_AUTOUPDATE_TR="KZM2 Oto guncelleme"
+TXT_HM_STATUS_AUTOUPDATE_EN="KZM2 Auto update"
 TXT_HM_WORD_ON_TR="ACIK"
 TXT_HM_WORD_ON_EN="ON"
 TXT_HM_WORD_OFF_TR="KAPALI"
@@ -6880,7 +6880,7 @@ case "$ssel" in
 github_fetch_release_kv_last10() {
     # outputs lines: tag|url  (tag list; not release assets)
     local API
-    API="https://api.github.com/repos/RevolutionTR/keenetic-zapret2-manager/tags?per_page=10"
+    API="https://api.github.com/repos/RevolutionTR/keenetic-zapret2-manager/tags?per_page=3"
     {
         if command -v curl >/dev/null 2>&1; then
             curl -fsSL -H "User-Agent: keenetic-zapret2-manager" "$API"
@@ -7121,7 +7121,6 @@ script_rollback_menu() {
         print_line "=" 
         echo " 1. $(T TXT_ROLLBACK_LOCAL_MENU)"
         echo " 2. $(T TXT_ROLLBACK_GH_LIST)"
-        echo " 3. $(T TXT_ROLLBACK_GH_TAG)"
         echo " 0. $(T TXT_BACK)"
         print_line "-"
         printf "%s" "$(T TXT_ROLLBACK_MAIN_PICK)"
@@ -7138,10 +7137,6 @@ script_rollback_menu() {
                 ;;
             2|G|g)
                 github_install_from_releases_last10
-                continue
-                ;;
-            3|T|t)
-                github_install_from_tag_prompt
                 continue
                 ;;
             *)
@@ -7269,6 +7264,13 @@ display_menu() {
         if [ "${HM_WANMON_ENABLE:-0}" != "1" ]; then
             printf "  %-*s   %b%s%b\n" "$_lw" "" \
                 "${CLR_ORANGE}" "$(T _ 'WAN izleme KAPALI (Menu 16 > 4 > 11)' 'WAN monitoring DISABLED (Menu 16 > 4 > 11)')" "${CLR_RESET}"
+        fi
+        if [ "${HM_AUTOUPDATE_MODE:-2}" = "0" ]; then
+            printf "  %-*s   %b%s%b\n" "$_lw" "" \
+                "${CLR_ORANGE}" "$(T _ 'KZM2 otomatik guncelleme KAPALI (Menu 16 > 4 > 7)' 'KZM2 auto-update DISABLED (Menu 16 > 4 > 7)')" "${CLR_RESET}"
+        elif [ "${HM_AUTOUPDATE_MODE:-2}" = "1" ]; then
+            printf "  %-*s   %b%s%b\n" "$_lw" "" \
+                "${CLR_ORANGE}" "$(T _ 'KZM2 otomatik guncelleme BILDIR modunda (Menu 16 > 4 > 7)' 'KZM2 auto-update in NOTIFY mode (Menu 16 > 4 > 7)')" "${CLR_RESET}"
         fi
     fi
     # ISP DNS kontrolu
@@ -16263,7 +16265,7 @@ case "$ACTION" in
         _rows="${_rows}$(_r "Heartbeat" "${HM_HEARTBEAT_SEC}s")"
         _rows="${_rows}$(_r "Notification Cooldown" "${HM_COOLDOWN_SEC}s")"
         _rows="${_rows}$(_r "Update Check" "${_upd} / every ${HM_UPDATECHECK_SEC}s")"
-        _rows="${_rows}$(_r "Auto Update" "${_mode} (mode ${HM_AUTOUPDATE_MODE})")"
+        _rows="${_rows}$(_r "KZM2 Auto Update" "${_mode} (mode ${HM_AUTOUPDATE_MODE})")"
         _rows="${_rows}$(_s "THRESHOLDS")"
         _rows="${_rows}$(_r "CPU Warning" "${HM_CPU_WARN}% / ${HM_CPU_WARN_DUR}s")"
         _rows="${_rows}$(_r "CPU Critical" "${HM_CPU_CRIT}% / ${HM_CPU_CRIT_DUR}s")"
@@ -16292,7 +16294,7 @@ case "$ACTION" in
         _rows="${_rows}$(_r "Heartbeat" "${HM_HEARTBEAT_SEC}s")"
         _rows="${_rows}$(_r "Bildirim Bekleme" "${HM_COOLDOWN_SEC}s")"
         _rows="${_rows}$(_r "G&#252;ncelleme Kontrol&#252;" "${_upd} / her ${HM_UPDATECHECK_SEC}s")"
-        _rows="${_rows}$(_r "Oto G&#252;ncelleme" "${_mode} (mod ${HM_AUTOUPDATE_MODE})")"
+        _rows="${_rows}$(_r "KZM2 Oto G&#252;ncelleme" "${_mode} (mod ${HM_AUTOUPDATE_MODE})")"
         _rows="${_rows}$(_s "E&#350;&#304;KLER")"
         _rows="${_rows}$(_r "CPU Uyar&#305;" "${HM_CPU_WARN}% / ${HM_CPU_WARN_DUR}s")"
         _rows="${_rows}$(_r "CPU Kritik" "${HM_CPU_CRIT}% / ${HM_CPU_CRIT_DUR}s")"
