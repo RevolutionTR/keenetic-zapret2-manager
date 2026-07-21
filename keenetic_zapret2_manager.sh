@@ -37,7 +37,7 @@
 # -------------------------------------------------------------------
 SCRIPT_NAME="keenetic_zapret2_manager.sh"
 # Version scheme: vYY.M.D[.N]  (YY=year, M=month, D=day, N=daily revision)
-SCRIPT_VERSION="v26.7.20"
+SCRIPT_VERSION="v26.7.21"
 SCRIPT_REPO="https://github.com/RevolutionTR/keenetic-zapret2-manager"
 KZM2_SCRIPT_PATH="/opt/lib/opkg/keenetic_zapret2_manager.sh"
 SCRIPT_AUTHOR="RevolutionTR"
@@ -1483,23 +1483,28 @@ TXT_HM_PROMPT_UPDATECHECK_ENABLE_TR="Guncelleme kontrolu (1=acik,0=kapali) [or: 
 TXT_HM_PROMPT_UPDATECHECK_ENABLE_EN="Update check (1=on,0=off) [e.g. 1]:"
 TXT_HM_PROMPT_UPDATECHECK_SEC_TR="Update check araligi (sn) [or: 21600]:"
 TXT_HM_PROMPT_UPDATECHECK_SEC_EN="Update check interval (sec) [e.g. 21600]:"
-TXT_UPD_ZKM_NEW_TR="[Guncelleme]
+# TG-UTF8-BEGIN  --- Telegram-only sozluk: SSH terminaline CIKMAZ, UTF-8 TR karakter serbest.
+# UYARI: Buraya SSH/menu/ekran metni EKLEME. --self-test bu blokta TR karakter taramaz.
+TXT_UPD_ZKM_NEW_TR="[Güncelleme]
 📦 Paket          : KZM2
-🔖 Mevcut Surum   : %CUR%
-🆕 Guncellenen Surum : %NEW%
+🔖 Mevcut Sürüm   : %CUR%
+🆕 Güncellenen Sürüm : %NEW%
 🔗 Link           : %URL%
-Simdi kur? (menu 10)"
+Şimdi kur? (menu 10)"
 TXT_UPD_ZKM_NEW_EN="[Update]
 📦 Package        : KZM2
 🔖 Current Version: %CUR%
 🆕 Updated Version: %NEW%
 🔗 Link           : %URL%
 Install now? (menu 10)"
-TXT_UPD_ZAPRET_NEW_TR="[Guncelleme]
-Zapret2 guncellemesi icin Ana Menu > 6 secenegi kullanin
+# TG-UTF8-END
+# TG-UTF8-BEGIN  --- Telegram-only sozluk: SSH terminaline CIKMAZ, UTF-8 TR karakter serbest.
+# UYARI: Buraya SSH/menu/ekran metni EKLEME. --self-test bu blokta TR karakter taramaz.
+TXT_UPD_ZAPRET_NEW_TR="[Güncelleme]
+Zapret2 güncellemesi için Ana Menu > 6 seçeneği kullanın
 📦 Paket          : Zapret2
-🔖 Mevcut Surum   : %CUR%
-🆕 Guncellenen Surum : %NEW%
+🔖 Mevcut Sürüm   : %CUR%
+🆕 Güncellenen Sürüm : %NEW%
 🔗 Link           : %URL%"
 TXT_UPD_ZAPRET_NEW_EN="[Update]
 Use Main Menu > Option 6 to update Zapret2
@@ -1507,16 +1512,17 @@ Use Main Menu > Option 6 to update Zapret2
 🔖 Current Version: %CUR%
 🆕 Updated Version: %NEW%
 🔗 Link           : %URL%"
-TXT_UPD_ZAPRET_ROLLED_TR="[Uyari] Zapret2 geri cekilmis surum
-Ana Menu > 6 ile GitHub surumunu yeniden yukleyin
+TXT_UPD_ZAPRET_ROLLED_TR="[Uyarı] Zapret2 geri çekilmiş sürüm
+Ana Menu > 6 ile GitHub sürümünü yeniden yükleyin
 📦 Paket          : Zapret2
-⚠️ Mevcut Surum   : %CUR% (geri cekilmis)
+⚠️ Mevcut Sürüm   : %CUR% (geri çekilmiş)
 ✅ Stabil         : %NEW%"
 TXT_UPD_ZAPRET_ROLLED_EN="[Warning] Zapret2 pulled release
 Use Main Menu > 6 to reinstall from GitHub
 📦 Package        : Zapret2
 ⚠️ Current Version: %CUR% (pulled)
 ✅ Stable         : %NEW%"
+# TG-UTF8-END
 # TG-UTF8-BEGIN  --- Telegram-only sozluk: SSH terminaline CIKMAZ, UTF-8 TR karakter serbest.
 # UYARI: Buraya SSH/menu/ekran metni EKLEME. --self-test bu blokta TR karakter taramaz.
 TXT_UPD_ZKM_AUTO_OK_TR="[Oto Güncelleme]\nKZM2 otomatik kurulum başarılı.\nBetiği yeniden çalıştırın.\n\n📦 Paket : KZM2\n🔖 Mevcut Sürüm : %CUR%\n🆕 Güncellenen Sürüm : %NEW%\n🔗 Link : %URL%"
@@ -1635,8 +1641,11 @@ TXT_TGBOT_BTN_SYSTEM_TR="Sistem"
 TXT_TGBOT_BTN_SYSTEM_EN="System"
 TXT_TGBOT_BTN_LOGS_TR="Loglar"
 TXT_TGBOT_BTN_LOGS_EN="Logs"
-TXT_TGBOT_LOG_MENU_TITLE_TR="Log Secenekleri"
+# TG-UTF8-BEGIN  --- Telegram-only sozluk: SSH terminaline CIKMAZ, UTF-8 TR karakter serbest.
+# UYARI: Buraya SSH/menu/ekran metni EKLEME. --self-test bu blokta TR karakter taramaz.
+TXT_TGBOT_LOG_MENU_TITLE_TR="Log Seçenekleri"
 TXT_TGBOT_LOG_MENU_TITLE_EN="Log Options"
+# TG-UTF8-END
 TXT_TGBOT_BTN_KZMLOG_TR="HealthMon Log"
 TXT_TGBOT_BTN_KZMLOG_EN="HealthMon Log"
 TXT_TGBOT_BTN_SYSLOG_TR="Sistem Log"
@@ -1653,93 +1662,110 @@ TXT_TGBOT_BTN_STOP_TR="Durdur"
 TXT_TGBOT_BTN_STOP_EN="Stop"
 TXT_TGBOT_BTN_RESTART_TR="Yeniden Baslat"
 TXT_TGBOT_BTN_RESTART_EN="Restart"
-TXT_TGBOT_BTN_REBOOT_TR="Yeniden Baslat (Router)"
+# TG-UTF8-BEGIN  --- Telegram-only sozluk: SSH terminaline CIKMAZ, UTF-8 TR karakter serbest.
+# UYARI: Buraya SSH/menu/ekran metni EKLEME. --self-test bu blokta TR karakter taramaz.
+TXT_TGBOT_BTN_REBOOT_TR="Yeniden Başlat (Router)"
 TXT_TGBOT_BTN_REBOOT_EN="Reboot Router"
-TXT_TGBOT_BTN_REBOOT_CONFIRM_TR="Onayla - Yeniden Baslat"
+# TG-UTF8-END
+# TG-UTF8-BEGIN  --- Telegram-only sozluk: SSH terminaline CIKMAZ, UTF-8 TR karakter serbest.
+# UYARI: Buraya SSH/menu/ekran metni EKLEME. --self-test bu blokta TR karakter taramaz.
+TXT_TGBOT_BTN_REBOOT_CONFIRM_TR="Onayla - Yeniden Başlat"
 TXT_TGBOT_BTN_REBOOT_CONFIRM_EN="Confirm Reboot"
-TXT_TGBOT_BTN_CANCEL_TR="Iptal"
+TXT_TGBOT_BTN_CANCEL_TR="İptal"
 TXT_TGBOT_BTN_CANCEL_EN="Cancel"
-TXT_TGBOT_BTN_KZM_UPDATE_TR="KZM2 Guncelle"
+TXT_TGBOT_BTN_KZM_UPDATE_TR="KZM2 Güncelle"
 TXT_TGBOT_BTN_KZM_UPDATE_EN="Update KZM2"
 TXT_TGBOT_BTN_KZM_BACKUP_TR="KZM2 Yedekle"
 TXT_TGBOT_BTN_KZM_BACKUP_EN="Backup KZM2"
-TXT_TGBOT_KZM_BACKUP_OK_TR="✅ Yedek Telegram'a gonderildi."
+TXT_TGBOT_KZM_BACKUP_OK_TR="✅ Yedek Telegram'a gönderildi."
 TXT_TGBOT_KZM_BACKUP_OK_EN="✅ Backup sent to Telegram."
-TXT_TGBOT_KZM_BACKUP_FAIL_TR="❌ Yedek gonderilemedi."
+TXT_TGBOT_KZM_BACKUP_FAIL_TR="❌ Yedek gönderilemedi."
 TXT_TGBOT_KZM_BACKUP_FAIL_EN="❌ Failed to send backup."
-TXT_TGBOT_BTN_ZAP_UPDATE_TR="Zapret2 Guncelle"
+TXT_TGBOT_BTN_ZAP_UPDATE_TR="Zapret2 Güncelle"
 TXT_TGBOT_BTN_ZAP_UPDATE_EN="Update Zapret2"
-TXT_TGBOT_STATUS_RUNNING_TR="Calisiyor"
+TXT_TGBOT_STATUS_RUNNING_TR="Çalışıyor"
 TXT_TGBOT_STATUS_RUNNING_EN="Running"
 TXT_TGBOT_STATUS_STOPPED_TR="Durduruldu"
 TXT_TGBOT_STATUS_STOPPED_EN="Stopped"
 TXT_TGBOT_STATUS_UNKNOWN_TR="Bilinmiyor"
 TXT_TGBOT_STATUS_UNKNOWN_EN="Unknown"
-TXT_TGBOT_REBOOT_SENT_TR="Yeniden baslatma komutu gonderildi."
+TXT_TGBOT_REBOOT_SENT_TR="Yeniden başlatma komutu gönderildi."
 TXT_TGBOT_REBOOT_SENT_EN="Reboot command sent."
-TXT_TGBOT_ZAPRET_STARTED_TR="Zapret2 baslatildi."
+TXT_TGBOT_ZAPRET_STARTED_TR="Zapret2 başlatıldı."
 TXT_TGBOT_ZAPRET_STARTED_EN="Zapret2 started."
 TXT_TGBOT_ZAPRET_STOPPED_TR="Zapret2 durduruldu."
 TXT_TGBOT_ZAPRET_STOPPED_EN="Zapret2 stopped."
-TXT_TGBOT_ZAPRET_RESTARTED_TR="Zapret2 yeniden baslatildi."
+TXT_TGBOT_ZAPRET_RESTARTED_TR="Zapret2 yeniden başlatıldı."
 TXT_TGBOT_ZAPRET_RESTARTED_EN="Zapret2 restarted."
-TXT_TGBOT_UPDATE_STARTED_TR="Guncelleme baslatildi, lutfen bekleyin..."
+# TG-UTF8-END
+# TG-UTF8-BEGIN  --- Telegram-only sozluk: SSH terminaline CIKMAZ, UTF-8 TR karakter serbest.
+# UYARI: Buraya SSH/menu/ekran metni EKLEME. --self-test bu blokta TR karakter taramaz.
+TXT_TGBOT_UPDATE_STARTED_TR="Güncelleme başlatıldı, lütfen bekleyin..."
 TXT_TGBOT_UPDATE_STARTED_EN="Update started, please wait..."
-TXT_TGBOT_UPDATE_DONE_TR="Guncelleme tamamlandi."
+TXT_TGBOT_UPDATE_DONE_TR="Güncelleme tamamlandı."
 TXT_TGBOT_UPDATE_DONE_EN="Update completed."
-TXT_TGBOT_UPDATE_FAIL_TR="Guncelleme basarisiz."
+TXT_TGBOT_UPDATE_FAIL_TR="Güncelleme başarısız."
 TXT_TGBOT_UPDATE_FAIL_EN="Update failed."
-TXT_TGBOT_ALREADY_UPTODATE_TR="KZM2 zaten guncel."
+# TG-UTF8-END
+# TG-UTF8-BEGIN  --- Telegram-only sozluk: SSH terminaline CIKMAZ, UTF-8 TR karakter serbest.
+# UYARI: Buraya SSH/menu/ekran metni EKLEME. --self-test bu blokta TR karakter taramaz.
+TXT_TGBOT_ALREADY_UPTODATE_TR="KZM2 zaten güncel."
 TXT_TGBOT_ALREADY_UPTODATE_EN="KZM2 is already up to date."
-TXT_TGBOT_ZAP_ALREADY_UPTODATE_TR="Zapret2 zaten guncel."
+TXT_TGBOT_ZAP_ALREADY_UPTODATE_TR="Zapret2 zaten güncel."
 TXT_TGBOT_ZAP_ALREADY_UPTODATE_EN="Zapret2 is already up to date."
-TXT_TGBOT_ZAP_NEWER_TR="UYARI: Kurulu surum GitHub'dakinden yeni (Surum geri cekilmis olabilir)."
+TXT_TGBOT_ZAP_NEWER_TR="UYARI: Kurulu sürüm GitHub'dakinden yeni (Sürüm geri çekilmiş olabilir)."
 TXT_TGBOT_ZAP_NEWER_EN="WARNING: Installed version is newer than GitHub (version may have been rolled back)."
-TXT_TGBOT_NO_LOGS_TR="Log bulunamadi."
+TXT_TGBOT_NO_LOGS_TR="Log bulunamadı."
 TXT_TGBOT_NO_LOGS_EN="No logs found."
-TXT_TGBOT_MENU_ZAPRET_TITLE_TR="Zapret2 Yonetimi"
+# TG-UTF8-END
+# TG-UTF8-BEGIN  --- Telegram-only sozluk: SSH terminaline CIKMAZ, UTF-8 TR karakter serbest.
+# UYARI: Buraya SSH/menu/ekran metni EKLEME. --self-test bu blokta TR karakter taramaz.
+TXT_TGBOT_MENU_ZAPRET_TITLE_TR="Zapret2 Yönetimi"
 TXT_TGBOT_MENU_ZAPRET_TITLE_EN="Zapret2 Management"
-TXT_TGBOT_MENU_KZM_TITLE_TR="KZM2 Yonetimi"
+TXT_TGBOT_MENU_KZM_TITLE_TR="KZM2 Yönetimi"
 TXT_TGBOT_MENU_KZM_TITLE_EN="KZM2 Management"
+# TG-UTF8-END
 TXT_TGBOT_BTN_KZM_TR="KZM2"
 TXT_TGBOT_BTN_KZM_EN="KZM2"
+# TG-UTF8-BEGIN  --- Telegram-only sozluk: SSH terminaline CIKMAZ, UTF-8 TR karakter serbest.
+# UYARI: Buraya SSH/menu/ekran metni EKLEME. --self-test bu blokta TR karakter taramaz.
 TXT_TGBOT_MENU_SISTEM_TITLE_TR="Sistem"
 TXT_TGBOT_MENU_SISTEM_TITLE_EN="System"
-TXT_TGBOT_BTN_NET_DEVICES_TR="Ag Cihazlari"
+TXT_TGBOT_BTN_NET_DEVICES_TR="Ağ Cihazları"
 TXT_TGBOT_BTN_NET_DEVICES_EN="Network Devices"
-TXT_TGBOT_BTN_WIFI_TR="Wifi Yonetim"
+TXT_TGBOT_BTN_WIFI_TR="Wifi Yönetim"
 TXT_TGBOT_BTN_WIFI_EN="Wifi Management"
-TXT_TGBOT_NET_DEVICES_TITLE_TR="Bagli Cihazlar"
+TXT_TGBOT_NET_DEVICES_TITLE_TR="Bağlı Cihazlar"
 TXT_TGBOT_NET_DEVICES_TITLE_EN="Connected Devices"
-TXT_TGBOT_NET_NO_DEVICES_TR="Bagli cihaz bulunamadi."
+TXT_TGBOT_NET_NO_DEVICES_TR="Bağlı cihaz bulunamadı."
 TXT_TGBOT_NET_NO_DEVICES_EN="No connected devices found."
-TXT_TGBOT_CLIENT_ACCESS_DENY_TR="Erisimi Engelle"
+TXT_TGBOT_CLIENT_ACCESS_DENY_TR="Erişimi Engelle"
 TXT_TGBOT_CLIENT_ACCESS_DENY_EN="Block Access"
-TXT_TGBOT_CLIENT_ACCESS_PERMIT_TR="Erisime Izin Ver"
+TXT_TGBOT_CLIENT_ACCESS_PERMIT_TR="Erişime İzin Ver"
 TXT_TGBOT_CLIENT_ACCESS_PERMIT_EN="Allow Access"
-TXT_TGBOT_CLIENT_RENAME_TR="Ismi Degistir"
+TXT_TGBOT_CLIENT_RENAME_TR="İsmi Değiştir"
 TXT_TGBOT_CLIENT_RENAME_EN="Rename Device"
-TXT_TGBOT_CLIENT_RENAME_PROMPT_TR="Cihaz icin yeni isim girin. Iptal icin /iptal yaz."
+TXT_TGBOT_CLIENT_RENAME_PROMPT_TR="Cihaz için yeni isim girin. İptal için /iptal yaz."
 TXT_TGBOT_CLIENT_RENAME_PROMPT_EN="Enter new name for the device. Type /iptal to cancel."
-TXT_TGBOT_CLIENT_RENAME_DONE_TR="Isim guncellendi."
+TXT_TGBOT_CLIENT_RENAME_DONE_TR="Isim güncellendi."
 TXT_TGBOT_CLIENT_RENAME_DONE_EN="Name updated."
-TXT_TGBOT_CLIENT_RENAME_CANCEL_TR="Isim degistirme iptal edildi."
+TXT_TGBOT_CLIENT_RENAME_CANCEL_TR="Isim değiştirme iptal edildi."
 TXT_TGBOT_CLIENT_RENAME_CANCEL_EN="Rename cancelled."
-TXT_TGBOT_CLIENT_STATUS_ACTIVE_TR="Bagli"
+TXT_TGBOT_CLIENT_STATUS_ACTIVE_TR="Bağlı"
 TXT_TGBOT_CLIENT_STATUS_ACTIVE_EN="Connected"
-TXT_TGBOT_CLIENT_STATUS_INACTIVE_TR="Bagli degil"
+TXT_TGBOT_CLIENT_STATUS_INACTIVE_TR="Bağlı değil"
 TXT_TGBOT_CLIENT_STATUS_INACTIVE_EN="Not connected"
-TXT_TGBOT_CLIENT_ACCESS_LABEL_TR="Erisim"
+TXT_TGBOT_CLIENT_ACCESS_LABEL_TR="Erişim"
 TXT_TGBOT_CLIENT_ACCESS_LABEL_EN="Access"
-TXT_TGBOT_CLIENT_ACCESS_OK_TR="Acik"
+TXT_TGBOT_CLIENT_ACCESS_OK_TR="Açık"
 TXT_TGBOT_CLIENT_ACCESS_OK_EN="Allowed"
 TXT_TGBOT_CLIENT_ACCESS_BLOCKED_TR="Engelli"
 TXT_TGBOT_CLIENT_ACCESS_BLOCKED_EN="Blocked"
 TXT_TGBOT_WIFI_TITLE_TR="Wifi Durumu"
 TXT_TGBOT_WIFI_TITLE_EN="Wifi Status"
-TXT_TGBOT_WIFI_NO_IF_TR="Wifi arayuzu bulunamadi."
+TXT_TGBOT_WIFI_NO_IF_TR="Wifi arayüzü bulunamadı."
 TXT_TGBOT_WIFI_NO_IF_EN="No wifi interface found."
-TXT_TGBOT_SISTEM_HEADER_ISIM_TR="Sistem Adi"
+TXT_TGBOT_SISTEM_HEADER_ISIM_TR="Sistem Adı"
 TXT_TGBOT_SISTEM_HEADER_ISIM_EN="System Name"
 TXT_TGBOT_SISTEM_HEADER_MODEL_TR="Model"
 TXT_TGBOT_SISTEM_HEADER_MODEL_EN="Model"
@@ -1751,14 +1777,15 @@ TXT_TGBOT_DEVICE_TRAFFIC_LABEL_TR="Trafik (WAN)"
 TXT_TGBOT_DEVICE_TRAFFIC_LABEL_EN="Traffic (WAN)"
 TXT_TGBOT_BTN_SELFTEST_TR="Selftest"
 TXT_TGBOT_BTN_SELFTEST_EN="Selftest"
-TXT_TGBOT_SELFTEST_PASS_TR="PASS=0 - Tum testler basarili."
+TXT_TGBOT_SELFTEST_PASS_TR="PASS=0 - Tüm testler başarılı."
 TXT_TGBOT_SELFTEST_PASS_EN="PASS=0 - All tests passed."
 TXT_TGBOT_SELFTEST_FAIL_TR="Selftest hata buldu."
 TXT_TGBOT_SELFTEST_FAIL_EN="Selftest found errors."
-TXT_TGBOT_SELFTEST_WARN_TR="Selftest uyari buldu. Detaylar icin log dosyasini inceleyin."
+TXT_TGBOT_SELFTEST_WARN_TR="Selftest uyarı buldu. Detaylar için log dosyasını inceleyin."
 TXT_TGBOT_SELFTEST_WARN_EN="Selftest found warnings. Check the log file for details."
 TXT_TGBOT_MENU_LOGS_TITLE_TR="Son Loglar"
 TXT_TGBOT_MENU_LOGS_TITLE_EN="Recent Logs"
+# TG-UTF8-END
 TXT_TGBOT_BOT_ENABLE_TR="Bot aktif mi"
 TXT_TGBOT_BOT_ENABLE_EN="Bot enabled"
 TXT_TGBOT_POLL_SEC_TR="Polling araligi (saniye)"
@@ -1783,30 +1810,33 @@ TXT_TGBOT_BOT_STOPPED_TR="Bot durduruldu."
 TXT_TGBOT_BOT_STOPPED_EN="Bot stopped."
 TXT_TGBOT_BOT_NOT_CONFIG_TR="Bot yapilandirilmamis. Once Telegram token ve chat ID girin."
 TXT_TGBOT_BOT_NOT_CONFIG_EN="Bot not configured. Enter Telegram token and chat ID first."
-TXT_TGBOT_BTN_WAN_RESET_TR="WAN Sureli Kapatma"
+# TG-UTF8-BEGIN  --- Telegram-only sozluk: SSH terminaline CIKMAZ, UTF-8 TR karakter serbest.
+# UYARI: Buraya SSH/menu/ekran metni EKLEME. --self-test bu blokta TR karakter taramaz.
+TXT_TGBOT_BTN_WAN_RESET_TR="WAN Süreli Kapatma"
 TXT_TGBOT_BTN_WAN_RESET_EN="Timed WAN Shutdown"
-TXT_TGBOT_BTN_PINGCHECK_OFF_TR="Ping Kontrolu Kapat"
+TXT_TGBOT_BTN_PINGCHECK_OFF_TR="Ping Kontrolü Kapat"
 TXT_TGBOT_BTN_PINGCHECK_OFF_EN="Disable Ping Check"
-TXT_TGBOT_BTN_PINGCHECK_ON_TR="Ping Kontrolu Ac"
+TXT_TGBOT_BTN_PINGCHECK_ON_TR="Ping Kontrolü Aç"
 TXT_TGBOT_BTN_PINGCHECK_ON_EN="Enable Ping Check"
-TXT_TGBOT_PINGCHECK_OFF_OK_TR="❌ Ping Kontrolu kapatildi."
+TXT_TGBOT_PINGCHECK_OFF_OK_TR="❌ Ping Kontrolü kapatıldı."
 TXT_TGBOT_PINGCHECK_OFF_OK_EN="❌ Ping Check disabled."
-TXT_TGBOT_PINGCHECK_ON_OK_TR="✅ Ping Kontrolu acildi."
+TXT_TGBOT_PINGCHECK_ON_OK_TR="✅ Ping Kontrolü açıldı."
 TXT_TGBOT_PINGCHECK_ON_OK_EN="✅ Ping Check enabled."
-TXT_TGBOT_PINGCHECK_ALREADY_OFF_TR="❌ Ping Kontrolu zaten kapali."
+TXT_TGBOT_PINGCHECK_ALREADY_OFF_TR="❌ Ping Kontrolü zaten kapalı."
 TXT_TGBOT_PINGCHECK_ALREADY_OFF_EN="❌ Ping Check is already disabled."
-TXT_TGBOT_PINGCHECK_FAIL_TR="⚠️ Ping Kontrolu degistirilemedi."
+TXT_TGBOT_PINGCHECK_FAIL_TR="⚠️ Ping Kontrolü değiştirilemedi."
 TXT_TGBOT_PINGCHECK_FAIL_EN="⚠️ Failed to change Ping Check."
 TXT_TGBOT_BTN_CONFIRM_TR="Onayla"
 TXT_TGBOT_BTN_CONFIRM_EN="Confirm"
-TXT_TGBOT_WAN_RESET_SELECT_TR="WAN kac dakika kapatilsin?"
+TXT_TGBOT_WAN_RESET_SELECT_TR="WAN kaç dakika kapatılsın?"
 TXT_TGBOT_WAN_RESET_SELECT_EN="How long to disable WAN?"
-TXT_TGBOT_WAN_RESET_CONFIRM_TR="WAN %MIN% dk kapatilacak. Onayliyor musun?"
+TXT_TGBOT_WAN_RESET_CONFIRM_TR="WAN %MIN% dk kapatılacak. Onaylıyor musun?"
 TXT_TGBOT_WAN_RESET_CONFIRM_EN="WAN will be off for %MIN% min. Confirm?"
-TXT_TGBOT_WAN_RESET_STARTED_TR="WAN kapatildi. %MIN% dk sonra yeniden baglanacak."
+TXT_TGBOT_WAN_RESET_STARTED_TR="WAN kapatıldı. %MIN% dk sonra yeniden bağlanacak."
 TXT_TGBOT_WAN_RESET_STARTED_EN="WAN disabled. Will reconnect in %MIN% min."
-TXT_TGBOT_WAN_NO_IF_TR="WAN arayuzu bulunamadi."
+TXT_TGBOT_WAN_NO_IF_TR="WAN arayüzü bulunamadı."
 TXT_TGBOT_WAN_NO_IF_EN="WAN interface not found."
+# TG-UTF8-END
 TXT_TGBOT_ROUTER_ID_LABEL_TR="Router Kimlik"
 TXT_TGBOT_ROUTER_ID_LABEL_EN="Router ID"
 TXT_HEALTH_DNS_LOCAL_TR="DNS (Yerel cozucu 127.0.0.1)"
