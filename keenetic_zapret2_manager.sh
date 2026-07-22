@@ -37,7 +37,7 @@
 # -------------------------------------------------------------------
 SCRIPT_NAME="keenetic_zapret2_manager.sh"
 # Version scheme: vYY.M.D[.N]  (YY=year, M=month, D=day, N=daily revision)
-SCRIPT_VERSION="v26.7.21"
+SCRIPT_VERSION="v26.7.22"
 SCRIPT_REPO="https://github.com/RevolutionTR/keenetic-zapret2-manager"
 KZM2_SCRIPT_PATH="/opt/lib/opkg/keenetic_zapret2_manager.sh"
 SCRIPT_AUTHOR="RevolutionTR"
@@ -1399,6 +1399,13 @@ TXT_HM_DISK_HEALTH_DOWN_MSG_TR="📌 HealthMon %TS%\n⚠️ Disk bakimi gerekiyo
 TXT_HM_DISK_HEALTH_DOWN_MSG_EN="📌 HealthMon %TS%\n⚠️ Disk maintenance required: /opt\n💾 Status: %REASON%\n🧠 CPU: %CPU%%\n📊 Load: %LOAD%\n🧮 RAM free: %RAM% MB"
 TXT_HM_DISK_HEALTH_UP_MSG_TR="📌 HealthMon %TS%\n✅ Disk sagligi normale dondu: /opt\n🧠 CPU: %CPU%%\n📊 Yuk: %LOAD%\n🧮 RAM bos: %RAM% MB"
 TXT_HM_DISK_HEALTH_UP_MSG_EN="📌 HealthMon %TS%\n✅ Disk health restored: /opt\n🧠 CPU: %CPU%%\n📊 Load: %LOAD%\n🧮 RAM free: %RAM% MB"
+# TG-UTF8-BEGIN  --- Telegram-only sozluk: SSH terminaline CIKMAZ, UTF-8 TR karakter serbest.
+# UYARI: Buraya SSH/menu/ekran metni EKLEME. --self-test bu blokta TR karakter taramaz.
+TXT_HM_DROPBEAR_DOWN_MSG_TR="📌 HealthMon %TS%\n⚠️ Entware SSH (port %PORT%) çalışmıyor!\n🧠 CPU: %CPU%%\n📊 Yük: %LOAD%\n🧮 RAM boş: %RAM% MB"
+TXT_HM_DROPBEAR_DOWN_MSG_EN="📌 HealthMon %TS%\n⚠️ Entware SSH (port %PORT%) is not running!\n🧠 CPU: %CPU%%\n📊 Load: %LOAD%\n🧮 RAM free: %RAM% MB"
+TXT_HM_DROPBEAR_UP_MSG_TR="📌 HealthMon %TS%\n✅ Entware SSH (port %PORT%) tekrar çalışıyor.\n🧠 CPU: %CPU%%\n📊 Yük: %LOAD%\n🧮 RAM boş: %RAM% MB"
+TXT_HM_DROPBEAR_UP_MSG_EN="📌 HealthMon %TS%\n✅ Entware SSH (port %PORT%) is running again.\n🧠 CPU: %CPU%%\n📊 Load: %LOAD%\n🧮 RAM free: %RAM% MB"
+# TG-UTF8-END
 TXT_HM_DISK_HEALTH_RO_TR="Salt okunur (read-only)"
 TXT_HM_DISK_HEALTH_RO_EN="Read-only mount"
 TXT_HM_DISK_HEALTH_IO_TR="Kritik I/O hatasi"
@@ -1486,47 +1493,47 @@ TXT_HM_PROMPT_UPDATECHECK_SEC_EN="Update check interval (sec) [e.g. 21600]:"
 # TG-UTF8-BEGIN  --- Telegram-only sozluk: SSH terminaline CIKMAZ, UTF-8 TR karakter serbest.
 # UYARI: Buraya SSH/menu/ekran metni EKLEME. --self-test bu blokta TR karakter taramaz.
 TXT_UPD_ZKM_NEW_TR="[Güncelleme]
-📦 Paket          : KZM2
-🔖 Mevcut Sürüm   : %CUR%
+📦 Paket : KZM2
+🔖 Mevcut Sürüm : %CUR%
 🆕 Güncellenen Sürüm : %NEW%
-🔗 Link           : %URL%
+🔗 Link : %URL%
 Şimdi kur? (menu 10)"
 TXT_UPD_ZKM_NEW_EN="[Update]
-📦 Package        : KZM2
-🔖 Current Version: %CUR%
-🆕 Updated Version: %NEW%
-🔗 Link           : %URL%
+📦 Package : KZM2
+🔖 Current Version : %CUR%
+🆕 Updated Version : %NEW%
+🔗 Link : %URL%
 Install now? (menu 10)"
 # TG-UTF8-END
 # TG-UTF8-BEGIN  --- Telegram-only sozluk: SSH terminaline CIKMAZ, UTF-8 TR karakter serbest.
 # UYARI: Buraya SSH/menu/ekran metni EKLEME. --self-test bu blokta TR karakter taramaz.
 TXT_UPD_ZAPRET_NEW_TR="[Güncelleme]
 Zapret2 güncellemesi için Ana Menu > 6 seçeneği kullanın
-📦 Paket          : Zapret2
-🔖 Mevcut Sürüm   : %CUR%
+📦 Paket : Zapret2
+🔖 Mevcut Sürüm : %CUR%
 🆕 Güncellenen Sürüm : %NEW%
-🔗 Link           : %URL%"
+🔗 Link : %URL%"
 TXT_UPD_ZAPRET_NEW_EN="[Update]
 Use Main Menu > Option 6 to update Zapret2
-📦 Package        : Zapret2
-🔖 Current Version: %CUR%
-🆕 Updated Version: %NEW%
-🔗 Link           : %URL%"
+📦 Package : Zapret2
+🔖 Current Version : %CUR%
+🆕 Updated Version : %NEW%
+🔗 Link : %URL%"
 TXT_UPD_ZAPRET_ROLLED_TR="[Uyarı] Zapret2 geri çekilmiş sürüm
 Ana Menu > 6 ile GitHub sürümünü yeniden yükleyin
-📦 Paket          : Zapret2
-⚠️ Mevcut Sürüm   : %CUR% (geri çekilmiş)
-✅ Stabil         : %NEW%"
+📦 Paket : Zapret2
+⚠️ Mevcut Sürüm : %CUR% (geri çekilmiş)
+✅ Stabil : %NEW%"
 TXT_UPD_ZAPRET_ROLLED_EN="[Warning] Zapret2 pulled release
 Use Main Menu > 6 to reinstall from GitHub
-📦 Package        : Zapret2
-⚠️ Current Version: %CUR% (pulled)
-✅ Stable         : %NEW%"
+📦 Package : Zapret2
+⚠️ Current Version : %CUR% (pulled)
+✅ Stable : %NEW%"
 # TG-UTF8-END
 # TG-UTF8-BEGIN  --- Telegram-only sozluk: SSH terminaline CIKMAZ, UTF-8 TR karakter serbest.
 # UYARI: Buraya SSH/menu/ekran metni EKLEME. --self-test bu blokta TR karakter taramaz.
 TXT_UPD_ZKM_AUTO_OK_TR="[Oto Güncelleme]\nKZM2 otomatik kurulum başarılı.\nBetiği yeniden çalıştırın.\n\n📦 Paket : KZM2\n🔖 Mevcut Sürüm : %CUR%\n🆕 Güncellenen Sürüm : %NEW%\n🔗 Link : %URL%"
-TXT_UPD_ZKM_AUTO_OK_EN="[Auto Update]\nKZM2 auto install OK.\nPlease re-run the script.\n\n📦 Package : KZM2\n🔖 Current Version: %CUR%\n🆕 Updated Version: %NEW%\n🔗 Link : %URL%"
+TXT_UPD_ZKM_AUTO_OK_EN="[Auto Update]\nKZM2 auto install OK.\nPlease re-run the script.\n\n📦 Package : KZM2\n🔖 Current Version : %CUR%\n🆕 Updated Version : %NEW%\n🔗 Link : %URL%"
 TXT_UPD_ZKM_UP_TO_DATE_TR="[Güncelleme]
 📦 Paket : KZM2
 🔄 Durum : Güncel ✅
@@ -1536,7 +1543,7 @@ TXT_UPD_ZKM_UP_TO_DATE_TR="[Güncelleme]
 💾 Disk (/opt) : %DISK_HEALTH%"
 TXT_UPD_ZKM_UP_TO_DATE_EN="[Update]
 📦 Package : KZM2
-🔄 Status  : Up to date ✅
+🔄 Status : Up to date ✅
 🔖 Version : %CUR%
 
 [Health]
@@ -1905,6 +1912,8 @@ TXT_HEALTH_LAN_IP_TR="LAN IP"
 TXT_HEALTH_LAN_IP_EN="LAN IP"
 TXT_HEALTH_ENTWARE_TR="Entware (/opt)"
 TXT_HEALTH_ENTWARE_EN="Entware (/opt)"
+TXT_HEALTH_DROPBEAR_TR="Entware SSH"
+TXT_HEALTH_DROPBEAR_EN="Entware SSH"
 TXT_HEALTH_CURL_TR="curl"
 TXT_HEALTH_CURL_EN="curl"
 TXT_HEALTH_LIGHTTPD_TR="Web Panel (lighttpd)"
@@ -3243,6 +3252,24 @@ kzm2_disk_health_check() {
             _dh_reason="usb_proto"
             return 0
         fi
+    fi
+    return 0
+}
+
+# Entware dropbear (SSH port 222) durum kontrolu — tum cagrilarda ortak kullanilir
+# Cikti: _ed_status (PASS/WARN/INFO), _ed_port
+# INFO = dropbear paketi kurulu degil (kontrol disi birakilir)
+# PASS = calisiyor / WARN = kurulu ama calismiyor
+# Kullanim: check_entware_dropbear && echo "$_ed_status"
+check_entware_dropbear() {
+    _ed_status="INFO"
+    _ed_port=""
+    [ -f /opt/etc/config/dropbear.conf ] || return 0
+    _ed_port="$(grep '^PORT=' /opt/etc/config/dropbear.conf 2>/dev/null | cut -d= -f2 | tr -d '"[:space:]')"
+    if pgrep -f '/opt/sbin/dropbear' >/dev/null 2>&1; then
+        _ed_status="PASS"
+    else
+        _ed_status="WARN"
     fi
     return 0
 }
@@ -4626,7 +4653,9 @@ update_zapret2() {
     tarball="zapret2-${latest}.tar.gz"
     local url="https://github.com/${repo}/releases/download/${latest}/${tarball}"
     # Asset SHA256 digest'ini API'den cek (format: "digest":"sha256:HASH")
-    expected_sha256="$(printf '%s\n' "$api_raw" | grep -A5 "\"${tarball}\"" | \
+    # -A30: digest alani asset "name"den sonra uploader{} blogunun ardindan gelir,
+    # -A5 yetersizdi ve digest hicbir zaman yakalanmiyordu (SHA daima atlaniyordu).
+    expected_sha256="$(printf '%s\n' "$api_raw" | grep -A30 "\"${tarball}\"" | \
         sed -n 's/.*"digest"[[:space:]]*:[[:space:]]*"sha256:\([^"]*\)".*/\1/p' | head -n1)"
     print_status INFO "$(T TXT_ZAP_UPDATE_DOWNLOADING)"
     mkdir -p "$tmpdir" || { print_status FAIL "$(T TXT_ZAP_UPDATE_FAIL_DL)"; return 1; }
@@ -4649,7 +4678,15 @@ update_zapret2() {
             return 1
         fi
     else
+        # SHA gelmedi (nadir: API yarim geldi vb.). Bozuk/HTML dosyayi tar'dan ONCE
+        # yakalamak icin arsiv gecerlilik testi yap (KZM2 kendi guncellemesindeki
+        # sh -n / SCRIPT_VERSION sanity check'inin Zapret2 karsiligi).
         print_status WARN "$(T TXT_ZAP_UPDATE_SHA256_SKIP)"
+        if ! tar -tzf "${tmpdir}/${tarball}" >/dev/null 2>&1; then
+            rm -rf "$tmpdir"
+            print_status FAIL "$(T TXT_ZAP_UPDATE_FAIL_EX)"
+            return 1
+        fi
     fi
     print_status INFO "$(T TXT_ZAP_UPDATE_EXTRACTING)"
     if ! tar -xzf "${tmpdir}/${tarball}" -C "$tmpdir" 2>/dev/null; then
@@ -7303,6 +7340,18 @@ display_menu() {
                 "${CLR_ORANGE}" "$(T _ 'KZM2 otomatik guncelleme BILDIR modunda (Menu 16 > 4 > 7)' 'KZM2 auto-update in NOTIFY mode (Menu 16 > 4 > 7)')" "${CLR_RESET}"
         fi
     fi
+    # Entware SSH (dropbear) durumu — HealthMon durumundan bagimsiz, her zaman goster
+    # Kurulu degilse (INFO) satir hic cikmaz
+    check_entware_dropbear
+    if [ "$_ed_status" = "PASS" ]; then
+        printf "  %b%-*s%b : %b%s%b\n" "${CLR_BOLD}" "$_lw" "$(T TXT_HEALTH_DROPBEAR)" \
+            "${CLR_RESET}" "${CLR_GREEN}" "$(T _ 'CALISIYOR' 'RUNNING') (port ${_ed_port:-222})" "${CLR_RESET}"
+    elif [ "$_ed_status" = "WARN" ]; then
+        printf "  %b%-*s%b : %b%s%b\n" "${CLR_BOLD}" "$_lw" "$(T TXT_HEALTH_DROPBEAR)" \
+            "${CLR_RESET}" "${CLR_RED}" "$(T _ 'CALISMIYOR' 'DOWN') (port ${_ed_port:-222})" "${CLR_RESET}"
+        printf "  %-*s   %b%s%b\n" "$_lw" "" \
+            "${CLR_ORANGE}" "$(T _ 'Entware SSH calismiyor, port '"${_ed_port:-222}"' (S51dropbear start)' 'Entware SSH is down, port '"${_ed_port:-222}"' (S51dropbear start)')" "${CLR_RESET}"
+    fi
     # ISP DNS kontrolu
     _isp_dns="$(LD_LIBRARY_PATH= ndmc -c 'show ip name-server' 2>/dev/null | awk '/address:/{print $2}' | tr '\n' ' ' | sed 's/ $//;s/ / - /g')"
     if [ -n "$_isp_dns" ]; then
@@ -8386,6 +8435,15 @@ run_health_check() {
         entware_ok="FAIL"
         entware_msg="$(T _ 'Bulunamadi' 'Not found')"
     fi
+    # Entware dropbear (SSH port 222)
+    local dropbear_ok="INFO" dropbear_msg
+    check_entware_dropbear
+    dropbear_ok="$_ed_status"
+    case "$_ed_status" in
+        PASS) dropbear_msg="$(T _ 'Calisiyor' 'Running') (port ${_ed_port:-222})" ;;
+        WARN) dropbear_msg="$(T _ 'Kurulu ama calismiyor' 'Installed but not running')" ;;
+        *)    dropbear_msg="$(T _ 'Kurulu degil' 'Not installed')" ;;
+    esac
     # curl
     local curl_ok="PASS" curl_msg
     if command -v curl >/dev/null 2>&1; then
@@ -8509,6 +8567,7 @@ run_health_check() {
     # SECTION: Services
     # ----------------------------
     add_line "$HC_SVC" "$(T TXT_HEALTH_ENTWARE)" " $entware_msg" "$entware_ok"
+    add_line "$HC_SVC" "$(T TXT_HEALTH_DROPBEAR)" " $dropbear_msg" "$dropbear_ok"
     add_line "$HC_SVC" "$(T TXT_HEALTH_CURL)" " $curl_msg" "$curl_ok"
     add_line "$HC_SVC" "$(T TXT_HEALTH_LIGHTTPD)" " $lighttpd_msg" "$lighttpd_ok"
     add_line "$HC_SVC" "$(T TXT_HEALTH_HEALTHMON)" " $hm_msg" "$hm_ok"
@@ -12568,6 +12627,7 @@ healthmon_loop() {
     local zapret_flag="/tmp/healthmon_zapret_down.flag"
     local zapret_restart_flag="/tmp/healthmon_zapret_restart.tried"
     local disk_health_flag="/tmp/healthmon_disk_health.flag"
+    local dropbear_flag="/tmp/healthmon_dropbear.flag"
     local hb_ts="/tmp/healthmon_heartbeat.ts"
     while true; do
         healthmon_load_config
@@ -12691,6 +12751,23 @@ healthmon_loop() {
                     healthmon_log "$now | disk_health_up | cpu=$cpu load=$load ram=${ram}MB disk=${disk}%"
                 fi
                 rm -f "$disk_health_flag" 2>/dev/null
+            fi
+        fi
+        # ---- ENTWARE DROPBEAR (SSH port 222) ----
+        check_entware_dropbear
+        if [ "$_ed_status" = "WARN" ]; then
+            if healthmon_should_alert "dropbear" "$HM_COOLDOWN_SEC"; then
+                telegram_send "$(tpl_render "$(T TXT_HM_DROPBEAR_DOWN_MSG)" CPU "$cpu" LOAD "$load" RAM "$ram" PORT "${_ed_port:-222}")" &
+                healthmon_log "$now | dropbear_down | port=${_ed_port:-222} cpu=$cpu load=$load ram=${ram}MB"
+                echo "1" >"$dropbear_flag" 2>/dev/null
+            fi
+        else
+            if [ -f "$dropbear_flag" ]; then
+                if healthmon_should_alert "dropbear_up" "$HM_COOLDOWN_SEC"; then
+                    telegram_send "$(tpl_render "$(T TXT_HM_DROPBEAR_UP_MSG)" CPU "$cpu" LOAD "$load" RAM "$ram" PORT "${_ed_port:-222}")" &
+                    healthmon_log "$now | dropbear_up | port=${_ed_port:-222} cpu=$cpu load=$load ram=${ram}MB"
+                fi
+                rm -f "$dropbear_flag" 2>/dev/null
             fi
         fi
         # ---- RAM ----
@@ -13732,6 +13809,13 @@ DEOF
             # Entware
             if [ -f /opt/bin/opkg ] || [ -d /opt/etc ]; then _add "svc" "$(T TXT_HEALTH_ENTWARE)" "$(T _ 'Kurulu' 'Installed') (/opt)" "PASS"
             else _add "svc" "$(T TXT_HEALTH_ENTWARE)" "$(T _ 'Bulunamadi' 'Not found')" "FAIL"; fi
+            # Entware dropbear (SSH port 222)
+            check_entware_dropbear
+            case "$_ed_status" in
+                PASS) _add "svc" "$(T TXT_HEALTH_DROPBEAR)" "$(T _ 'Calisiyor' 'Running') (port ${_ed_port:-222})" "PASS" ;;
+                WARN) _add "svc" "$(T TXT_HEALTH_DROPBEAR)" "$(T _ 'Kurulu ama calismiyor' 'Installed but not running')" "WARN" ;;
+                *)    _add "svc" "$(T TXT_HEALTH_DROPBEAR)" "$(T _ 'Kurulu degil' 'Not installed')" "INFO" ;;
+            esac
             # curl
             if command -v curl >/dev/null 2>&1; then
                 if curl --version >/dev/null 2>&1; then
