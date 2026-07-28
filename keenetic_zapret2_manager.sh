@@ -37,7 +37,7 @@
 # -------------------------------------------------------------------
 SCRIPT_NAME="keenetic_zapret2_manager.sh"
 # Version scheme: vYY.M.D[.N]  (YY=year, M=month, D=day, N=daily revision)
-SCRIPT_VERSION="v26.7.28"
+SCRIPT_VERSION="v26.7.28.1"
 SCRIPT_REPO="https://github.com/RevolutionTR/keenetic-zapret2-manager"
 KZM2_SCRIPT_PATH="/opt/lib/opkg/keenetic_zapret2_manager.sh"
 SCRIPT_AUTHOR="RevolutionTR"
@@ -5597,41 +5597,24 @@ nozapret_ensure_and_load() {
 }
 # iptables RETURN kurali ekler (nozapret listesindeki IP'ler Zapret2'den muaf)
 nozapret_apply_rules() {
-    local wan_if _nz_ch
-    wan_if="$(get_wan_if 2>/dev/null)"
-    # Eski kurallari temizle
+    # nozapret, zapret2'nin HEDEF adres muafiyet listesidir ve varsayilan olarak
+    # ozel ag araliklariyla (192.168.0.0/16, 10.0.0.0/8, 172.16.0.0/12 ...) doludur.
+    # Bu yuzden buraya kaynak/hedef bazli ayri bir RETURN kurali EKLENMEZ:
+    # LAN'daki her istemcinin IP'si zaten bu araliklarda oldugu icin kural TUM
+    # trafigi eslestirir ve NFQUEUE'dan once RETURN vererek DPI'i tamamen oldurur.
+    # (LIST modunda add_ipset_nfqueue_rules NFQUEUE'yu uste ittigi icin belirti
+    #  gizleniyordu; ALL modunda ise DPI komple devre disi kaliyordu.)
+    # Hedef muafiyeti zaten NFQUEUE kurallarindaki "! match-set nozapret dst"
+    # kosuluyla saglanir; ayri bir kurala gerek yoktur.
+    # Eski surumlerden kalan hatali RETURN kurallarini temizle
     nozapret_remove_rules
-    # ipset'i yukle
+    # ipset'i dosyadan yukle (muafiyet listesi kurallar tarafindan kullanilir)
     nozapret_ensure_and_load
-    # RETURN kurali: nozapret listesindeki kaynak IP'ler NFQUEUE'ya gitmez
-    if [ -n "$wan_if" ]; then
-        iptables -t mangle -I POSTROUTING -o "$wan_if" \
-            -m set --match-set "$NOZAPRET_IPSET_NAME" src \
-            -j RETURN 2>/dev/null
-    else
-        iptables -t mangle -I POSTROUTING \
-            -m set --match-set "$NOZAPRET_IPSET_NAME" src \
-            -j RETURN 2>/dev/null
-    fi
-    # Gelen (reply) yon: yukaridaki kuralin simetrigi. Gelen pakette yerel cihaz
-    # src degil dst konumundadir; bu kural olmadan muafiyet yalnizca giden yonde
-    # calisir ve TLS oturumunun yarisi NFQUEUE'ya girer.
-    # NOT: RETURN built-in zincirde zincir POLITIKASINI uygular. Politika DROP ise
-    # paket dusurulur, bu yuzden yalnizca ACCEPT politikasinda kural eklenir.
-    for _nz_ch in INPUT FORWARD; do
-        iptables -S "$_nz_ch" 2>/dev/null | head -n1 | grep -q "ACCEPT" || continue
-        if [ -n "$wan_if" ]; then
-            iptables -I "$_nz_ch" -i "$wan_if" \
-                -m set --match-set "$NOZAPRET_IPSET_NAME" dst \
-                -j RETURN 2>/dev/null
-        else
-            iptables -I "$_nz_ch" \
-                -m set --match-set "$NOZAPRET_IPSET_NAME" dst \
-                -j RETURN 2>/dev/null
-        fi
-    done
+    return 0
 }
-# iptables kurallarini temizler
+# Eski surumlerden (v26.7.28 ve oncesi) kalan hatali nozapret RETURN kurallarini
+# temizler. Bu fonksiyon KALDIRILMAMALI: yukselten kullanicilarda kernel'de duran
+# kurallari otomatik siler, aksi halde DPI olu kalmaya devam eder.
 nozapret_remove_rules() {
     local _wan="$(get_wan_if 2>/dev/null)"
     local _nz_ch
