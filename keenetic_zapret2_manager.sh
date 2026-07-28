@@ -37,7 +37,7 @@
 # -------------------------------------------------------------------
 SCRIPT_NAME="keenetic_zapret2_manager.sh"
 # Version scheme: vYY.M.D[.N]  (YY=year, M=month, D=day, N=daily revision)
-SCRIPT_VERSION="v26.7.22"
+SCRIPT_VERSION="v26.7.28"
 SCRIPT_REPO="https://github.com/RevolutionTR/keenetic-zapret2-manager"
 KZM2_SCRIPT_PATH="/opt/lib/opkg/keenetic_zapret2_manager.sh"
 SCRIPT_AUTHOR="RevolutionTR"
@@ -1401,8 +1401,8 @@ TXT_HM_DISK_HEALTH_UP_MSG_TR="📌 HealthMon %TS%\n✅ Disk sagligi normale dond
 TXT_HM_DISK_HEALTH_UP_MSG_EN="📌 HealthMon %TS%\n✅ Disk health restored: /opt\n🧠 CPU: %CPU%%\n📊 Load: %LOAD%\n🧮 RAM free: %RAM% MB"
 # TG-UTF8-BEGIN  --- Telegram-only sozluk: SSH terminaline CIKMAZ, UTF-8 TR karakter serbest.
 # UYARI: Buraya SSH/menu/ekran metni EKLEME. --self-test bu blokta TR karakter taramaz.
-TXT_HM_DROPBEAR_DOWN_MSG_TR="📌 HealthMon %TS%\n⚠️ Entware SSH (port %PORT%) çalışmıyor!\n🧠 CPU: %CPU%%\n📊 Yük: %LOAD%\n🧮 RAM boş: %RAM% MB"
-TXT_HM_DROPBEAR_DOWN_MSG_EN="📌 HealthMon %TS%\n⚠️ Entware SSH (port %PORT%) is not running!\n🧠 CPU: %CPU%%\n📊 Load: %LOAD%\n🧮 RAM free: %RAM% MB"
+TXT_HM_DROPBEAR_DOWN_MSG_TR="📌 HealthMon %TS%\n⚠️ Entware SSH (port %PORT%) çalışmıyor!\n\nBu uyarı KZM2 kaynaklı değildir; Entware'in kendi SSH sunucusudur.\nBaşlatmak için: /opt/etc/init.d/S51dropbear start\n\n🧠 CPU: %CPU%%\n📊 Yük: %LOAD%\n🧮 RAM boş: %RAM% MB"
+TXT_HM_DROPBEAR_DOWN_MSG_EN="📌 HealthMon %TS%\n⚠️ Entware SSH (port %PORT%) is not running!\n\nThis is not caused by KZM2; it is Entware's own SSH server.\nTo start: /opt/etc/init.d/S51dropbear start\n\n🧠 CPU: %CPU%%\n📊 Load: %LOAD%\n🧮 RAM free: %RAM% MB"
 TXT_HM_DROPBEAR_UP_MSG_TR="📌 HealthMon %TS%\n✅ Entware SSH (port %PORT%) tekrar çalışıyor.\n🧠 CPU: %CPU%%\n📊 Yük: %LOAD%\n🧮 RAM boş: %RAM% MB"
 TXT_HM_DROPBEAR_UP_MSG_EN="📌 HealthMon %TS%\n✅ Entware SSH (port %PORT%) is running again.\n🧠 CPU: %CPU%%\n📊 Load: %LOAD%\n🧮 RAM free: %RAM% MB"
 # TG-UTF8-END
@@ -1508,24 +1508,28 @@ Install now? (menu 10)"
 # TG-UTF8-BEGIN  --- Telegram-only sozluk: SSH terminaline CIKMAZ, UTF-8 TR karakter serbest.
 # UYARI: Buraya SSH/menu/ekran metni EKLEME. --self-test bu blokta TR karakter taramaz.
 TXT_UPD_ZAPRET_NEW_TR="[Güncelleme]
-Zapret2 güncellemesi için Ana Menu > 6 seçeneği kullanın
+Zapret2 güncellemesi için Ana Menu > 6 seçeneği kullanın.
+
 📦 Paket : Zapret2
 🔖 Mevcut Sürüm : %CUR%
 🆕 Güncellenen Sürüm : %NEW%
 🔗 Link : %URL%"
 TXT_UPD_ZAPRET_NEW_EN="[Update]
-Use Main Menu > Option 6 to update Zapret2
+Use Main Menu > Option 6 to update Zapret2.
+
 📦 Package : Zapret2
 🔖 Current Version : %CUR%
 🆕 Updated Version : %NEW%
 🔗 Link : %URL%"
 TXT_UPD_ZAPRET_ROLLED_TR="[Uyarı] Zapret2 geri çekilmiş sürüm
-Ana Menu > 6 ile GitHub sürümünü yeniden yükleyin
+Ana Menu > 6 ile GitHub sürümünü yeniden yükleyin.
+
 📦 Paket : Zapret2
 ⚠️ Mevcut Sürüm : %CUR% (geri çekilmiş)
 ✅ Stabil : %NEW%"
 TXT_UPD_ZAPRET_ROLLED_EN="[Warning] Zapret2 pulled release
-Use Main Menu > 6 to reinstall from GitHub
+Use Main Menu > 6 to reinstall from GitHub.
+
 📦 Package : Zapret2
 ⚠️ Current Version : %CUR% (pulled)
 ✅ Stable : %NEW%"
@@ -1713,6 +1717,27 @@ TXT_TGBOT_UPDATE_DONE_TR="Güncelleme tamamlandı."
 TXT_TGBOT_UPDATE_DONE_EN="Update completed."
 TXT_TGBOT_UPDATE_FAIL_TR="Güncelleme başarısız."
 TXT_TGBOT_UPDATE_FAIL_EN="Update failed."
+# TG-UTF8-END
+# TG-UTF8-BEGIN  --- Telegram-only sozluk: SSH terminaline CIKMAZ, UTF-8 TR karakter serbest.
+# UYARI: Buraya SSH/menu/ekran metni EKLEME. --self-test bu blokta TR karakter taramaz.
+# Bot komut menusu aciklamalari (setMyCommands) — yalnizca Telegram API'ye gonderilir.
+# JSON icine gomuldugu icin cift tirnak ve ters bolu KULLANILMAMALI.
+TXT_TGBOT_CMD_START_TR="Ana Menüyü Aç"
+TXT_TGBOT_CMD_START_EN="Open Main Menu"
+TXT_TGBOT_CMD_DURUM_TR="Sistem Durumunu Göster"
+TXT_TGBOT_CMD_DURUM_EN="Show System Status"
+TXT_TGBOT_CMD_PROFIL_TR="Aktif DPI Profilini Göster"
+TXT_TGBOT_CMD_PROFIL_EN="Show Active DPI Profile"
+TXT_TGBOT_CMD_ZAPRET2_TR="Zapret2 Yönetimi"
+TXT_TGBOT_CMD_ZAPRET2_EN="Zapret2 Management"
+TXT_TGBOT_CMD_SISTEM_TR="Sistem ve Router"
+TXT_TGBOT_CMD_SISTEM_EN="System and Router"
+TXT_TGBOT_CMD_KZM2_TR="KZM2 Yönetimi"
+TXT_TGBOT_CMD_KZM2_EN="KZM2 Management"
+TXT_TGBOT_CMD_LOGLAR_TR="Log Görüntüle"
+TXT_TGBOT_CMD_LOGLAR_EN="View Logs"
+TXT_TGBOT_CMD_HELP_TR="Yardım"
+TXT_TGBOT_CMD_HELP_EN="Help"
 # TG-UTF8-END
 # TG-UTF8-BEGIN  --- Telegram-only sozluk: SSH terminaline CIKMAZ, UTF-8 TR karakter serbest.
 # UYARI: Buraya SSH/menu/ekran metni EKLEME. --self-test bu blokta TR karakter taramaz.
@@ -1914,6 +1939,8 @@ TXT_HEALTH_ENTWARE_TR="Entware (/opt)"
 TXT_HEALTH_ENTWARE_EN="Entware (/opt)"
 TXT_HEALTH_DROPBEAR_TR="Entware SSH"
 TXT_HEALTH_DROPBEAR_EN="Entware SSH"
+TXT_HEALTH_KEENETIC_SSH_TR="Keenetic SSH"
+TXT_HEALTH_KEENETIC_SSH_EN="Keenetic SSH"
 TXT_HEALTH_CURL_TR="curl"
 TXT_HEALTH_CURL_EN="curl"
 TXT_HEALTH_LIGHTTPD_TR="Web Panel (lighttpd)"
@@ -2822,6 +2849,30 @@ cleanup_nfqueue_rules_except_selected_wan() {
         iptables -t mangle $del 2>/dev/null
     done
 }
+# Secili WAN gercekten varsayilan cikis mi? Yalnizca bilgi/uyari uretir,
+# hicbir kurala veya yonlendirmeye dokunmaz.
+# Cikti: _wd_status (PASS/WARN/INFO), _wd_default (gercek varsayilan arayuz)
+# INFO = karar verilemedi (WAN secimi bos veya varsayilan rota okunamiyor) -> sessiz kal
+check_wan_is_default() {
+    _wd_status="INFO"
+    _wd_default=""
+    local _wd_sel
+    _wd_sel="$(get_wan_if 2>/dev/null)"
+    # WAN secimi bos ("any") ise kurallar tum arayuzlere yazilir, uyari anlamsiz
+    [ -z "$_wd_sel" ] && return 0
+    # Keenetic'te 'ip route show default' filtrelemeyip tum tabloyu basabiliyor;
+    # bu yuzden yalnizca 'default' ile baslayan satirin dev alani okunur.
+    _wd_default="$(ip route show default 2>/dev/null | awk '$1=="default"{for(i=1;i<=NF;i++) if($i=="dev"){print $(i+1); exit}}')"
+    # Varsayilan rota yoksa (WAN kopuk vb.) uyari verme
+    [ -z "$_wd_default" ] && return 0
+    if [ "$_wd_default" = "$_wd_sel" ]; then
+        _wd_status="PASS"
+    else
+        _wd_status="WARN"
+    fi
+    return 0
+}
+
 select_wan_if() {
     # Kurulumda (ve gerekirse sonradan) WAN arayuzunu belirle.
     local rec="$(detect_recommended_wan_if)"
@@ -2844,6 +2895,12 @@ select_wan_if() {
     mkdir -p /opt/zapret2 2>/dev/null
     echo "$ans" > "$WAN_IF_FILE" 2>/dev/null
     echo "$(T TXT_WAN_SEL_SELECTED) $(get_wan_if)"
+    # Secilen WAN varsayilan cikis degilse kullaniciyi hemen bilgilendir
+    check_wan_is_default
+    if [ "$_wd_status" = "WARN" ]; then
+        printf " %b%s%b\n" "${CLR_ORANGE}" \
+            "$(tpl_render "$(T TXT_WAN_NOT_DEFAULT_MSG)" DEV "$_wd_default")" "${CLR_RESET}"
+    fi
 }
 enforce_wan_if_nfqueue_rules() {
     # NFQUEUE kurallarini sadece secili WAN arayuzunde etkinlestirerek WireGuard vb. arayuzlerde sorunlari azaltir.
@@ -3264,13 +3321,39 @@ kzm2_disk_health_check() {
 check_entware_dropbear() {
     _ed_status="INFO"
     _ed_port=""
-    [ -f /opt/etc/config/dropbear.conf ] || return 0
+    _ed_reason=""
+    [ -f /opt/etc/config/dropbear.conf ] || { _ed_reason="notinstalled"; return 0; }
     _ed_port="$(grep '^PORT=' /opt/etc/config/dropbear.conf 2>/dev/null | cut -d= -f2 | tr -d '"[:space:]')"
     if pgrep -f '/opt/sbin/dropbear' >/dev/null 2>&1; then
         _ed_status="PASS"
+    elif netstat -tln 2>/dev/null | grep -qE ":${_ed_port:-222}[[:space:]]"; then
+        # Port baska bir SSH sunucusu tarafindan dinleniyor (or. Keenetic firmware SSH
+        # bileseni ayni porta ayarlanmis). Entware dropbear bu yuzden baslayamaz.
+        # Kullanici erisimsiz degil, bu bir ariza degil yapilandirma cakismasidir.
+        _ed_status="INFO"
+        _ed_reason="portbusy"
     else
         _ed_status="WARN"
     fi
+    return 0
+}
+
+# Keenetic firmware SSH (dropbear, /usr/sbin) durum kontrolu — yalnizca bilgi amacli
+# Cikti: _ks_status (PASS/INFO), _ks_port
+# netstat program sutununda her iki dropbear da sadece "dropbear" gorunur, bu yuzden
+# PID eslestirmesi yapilir. Oturum sureclerinin dinleyen portu yoktur, atlanir.
+check_keenetic_ssh() {
+    _ks_status="INFO"
+    _ks_port=""
+    _ks_pids="$(pgrep -f '/usr/sbin/dropbear' 2>/dev/null)"
+    [ -n "$_ks_pids" ] || return 0
+    for _ks_p in $_ks_pids; do
+        _ks_port="$(netstat -tlnp 2>/dev/null | grep -E "[[:space:]]${_ks_p}/" | awk '{print $4}' | sed 's/.*://' | head -n1)"
+        if [ -n "$_ks_port" ]; then
+            _ks_status="PASS"
+            break
+        fi
+    done
     return 0
 }
 
@@ -3401,6 +3484,16 @@ TXT_WAN_SEL_PROMPT_TR="Arayuz adini yazin (Enter = %REC%): "
 TXT_WAN_SEL_PROMPT_EN="Enter interface name (Enter = %REC%): "
 TXT_WAN_SEL_SELECTED_TR="Secildi:"
 TXT_WAN_SEL_SELECTED_EN="Selected:"
+TXT_WAN_NOT_DEFAULT_SHORT_TR="VARSAYILAN DEGIL"
+TXT_WAN_NOT_DEFAULT_SHORT_EN="NOT DEFAULT"
+TXT_WAN_NOT_DEFAULT_MSG_TR="UYARI: Secili WAN varsayilan cikis degil (su an: %DEV%). DPI yalnizca varsayilan cikisi kullanan cihazlara uygulanir. Degistirmek icin Keenetic arayuzunden baglanti onceligini duzenleyin."
+TXT_WAN_NOT_DEFAULT_MSG_EN="WARNING: Selected WAN is not the default route (currently: %DEV%). DPI only applies to devices using the default route. To change it, edit the connection priority in the Keenetic interface."
+TXT_HEALTH_DEFROUTE_TR="Varsayilan Cikis"
+TXT_HEALTH_DEFROUTE_EN="Default Route"
+TXT_WAN_DEFAULT_OK_TR="Secili WAN ile ayni"
+TXT_WAN_DEFAULT_OK_EN="Same as selected WAN"
+TXT_WAN_DEFAULT_MISMATCH_TR="Secili WAN: %SEL% - DPI bu cihazlara uygulanmaz"
+TXT_WAN_DEFAULT_MISMATCH_EN="Selected WAN: %SEL% - DPI does not apply to these devices"
 TXT_CLEANUP_REMOVING_TR="Indirilen Zapret2 arsivi ve gereksiz binary dosyalari siliniyor..."
 TXT_CLEANUP_REMOVING_EN="Removing downloaded Zapret2 archive and unnecessary binary files..."
 TXT_CLEANUP_REMOVED_TR="Indirilen Zapret2 arsivi ve gereksiz binary dosyalari silindi."
@@ -5504,7 +5597,7 @@ nozapret_ensure_and_load() {
 }
 # iptables RETURN kurali ekler (nozapret listesindeki IP'ler Zapret2'den muaf)
 nozapret_apply_rules() {
-    local wan_if
+    local wan_if _nz_ch
     wan_if="$(get_wan_if 2>/dev/null)"
     # Eski kurallari temizle
     nozapret_remove_rules
@@ -5520,10 +5613,28 @@ nozapret_apply_rules() {
             -m set --match-set "$NOZAPRET_IPSET_NAME" src \
             -j RETURN 2>/dev/null
     fi
+    # Gelen (reply) yon: yukaridaki kuralin simetrigi. Gelen pakette yerel cihaz
+    # src degil dst konumundadir; bu kural olmadan muafiyet yalnizca giden yonde
+    # calisir ve TLS oturumunun yarisi NFQUEUE'ya girer.
+    # NOT: RETURN built-in zincirde zincir POLITIKASINI uygular. Politika DROP ise
+    # paket dusurulur, bu yuzden yalnizca ACCEPT politikasinda kural eklenir.
+    for _nz_ch in INPUT FORWARD; do
+        iptables -S "$_nz_ch" 2>/dev/null | head -n1 | grep -q "ACCEPT" || continue
+        if [ -n "$wan_if" ]; then
+            iptables -I "$_nz_ch" -i "$wan_if" \
+                -m set --match-set "$NOZAPRET_IPSET_NAME" dst \
+                -j RETURN 2>/dev/null
+        else
+            iptables -I "$_nz_ch" \
+                -m set --match-set "$NOZAPRET_IPSET_NAME" dst \
+                -j RETURN 2>/dev/null
+        fi
+    done
 }
 # iptables kurallarini temizler
 nozapret_remove_rules() {
     local _wan="$(get_wan_if 2>/dev/null)"
+    local _nz_ch
     # Interface ile eklenenmis kurallari temizle
     [ -n "$_wan" ] && while iptables -t mangle -D POSTROUTING -o "$_wan" \
         -m set --match-set "$NOZAPRET_IPSET_NAME" src \
@@ -5532,6 +5643,15 @@ nozapret_remove_rules() {
     while iptables -t mangle -D POSTROUTING \
         -m set --match-set "$NOZAPRET_IPSET_NAME" src \
         -j RETURN 2>/dev/null; do :; done
+    # Gelen yon kurallari (politikadan bagimsiz temizlenir)
+    for _nz_ch in INPUT FORWARD; do
+        [ -n "$_wan" ] && while iptables -D "$_nz_ch" -i "$_wan" \
+            -m set --match-set "$NOZAPRET_IPSET_NAME" dst \
+            -j RETURN 2>/dev/null; do :; done
+        while iptables -D "$_nz_ch" \
+            -m set --match-set "$NOZAPRET_IPSET_NAME" dst \
+            -j RETURN 2>/dev/null; do :; done
+    done
 }
 # Mevcut muafiyet listesini gosterir
 nozapret_show_status() {
@@ -7244,6 +7364,9 @@ display_menu() {
     _wan_ip_str=""
     [ -n "$_wan_ipv4" ] && _wan_ip_str=" | $(kzm2_fmt_ip "$_wan_ipv4")"
     [ -n "$_wan_ipv6" ] && _wan_ip_str="${_wan_ip_str} | ${CLR_CYAN}${_wan_ipv6}${CLR_RESET}"
+    # Secili WAN varsayilan cikis degilse satirin sonuna uyari ekle (yalnizca uyusmazlikta)
+    check_wan_is_default
+    [ "$_wd_status" = "WARN" ] && _wan_ip_str="${_wan_ip_str} | ${CLR_ORANGE}$(T TXT_WAN_NOT_DEFAULT_SHORT) (${_wd_default})${CLR_RESET}"
     printf "  %b%-*s%b : %b%s%b | %b%s\n"   "${CLR_BOLD}" "$_lw" "$(T TXT_MAIN_WAN_LABEL)" \
         "${CLR_RESET}" "${CLR_RESET}" "$_wan_dev" "${CLR_RESET}" \
         "$(kzm2_banner_fmt_wan_state "$_wan_state")${_wan_ip_str}"
@@ -7350,7 +7473,14 @@ display_menu() {
         printf "  %b%-*s%b : %b%s%b\n" "${CLR_BOLD}" "$_lw" "$(T TXT_HEALTH_DROPBEAR)" \
             "${CLR_RESET}" "${CLR_RED}" "$(T _ 'CALISMIYOR' 'DOWN') (port ${_ed_port:-222})" "${CLR_RESET}"
         printf "  %-*s   %b%s%b\n" "$_lw" "" \
-            "${CLR_ORANGE}" "$(T _ 'Entware SSH calismiyor, port '"${_ed_port:-222}"' (S51dropbear start)' 'Entware SSH is down, port '"${_ed_port:-222}"' (S51dropbear start)')" "${CLR_RESET}"
+            "${CLR_ORANGE}" "$(T _ 'Baslatmak icin: /opt/etc/init.d/S51dropbear start' 'To start: /opt/etc/init.d/S51dropbear start')" "${CLR_RESET}"
+    fi
+    # Keenetic firmware SSH — yalnizca bilgi, uyari verilmez (firmware bileseni,
+    # KZM2 sorumlulugunda degil). Bulunamazsa satir hic cikmaz.
+    check_keenetic_ssh
+    if [ "$_ks_status" = "PASS" ]; then
+        printf "  %b%-*s%b : %b%s%b\n" "${CLR_BOLD}" "$_lw" "$(T TXT_HEALTH_KEENETIC_SSH)" \
+            "${CLR_RESET}" "${CLR_GREEN}" "$(T _ 'CALISIYOR' 'RUNNING') (port ${_ks_port})" "${CLR_RESET}"
     fi
     # ISP DNS kontrolu
     _isp_dns="$(LD_LIBRARY_PATH= ndmc -c 'show ip name-server' 2>/dev/null | awk '/address:/{print $2}' | tr '\n' ' ' | sed 's/ $//;s/ / - /g')"
@@ -8183,6 +8313,13 @@ run_health_check() {
         wan_state="FAIL"
     fi
     add_line "$HC_NET" "$(T TXT_HEALTH_WAN_STATUS)" " ($WAN_IF)" "$wan_state"
+    # Varsayilan cikis kontrolu (yalnizca bilgi/uyari)
+    check_wan_is_default
+    if [ "$_wd_status" = "PASS" ]; then
+        add_line "$HC_NET" "$(T TXT_HEALTH_DEFROUTE)" " ${_wd_default} - $(T TXT_WAN_DEFAULT_OK)" "PASS"
+    elif [ "$_wd_status" = "WARN" ]; then
+        add_line "$HC_NET" "$(T TXT_HEALTH_DEFROUTE)" " ${_wd_default} - $(tpl_render "$(T TXT_WAN_DEFAULT_MISMATCH)" SEL "$WAN_IF")" "WARN"
+    fi
     # WAN IP adresleri
     local wan_ipv4 wan_ipv6 wan_ip_type wan_ip_label
     wan_ipv4="$(ip -4 addr show "$WAN_IF" 2>/dev/null | awk '/inet /{print $2; exit}' | cut -d/ -f1)"
@@ -8442,8 +8579,21 @@ run_health_check() {
     case "$_ed_status" in
         PASS) dropbear_msg="$(T _ 'Calisiyor' 'Running') (port ${_ed_port:-222})" ;;
         WARN) dropbear_msg="$(T _ 'Kurulu ama calismiyor' 'Installed but not running')" ;;
-        *)    dropbear_msg="$(T _ 'Kurulu degil' 'Not installed')" ;;
+        *)    if [ "$_ed_reason" = "portbusy" ]; then
+                  dropbear_msg="$(T _ 'Port '"${_ed_port:-222}"' baska bir SSH sunucusunda' 'Port '"${_ed_port:-222}"' used by another SSH server')"
+              else
+                  dropbear_msg="$(T _ 'Kurulu degil' 'Not installed')"
+              fi ;;
     esac
+    # Keenetic firmware SSH — bilgi amacli, hicbir zaman WARN/FAIL vermez
+    local keenssh_ok="INFO" keenssh_msg
+    check_keenetic_ssh
+    if [ "$_ks_status" = "PASS" ]; then
+        keenssh_ok="PASS"
+        keenssh_msg="$(T _ 'Calisiyor' 'Running') (port ${_ks_port})"
+    else
+        keenssh_msg="$(T _ 'Kapali veya kurulu degil' 'Disabled or not installed')"
+    fi
     # curl
     local curl_ok="PASS" curl_msg
     if command -v curl >/dev/null 2>&1; then
@@ -8568,6 +8718,7 @@ run_health_check() {
     # ----------------------------
     add_line "$HC_SVC" "$(T TXT_HEALTH_ENTWARE)" " $entware_msg" "$entware_ok"
     add_line "$HC_SVC" "$(T TXT_HEALTH_DROPBEAR)" " $dropbear_msg" "$dropbear_ok"
+    add_line "$HC_SVC" "$(T TXT_HEALTH_KEENETIC_SSH)" " $keenssh_msg" "$keenssh_ok"
     add_line "$HC_SVC" "$(T TXT_HEALTH_CURL)" " $curl_msg" "$curl_ok"
     add_line "$HC_SVC" "$(T TXT_HEALTH_LIGHTTPD)" " $lighttpd_msg" "$lighttpd_ok"
     add_line "$HC_SVC" "$(T TXT_HEALTH_HEALTHMON)" " $hm_msg" "$hm_ok"
@@ -11368,7 +11519,16 @@ tgbot_handle_callback() {
 tgbot_set_commands() {
     local _token="$1"
     local _cmds
-    _cmds='[{"command":"start","description":"Ana menuyu ac"},{"command":"durum","description":"Sistem durumunu goster"},{"command":"profil","description":"Aktif DPI profilini goster"},{"command":"zapret2","description":"Zapret2 yonetimi"},{"command":"sistem","description":"Sistem ve router"},{"command":"kzm2","description":"KZM2 yonetimi"},{"command":"loglar","description":"Log goruntule"},{"command":"help","description":"Yardim"}]'
+    # Aciklamalar dil ayarina gore sozlukten kurulur (bot mesajlariyla tutarli).
+    _cmds="[{\"command\":\"start\",\"description\":\"$(T TXT_TGBOT_CMD_START)\"}"
+    _cmds="${_cmds},{\"command\":\"$(T _ 'durum' 'status')\",\"description\":\"$(T TXT_TGBOT_CMD_DURUM)\"}"
+    _cmds="${_cmds},{\"command\":\"$(T _ 'profil' 'profile')\",\"description\":\"$(T TXT_TGBOT_CMD_PROFIL)\"}"
+    _cmds="${_cmds},{\"command\":\"zapret2\",\"description\":\"$(T TXT_TGBOT_CMD_ZAPRET2)\"}"
+    _cmds="${_cmds},{\"command\":\"$(T _ 'sistem' 'system')\",\"description\":\"$(T TXT_TGBOT_CMD_SISTEM)\"}"
+    _cmds="${_cmds},{\"command\":\"kzm2\",\"description\":\"$(T TXT_TGBOT_CMD_KZM2)\"}"
+    _cmds="${_cmds},{\"command\":\"$(T _ 'loglar' 'logs')\",\"description\":\"$(T TXT_TGBOT_CMD_LOGLAR)\"}"
+    _cmds="${_cmds},{\"command\":\"help\",\"description\":\"$(T TXT_TGBOT_CMD_HELP)\"}"
+    _cmds="${_cmds}]"
     local _sc_result
     _sc_result="$(curl -fsSL -X POST "https://api.telegram.org/bot${_token}/setMyCommands" \
         -H "Content-Type: application/json" \
@@ -11382,12 +11542,18 @@ telegram_bot_daemon() {
     local offset=0
     local raw ids update_id blk
     local cb_id cb_data cb_chat cb_msg_id msg_chat msg_text
+    local _tg_cmd_lang=""
     printf '%s\n' "$(date '+%Y-%m-%d %H:%M:%S') | tgbot | started" >> "$TG_BOT_LOG_FILE"
     # Eski pending dosyalarini temizle
     rm -f /tmp/tgbot_pending_* 2>/dev/null
-    tgbot_set_commands "$TG_BOT_TOKEN"
     while true; do
         load_lang
+        # Komut menusu: ilk turda kaydedilir, dil degisirse yeniden kaydedilir.
+        # Bot mesajlari load_lang ile canli degistigi icin menu de takip etmeli.
+        if [ "$LANG" != "${_tg_cmd_lang:-}" ]; then
+            tgbot_set_commands "$TG_BOT_TOKEN"
+            _tg_cmd_lang="$LANG"
+        fi
         # getUpdates
         _tgbot_api "getUpdates" \
             "{\"offset\":${offset},\"timeout\":${TG_BOT_POLL_SEC:-5},\"allowed_updates\":[\"message\",\"callback_query\"]}"
@@ -12268,11 +12434,13 @@ healthmon_updatecheck_do() {
             if ver_is_newer "$zap_latest" "$zap_cur"; then
                 # Normal guncelleme: yeni surum mevcut
                 zap_url="https://github.com/${zap_repo}/releases/latest"
-                telegram_send "$(tpl_render "$(T TXT_UPD_ZAPRET_NEW)" CUR "$zap_cur" NEW "$zap_latest" URL "$zap_url")" &
+                telegram_send "$(tpl_render "$(T TXT_UPD_ZAPRET_NEW)" CUR "$zap_cur" NEW "$zap_latest" URL "$zap_url")
+" &
                 healthmon_log "$(date +%s 2>/dev/null) | updatecheck | zapret2 | notified cur=$zap_cur latest=$zap_latest"
             elif ver_is_newer "$zap_cur" "$zap_latest"; then
                 # Geri cekilmis release: kurulu surum GitHub'dan yeni
-                telegram_send "$(tpl_render "$(T TXT_UPD_ZAPRET_ROLLED)" CUR "$zap_cur" NEW "$zap_latest")" &
+                telegram_send "$(tpl_render "$(T TXT_UPD_ZAPRET_ROLLED)" CUR "$zap_cur" NEW "$zap_latest")
+" &
                 healthmon_log "$(date +%s 2>/dev/null) | updatecheck | zapret2 | pulled_release cur=$zap_cur stable=$zap_latest"
             fi
         fi
@@ -12756,7 +12924,7 @@ healthmon_loop() {
         # ---- ENTWARE DROPBEAR (SSH port 222) ----
         check_entware_dropbear
         if [ "$_ed_status" = "WARN" ]; then
-            if healthmon_should_alert "dropbear" "$HM_COOLDOWN_SEC"; then
+            if [ ! -f "$dropbear_flag" ] && healthmon_should_alert "dropbear" "$HM_COOLDOWN_SEC"; then
                 telegram_send "$(tpl_render "$(T TXT_HM_DROPBEAR_DOWN_MSG)" CPU "$cpu" LOAD "$load" RAM "$ram" PORT "${_ed_port:-222}")" &
                 healthmon_log "$now | dropbear_down | port=${_ed_port:-222} cpu=$cpu load=$load ram=${ram}MB"
                 echo "1" >"$dropbear_flag" 2>/dev/null
@@ -13799,6 +13967,13 @@ DEOF
             _hc_lan="$(ip -4 addr show br0 2>/dev/null | awk '/inet /{print $2;exit}' | cut -d/ -f1)"
             [ -z "$_hc_lan" ] && _hc_lan="$(ip -4 addr show eth0 2>/dev/null | awk '/inet /{print $2;exit}' | cut -d/ -f1)"
             [ -n "$_hc_lan" ] && _add "net" "$(T TXT_HEALTH_LAN_IP)" "$_hc_lan" "INFO"
+            # Varsayilan cikis kontrolu (secili WAN gercekten varsayilan rota mi)
+            check_wan_is_default
+            if [ "$_wd_status" = "PASS" ]; then
+                _add "net" "$(T TXT_HEALTH_DEFROUTE)" "${_wd_default} - $(T TXT_WAN_DEFAULT_OK)" "PASS"
+            elif [ "$_wd_status" = "WARN" ]; then
+                _add "net" "$(T TXT_HEALTH_DEFROUTE)" "${_wd_default} - $(tpl_render "$(T TXT_WAN_DEFAULT_MISMATCH)" SEL "$(get_wan_if)")" "WARN"
+            fi
             if check_ntp; then _add "sys" "$(T TXT_HEALTH_TIME)" "$(date '+%Y-%m-%d %H:%M')" "PASS"
             else _add "sys" "$(T TXT_HEALTH_TIME)" "$(date '+%Y-%m-%d %H:%M')" "WARN"; fi
             _kzm_exp="/opt/lib/opkg/keenetic_zapret2_manager.sh"
@@ -13814,8 +13989,19 @@ DEOF
             case "$_ed_status" in
                 PASS) _add "svc" "$(T TXT_HEALTH_DROPBEAR)" "$(T _ 'Calisiyor' 'Running') (port ${_ed_port:-222})" "PASS" ;;
                 WARN) _add "svc" "$(T TXT_HEALTH_DROPBEAR)" "$(T _ 'Kurulu ama calismiyor' 'Installed but not running')" "WARN" ;;
-                *)    _add "svc" "$(T TXT_HEALTH_DROPBEAR)" "$(T _ 'Kurulu degil' 'Not installed')" "INFO" ;;
+                *)    if [ "$_ed_reason" = "portbusy" ]; then
+                          _add "svc" "$(T TXT_HEALTH_DROPBEAR)" "$(T _ 'Port '"${_ed_port:-222}"' baska bir SSH sunucusunda' 'Port '"${_ed_port:-222}"' used by another SSH server')" "INFO"
+                      else
+                          _add "svc" "$(T TXT_HEALTH_DROPBEAR)" "$(T _ 'Kurulu degil' 'Not installed')" "INFO"
+                      fi ;;
             esac
+            # Keenetic firmware SSH — bilgi amacli, hicbir zaman WARN/FAIL vermez
+            check_keenetic_ssh
+            if [ "$_ks_status" = "PASS" ]; then
+                _add "svc" "$(T TXT_HEALTH_KEENETIC_SSH)" "$(T _ 'Calisiyor' 'Running') (port ${_ks_port})" "PASS"
+            else
+                _add "svc" "$(T TXT_HEALTH_KEENETIC_SSH)" "$(T _ 'Kapali veya kurulu degil' 'Disabled or not installed')" "INFO"
+            fi
             # curl
             if command -v curl >/dev/null 2>&1; then
                 if curl --version >/dev/null 2>&1; then
@@ -15304,9 +15490,9 @@ kzm_gui_gen_status() {
     else
         _wan_dev="$_wan_raw"
         [ -z "$_wan_dev" ] && _wan_dev="$(ip -4 route show default 2>/dev/null | awk '/^default/{print $5; exit}')"
-        [ -z "$_wan_dev" ] && _wan_dev="Unknown"
+        [ -z "$_wan_dev" ] && _wan_dev="—"
         _wan_ip="$(ip -4 addr show "$_wan_dev" 2>/dev/null | awk '/inet /{print $2; exit}' | cut -d/ -f1)"
-        [ -z "$_wan_ip" ] && _wan_ip="Unknown"
+        [ -z "$_wan_ip" ] && _wan_ip="—"
     fi
     # Model ve firmware: statik dosyadan oku (kurulumda yazildi)
     local _model _firmware
@@ -15569,7 +15755,7 @@ if [ -f /opt/zapret2/wan_if ] && [ -z "$_wan" ]; then
 else
     _wan_display="$_wan"
     _wip="$(ip -4 addr show "$_wan" 2>/dev/null | awk '/inet /{print $2;exit}' | cut -d/ -f1)"
-    [ -z "$_wip" ] && _wip="Unknown"
+    [ -z "$_wip" ] && _wip="—"
 fi
 _zver="$(cat /opt/zapret2/version 2>/dev/null | head -n1 | tr -d '\n')"
 [ -z "$_zver" ] && _zver="Unknown"
@@ -16664,11 +16850,15 @@ case "$ACTION" in
         # Cakisma korumasi: ipset_clients.txt'den cikar
         sed -i "\|^$(printf '%s' "$_ip" | sed 's/[.[*^$]/\\&/g')$|d" "$IPSET_FILE" 2>/dev/null
         kzm_append_unique_line "/opt/zapret2/ipset/nozapret.txt" "$_ip"
+        # Canli ipset senkronu: dosyaya yazmak tek basina muafiyeti aktif etmez
+        ipset -exist add nozapret "$_ip" 2>/dev/null
+        ipset del zapret2_clients "$_ip" 2>/dev/null
         kzm_rebuild_profile_restart
         ok "Eklendi: $_ip" ;;
     nozapret_del)
         _ip=$(get_param ip); [ -z "$_ip" ] && { fail "IP bos"; exit 0; }
         sed -i "\|^$(printf '%s' "$_ip" | sed 's/[.[*^$]/\\&/g')$|d" "/opt/zapret2/ipset/nozapret.txt" 2>/dev/null
+        ipset del nozapret "$_ip" 2>/dev/null
         kzm_rebuild_profile_restart
         ok "Silindi: $_ip" ;;
     ipset_active_get)
@@ -16678,11 +16868,17 @@ case "$ACTION" in
     ip_add)
         _ip=$(get_param ip); [ -z "$_ip" ] && { fail "IP bos"; exit 0; }
         kzm_append_unique_line "$IPSET_FILE" "$_ip"
+        # Canli ipset senkronu: dosyaya yazmak tek basina listeyi aktif etmez
+        ipset -exist add zapret2_clients "$_ip" 2>/dev/null
+        # Cakisma korumasi: nozapret listesinden cikar (SSH ile ayni davranis)
+        sed -i "\|^$(printf '%s' "$_ip" | sed 's/[.[*^$]/\\&/g')$|d" "/opt/zapret2/ipset/nozapret.txt" 2>/dev/null
+        ipset del nozapret "$_ip" 2>/dev/null
         kzm_rebuild_profile_restart
         ok "Eklendi: $_ip" ;;
     ip_del)
         _ip=$(get_param ip); [ -z "$_ip" ] && { fail "IP bos"; exit 0; }
         sed -i "\|^$(printf '%s' "$_ip" | sed 's/[.[*^$]/\\&/g')$|d" "$IPSET_FILE" 2>/dev/null
+        ipset del zapret2_clients "$_ip" 2>/dev/null
         kzm_rebuild_profile_restart
         ok "Silindi: $_ip" ;;
     sched_get)
@@ -18492,7 +18688,7 @@ function syncLang(){
   if(langBadge)langBadge.innerHTML=L?'<img src="data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjQiIGhlaWdodD0iMjQiIHZpZXdCb3g9IjAgMCAzNiAzNiIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cGF0aCBmaWxsPSIjMDAyNDdEIiBkPSJNMCA5LjA1OVYxM2g1LjYyOHpNNC42NjQgMzFIMTN2LTUuODM3ek0yMyAyNS4xNjRWMzFoOC4zMzV6TTAgMjN2My45NDFMNS42MyAyM3pNMzEuMzM3IDVIMjN2NS44Mzd6TTM2IDI2Ljk0MlYyM2gtNS42MzF6TTM2IDEzVjkuMDU5TDMwLjM3MSAxM3pNMTMgNUg0LjY2NEwxMyAxMC44Mzd6Ii8+PHBhdGggZmlsbD0iI0NGMUIyQiIgZD0iTTI1LjE0IDIzbDkuNzEyIDYuODAxYTMuOTc3IDMuOTc3IDAgMCAwIC45OS0xLjc0OUwyOC42MjcgMjNIMjUuMTR6TTEzIDIzaC0yLjE0MWwtOS43MTEgNi44Yy41MjEuNTMgMS4xODkuOTA5IDEuOTM4IDEuMDg1TDEzIDIzLjk0M1YyM3ptMTAtMTBoMi4xNDFsOS43MTEtNi44YTMuOTg4IDMuOTg4IDAgMCAwLTEuOTM3LTEuMDg1TDIzIDEyLjA1N1YxM3ptLTEyLjE0MSAwTDEuMTQ4IDYuMmEzLjk5NCAzLjk5NCAwIDAgMC0uOTkxIDEuNzQ5TDcuMzcyIDEzaDMuNDg3eiIvPjxwYXRoIGZpbGw9IiNFRUUiIGQ9Ik0zNiAyMUgyMXYxMGgydi01LjgzNkwzMS4zMzUgMzFIMzJhMy45OSAzLjk5IDAgMCAwIDIuODUyLTEuMTk5TDI1LjE0IDIzaDMuNDg3bDcuMjE1IDUuMDUyYy4wOTMtLjMzNy4xNTgtLjY4Ni4xNTgtMS4wNTJ2LS4wNThMMzAuMzY5IDIzSDM2di0yek0wIDIxdjJoNS42M0wwIDI2Ljk0MVYyN2MwIDEuMDkxLjQzOSAyLjA3OCAxLjE0OCAyLjhsOS43MTEtNi44SDEzdi45NDNsLTkuOTE0IDYuOTQxYy4yOTQuMDcuNTk4LjExNi45MTQuMTE2aC42NjRMMTMgMjUuMTYzVjMxaDJWMjFIMHpNMzYgOWEzLjk4MyAzLjk4MyAwIDAgMC0xLjE0OC0yLjhMMjUuMTQxIDEzSDIzdi0uOTQzbDkuOTE1LTYuOTQyQTQuMDAxIDQuMDAxIDAgMCAwIDMyIDVoLS42NjNMMjMgMTAuODM3VjVoLTJ2MTBoMTV2LTJoLTUuNjI5TDM2IDkuMDU5Vjl6TTEzIDV2NS44MzdMNC42NjQgNUg0YTMuOTg1IDMuOTg1IDAgMCAwLTIuODUyIDEuMmw5LjcxMSA2LjhINy4zNzJMLjE1NyA3Ljk0OUEzLjk2OCAzLjk2OCAwIDAgMCAwIDl2LjA1OUw1LjYyOCAxM0gwdjJoMTVWNWgtMnoiLz48cGF0aCBmaWxsPSIjQ0YxQjJCIiBkPSJNMjEgMTVWNWgtNnYxMEgwdjZoMTV2MTBoNlYyMWgxNXYtNnoiLz48L3N2Zz4=" width="24" height="24" style="vertical-align:middle"> EN':'<img src="data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjQiIGhlaWdodD0iMjQiIHZpZXdCb3g9IjAgMCAzNiAzNiIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIiB4bWxuczp4bGluaz0iaHR0cDovL3d3dy53My5vcmcvMTk5OS94bGluayI+PHBhdGggZmlsbD0iI0UzMDkxNyIgZD0iTTM2IDI3YTQgNCAwIDAgMS00IDRINGE0IDQgMCAwIDEtNC00VjlhNCA0IDAgMCAxIDQtNGgyOGE0IDQgMCAwIDEgNCA0djE4eiIvPjxwYXRoIGZpbGw9IiNFRUUiIGQ9Ik0xNiAyNGE2IDYgMCAxIDEgMC0xMmMxLjMxIDAgMi41Mi40MjUgMy41MDcgMS4xMzhBNy4zMzIgNy4zMzIgMCAwIDAgMTQgMTAuNjQ3QTcuMzUzIDcuMzUzIDAgMCAwIDYuNjQ3IDE4QTcuMzUzIDcuMzUzIDAgMCAwIDE0IDI1LjM1NGMyLjE5NSAwIDQuMTYtLjk2NyA1LjUwNy0yLjQ5MkE1Ljk2MyA1Ljk2MyAwIDAgMSAxNiAyNHptMy45MTMtNS43N2wyLjQ0LjU2MmwuMjIgMi40OTNsMS4yODgtMi4xNDZsMi40NC41NjFsLTEuNjQ0LTEuODg4bDEuMjg3LTIuMTQ3bC0yLjMwMy45OGwtMS42NDQtMS44ODlsLjIyIDIuNDk0eiIvPjwvc3ZnPg==" width="24" height="24" style="vertical-align:middle"> TR';
 }
 function fixTR(s){if(!s)return s;
-  return s.replace(/Calisiyor/g,'&#199;al&#305;&#351;&#305;yor').replace(/Calismiyor/g,'&#199;al&#305;&#351;m&#305;yor')
+  return s.replace(/Calisiyor/g,'&#199;al&#305;&#351;&#305;yor').replace(/Calismiyor/g,'&#199;al&#305;&#351;m&#305;yor').replace(/calisiyor/g,'&#231;al&#305;&#351;&#305;yor').replace(/calismiyor/g,'&#231;al&#305;&#351;m&#305;yor')
           .replace(/Durdurulmus/g,'Durdurulmu&#351;').replace(/durduruldu/g,'durduruldu')
           .replace(/Dogrulandi/g,'Do&#287;ruland&#305;').replace(/Farkli/g,'Farkl&#305;')
           .replace(/Varsayilan/g,'Varsay&#305;lan').replace(/butunlugu/g,'b&#252;t&#252;nl&#252;&#287;&#252;')
@@ -18501,6 +18697,9 @@ function fixTR(s){if(!s)return s;
           .replace(/Guncelleme/g,'G&#252;ncelleme').replace(/Guncel/g,'G&#252;ncel')
           .replace(/Saglikli/g,'Sa&#287;l&#305;kl&#305;').replace(/Saglik/g,'Sa&#287;l&#305;k').replace(/sagligi/g,'sa&#287;l&#305;&#287;&#305;').replace(/hatali/g,'hatal&#305;').replace(/hatasi/g,'hatas&#305;').replace(/Tanilama/g,'Tan&#305;lama')
           .replace(/Anlik/g,'Anl&#305;k').replace(/Esik/g,'E&#351;ik').replace(/esigi/g,'e&#351;i&#287;i')
+          .replace(/degil/g,'de&#287;il').replace(/baska/g,'ba&#351;ka').replace(/\bCip\b/g,'&#199;ip')
+          .replace(/\bCikis\b/g,'&#199;&#305;k&#305;&#351;').replace(/\bcikis\b/g,'&#231;&#305;k&#305;&#351;')
+          .replace(/\bSecili\b/g,'Se&#231;ili').replace(/\bsecili\b/g,'se&#231;ili').replace(/\bayni\b/g,'ayn&#305;')
           .replace(/Ardisik/g,'Ard&#305;&#351;&#305;k').replace(/Arayuz/g,'Aray&#252;z')
           .replace(/Baglanti/g,'Ba&#287;lant&#305;').replace(/baglanti/g,'ba&#287;lant&#305;')
           .replace(/Baslatildi/g,'Ba&#351;lat&#305;ld&#305;').replace(/baslatildi/g,'ba&#351;lat&#305;ld&#305;')
