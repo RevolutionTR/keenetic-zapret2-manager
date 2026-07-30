@@ -37,7 +37,7 @@
 # -------------------------------------------------------------------
 SCRIPT_NAME="keenetic_zapret2_manager.sh"
 # Version scheme: vYY.M.D[.N]  (YY=year, M=month, D=day, N=daily revision)
-SCRIPT_VERSION="v26.7.28.1"
+SCRIPT_VERSION="v26.7.30"
 SCRIPT_REPO="https://github.com/RevolutionTR/keenetic-zapret2-manager"
 KZM2_SCRIPT_PATH="/opt/lib/opkg/keenetic_zapret2_manager.sh"
 SCRIPT_AUTHOR="RevolutionTR"
@@ -1667,12 +1667,19 @@ TXT_TGBOT_BTN_DEBUGLOG_TR="Debug Log"
 TXT_TGBOT_BTN_DEBUGLOG_EN="Debug Log"
 TXT_TGBOT_BTN_BACK_TR="Geri"
 TXT_TGBOT_BTN_BACK_EN="Back"
-TXT_TGBOT_BTN_START_TR="Baslat"
+# TG-UTF8-BEGIN  --- Telegram-only sozluk: SSH terminaline CIKMAZ, UTF-8 TR karakter serbest.
+# UYARI: Buraya SSH/menu/ekran metni EKLEME. --self-test bu blokta TR karakter taramaz.
+TXT_TGBOT_BTN_START_TR="Başlat"
 TXT_TGBOT_BTN_START_EN="Start"
 TXT_TGBOT_BTN_STOP_TR="Durdur"
 TXT_TGBOT_BTN_STOP_EN="Stop"
-TXT_TGBOT_BTN_RESTART_TR="Yeniden Baslat"
+TXT_TGBOT_BTN_RESTART_TR="Yeniden Başlat"
 TXT_TGBOT_BTN_RESTART_EN="Restart"
+TXT_TGBOT_BTN_SHARE_TR="Paylaş"
+TXT_TGBOT_BTN_SHARE_EN="Share"
+TXT_TGBOT_NO_DEBUGLOG_TR="Debug log bulunamadı. Debug modu kapalı olabilir."
+TXT_TGBOT_NO_DEBUGLOG_EN="Debug log not found. Debug mode may be disabled."
+# TG-UTF8-END
 # TG-UTF8-BEGIN  --- Telegram-only sozluk: SSH terminaline CIKMAZ, UTF-8 TR karakter serbest.
 # UYARI: Buraya SSH/menu/ekran metni EKLEME. --self-test bu blokta TR karakter taramaz.
 TXT_TGBOT_BTN_REBOOT_TR="Yeniden Başlat (Router)"
@@ -4501,6 +4508,25 @@ is_zapret2_installed() {
 }
 KZM2_IP_EXCLUDE_SET="zapret2_ip_exclude"
 KZM2_IP6_EXCLUDE_SET="zapret2_ip6_exclude"
+# Istemci (LAN cihazi) muafiyet seti — YALNIZCA kullanicinin No Zapret listesine
+# ekledigi adresleri icerir. DIKKAT: zapret2'nin kendi "nozapret" seti ozel ag
+# araliklarini (192.168.0.0/16 vb.) otomatik icerir; o set istemci kuralinda
+# KULLANILAMAZ, tum cihazlarla eslesip DPI'i tamamen devre disi birakir.
+# Bu yuzden ayri bir set kullanilir ve yalnizca nozapret.txt'den doldurulur.
+KZM2_CLIENT_EXCLUDE_SET="zapret2_client_exclude"
+kzm2_sync_client_exclude_set() {
+    command -v ipset >/dev/null 2>&1 || return 0
+    ipset list "$KZM2_CLIENT_EXCLUDE_SET" >/dev/null 2>&1 || \
+        ipset create "$KZM2_CLIENT_EXCLUDE_SET" hash:net family inet 2>/dev/null
+    ipset flush "$KZM2_CLIENT_EXCLUDE_SET" >/dev/null 2>&1
+    [ -f "$NOZAPRET_FILE" ] || return 0
+    awk 'NF && $0 !~ /^[[:space:]]*#/ && $0 !~ /:/{print}' "$NOZAPRET_FILE" 2>/dev/null | \
+        while read -r _ce_ip; do
+            _ce_ip="$(echo "$_ce_ip" | tr -d '[:space:]')"
+            [ -n "$_ce_ip" ] && ipset add "$KZM2_CLIENT_EXCLUDE_SET" "$_ce_ip" -exist >/dev/null 2>&1
+        done
+    return 0
+}
 kzm2_sync_ip_exclude_sets() {
     command -v ipset >/dev/null 2>&1 || return 0
     ensure_hostlist_files >/dev/null 2>&1
@@ -4519,8 +4545,15 @@ kzm2_sync_ip_exclude_sets() {
     return 0
 }
 kzm2_remove_ip_exclude_rules() {
-    local _wan
+    local _wan _ce_ch
     _wan="$(get_wan_if 2>/dev/null)"
+    # Istemci muafiyet kurallari (giden: src / gelen: dst)
+    while iptables -t mangle -D POSTROUTING ${_wan:+-o $_wan} -m set --match-set "$KZM2_CLIENT_EXCLUDE_SET" src -j RETURN 2>/dev/null; do :; done
+    while iptables -t mangle -D POSTROUTING -m set --match-set "$KZM2_CLIENT_EXCLUDE_SET" src -j RETURN 2>/dev/null; do :; done
+    for _ce_ch in INPUT FORWARD; do
+        while iptables -D "$_ce_ch" ${_wan:+-i $_wan} -m set --match-set "$KZM2_CLIENT_EXCLUDE_SET" dst -j RETURN 2>/dev/null; do :; done
+        while iptables -D "$_ce_ch" -m set --match-set "$KZM2_CLIENT_EXCLUDE_SET" dst -j RETURN 2>/dev/null; do :; done
+    done
     while iptables -t mangle -D POSTROUTING ${_wan:+-o $_wan} -m set --match-set "$KZM2_IP_EXCLUDE_SET" dst -j RETURN 2>/dev/null; do :; done
     while iptables -t mangle -D POSTROUTING -m set --match-set "$KZM2_IP_EXCLUDE_SET" dst -j RETURN 2>/dev/null; do :; done
     while iptables -t mangle -D PREROUTING ${_wan:+-i $_wan} -m set --match-set "$KZM2_IP_EXCLUDE_SET" src -j RETURN 2>/dev/null; do :; done
@@ -4535,10 +4568,22 @@ kzm2_remove_ip_exclude_rules() {
 kzm2_apply_ip_exclude_rules() {
     command -v iptables >/dev/null 2>&1 || return 0
     command -v ipset >/dev/null 2>&1 || return 0
-    local _wan
+    local _wan _ce_ch
     _wan="$(get_wan_if 2>/dev/null)"
     kzm2_sync_ip_exclude_sets >/dev/null 2>&1
+    kzm2_sync_client_exclude_set >/dev/null 2>&1
     kzm2_remove_ip_exclude_rules >/dev/null 2>&1
+    # Istemci muafiyeti: No Zapret listesindeki LAN cihazlari DPI gormez.
+    # Giden pakette cihaz src, gelen (reply) pakette dst konumundadir.
+    # Bu fonksiyon add_ipset_nfqueue_rules'tan SONRA cagrildigi icin kurallar
+    # NFQUEUE'nun ustunde kalir (sira kritik).
+    iptables -t mangle -I POSTROUTING 1 ${_wan:+-o $_wan} -m set --match-set "$KZM2_CLIENT_EXCLUDE_SET" src -j RETURN 2>/dev/null
+    # Gelen yon filter tablosunda; RETURN built-in zincirde zincir POLITIKASINI
+    # uygular, bu yuzden yalnizca ACCEPT politikasinda eklenir.
+    for _ce_ch in INPUT FORWARD; do
+        iptables -S "$_ce_ch" 2>/dev/null | head -n1 | grep -q "ACCEPT" || continue
+        iptables -I "$_ce_ch" 1 ${_wan:+-i $_wan} -m set --match-set "$KZM2_CLIENT_EXCLUDE_SET" dst -j RETURN 2>/dev/null
+    done
     iptables -t mangle -I POSTROUTING 1 ${_wan:+-o $_wan} -m set --match-set "$KZM2_IP_EXCLUDE_SET" dst -j RETURN 2>/dev/null
     iptables -t mangle -I PREROUTING 1 ${_wan:+-i $_wan} -m set --match-set "$KZM2_IP_EXCLUDE_SET" src -j RETURN 2>/dev/null
     if command -v ip6tables >/dev/null 2>&1; then
@@ -5443,6 +5488,7 @@ manage_ipset_clients() {
                         rm -f "$tmpf"
                         ipset del "$NOZAPRET_IPSET_NAME" "$oneip" 2>/dev/null
                         nozapret_apply_rules
+                        kzm2_apply_ip_exclude_rules >/dev/null 2>&1
                         echo "$(T _ 'Tamam: IP eklendi. No Zapret2 listesinden cikarildi.' 'Done: IP added. Removed from No Zapret2 list.')"
                     else
                         echo "$(T _ 'Tamam: IP eklendi.' 'Done: IP added.')"
@@ -5694,6 +5740,7 @@ manage_nozapret_menu() {
                     else
                         echo "$noz_ip" >> "$NOZAPRET_FILE"
                         nozapret_apply_rules
+                        kzm2_apply_ip_exclude_rules >/dev/null 2>&1
                         # Ayni IP zapret2_clients listesinde varsa cikar (catisma onleme)
                         if [ -f "$IPSET_CLIENT_FILE" ] && grep -Fqx "$noz_ip" "$IPSET_CLIENT_FILE" 2>/dev/null; then
                             tmpf="/tmp/ipset_clients_clash.$$"
@@ -5721,6 +5768,7 @@ manage_nozapret_menu() {
                     cp "$tmpf" "$NOZAPRET_FILE" 2>/dev/null; rm -f "$tmpf"
                     ipset del "$NOZAPRET_IPSET_NAME" "$noz_ip" 2>/dev/null
                     nozapret_apply_rules
+                    kzm2_apply_ip_exclude_rules >/dev/null 2>&1
                     echo "$(T TXT_NOZAPRET_REMOVED)"
                 else
                     echo "$(T TXT_NOZAPRET_NOTFOUND)"
@@ -5825,9 +5873,33 @@ cleanup_zapret_firewall_leftovers() {
     for c in INPUT FORWARD OUTPUT; do
         _del_nfqueue_lines "" "$c"
     done
+    # RETURN tipi muafiyet kurallari (NFQUEUE icermedikleri icin yukaridaki
+    # temizleyici bunlari yakalamaz). Kalirlarsa ipset destroy basarisiz olur.
+    kzm2_remove_ip_exclude_rules >/dev/null 2>&1
+    nozapret_remove_rules >/dev/null 2>&1
+    # Set adiyla eslesen artik RETURN kurallari (arayuz/varyant farki olsa bile)
+    for _cl_set in zapret2_client_exclude zapret2_ip_exclude nozapret; do
+        for _cl_tbl in mangle ""; do
+            for _cl_ch in PREROUTING INPUT FORWARD OUTPUT POSTROUTING; do
+                while true; do
+                    if [ -n "$_cl_tbl" ]; then
+                        _cl_ln="$(iptables -t "$_cl_tbl" -L "$_cl_ch" -n --line-numbers 2>/dev/null \
+                            | grep -F "match-set $_cl_set" | grep -E '^[0-9]+ +RETURN' | head -n 1 | awk '{print $1}')"
+                        [ -n "$_cl_ln" ] || break
+                        iptables -t "$_cl_tbl" -D "$_cl_ch" "$_cl_ln" 2>/dev/null || break
+                    else
+                        _cl_ln="$(iptables -L "$_cl_ch" -n --line-numbers 2>/dev/null \
+                            | grep -F "match-set $_cl_set" | grep -E '^[0-9]+ +RETURN' | head -n 1 | awk '{print $1}')"
+                        [ -n "$_cl_ln" ] || break
+                        iptables -D "$_cl_ch" "$_cl_ln" 2>/dev/null || break
+                    fi
+                done
+            done
+        done
+    done
     # ipset kalintilari
     if command -v ipset >/dev/null 2>&1; then
-        for s in zapret zapret2_clients nozapret ipban; do
+        for s in zapret zapret2_clients nozapret zapret2_client_exclude ipban; do
             ipset list "$s" >/dev/null 2>&1 && ipset flush "$s" >/dev/null 2>&1
             ipset list "$s" >/dev/null 2>&1 && ipset destroy "$s" >/dev/null 2>&1
         done
@@ -10549,7 +10621,7 @@ tgbot_kb_main() {
 tgbot_kb_profil() {
     local rid="${TG_ROUTER_ID:-default}"
     printf '[[{"text":"📤 %s","callback_data":"%s:profil_share"}],[{"text":"◀ %s","callback_data":"%s:menu_main"}]]' \
-        "$(T _ 'Paylas' 'Share')" "$rid" \
+        "$(T TXT_TGBOT_BTN_SHARE)" "$rid" \
         "$(T _ 'Ana Menu' 'Main Menu')" "$rid"
 }
 tgbot_kb_zapret() {    local rid="${TG_ROUTER_ID:-default}"
@@ -11191,7 +11263,7 @@ tgbot_handle_callback() {
                 tgbot_send_document "$chat_id" "$_dbglog_tmp"                     "🐛 Debug Log | ${TG_ROUTER_ID:-router}"
                 rm -f "$_dbglog_tmp" 2>/dev/null
             else
-                tgbot_send "$chat_id" "$(T _ 'Debug log bulunamadi. Debug modu kapali olabilir.' 'Debug log not found. Debug mode may be disabled.')" ""
+                tgbot_send "$chat_id" "$(T TXT_TGBOT_NO_DEBUGLOG)" ""
             fi
             tgbot_send "$chat_id"                 "$(T TXT_TGBOT_LOG_MENU_TITLE)" "$(tgbot_kb_logs)"
             ;;
@@ -12482,7 +12554,8 @@ healthmon_updatecheck_do() {
     if [ "$upd_mode" = "2" ]; then
         healthmon_log "$(date +%s 2>/dev/null) | updatecheck | kzm2 | autoinstall_start cur=$cur latest=$latest"
         if update_manager_script >/tmp/kzm2_autoupdate.log 2>&1; then
-            telegram_send "$(tpl_render "$(T TXT_UPD_ZKM_AUTO_OK)" NEW "$latest" CUR "$cur" URL "$url")" &
+            telegram_send "$(tpl_render "$(T TXT_UPD_ZKM_AUTO_OK)" NEW "$latest" CUR "$cur" URL "$url")
+" &
             healthmon_log "$(date +%s 2>/dev/null) | updatecheck | kzm2 | autoinstall_ok cur=$cur latest=$latest"
             # Web Panel HTML/CGI guncelle
             (KZM2_SKIP_LOCK=1 sh "/opt/lib/opkg/keenetic_zapret2_manager.sh" --update-gui >/dev/null 2>&1 &)
@@ -16835,6 +16908,7 @@ case "$ACTION" in
         kzm_append_unique_line "/opt/zapret2/ipset/nozapret.txt" "$_ip"
         # Canli ipset senkronu: dosyaya yazmak tek basina muafiyeti aktif etmez
         ipset -exist add nozapret "$_ip" 2>/dev/null
+        ipset -exist add zapret2_client_exclude "$_ip" 2>/dev/null
         ipset del zapret2_clients "$_ip" 2>/dev/null
         kzm_rebuild_profile_restart
         ok "Eklendi: $_ip" ;;
@@ -16842,6 +16916,7 @@ case "$ACTION" in
         _ip=$(get_param ip); [ -z "$_ip" ] && { fail "IP bos"; exit 0; }
         sed -i "\|^$(printf '%s' "$_ip" | sed 's/[.[*^$]/\\&/g')$|d" "/opt/zapret2/ipset/nozapret.txt" 2>/dev/null
         ipset del nozapret "$_ip" 2>/dev/null
+        ipset del zapret2_client_exclude "$_ip" 2>/dev/null
         kzm_rebuild_profile_restart
         ok "Silindi: $_ip" ;;
     ipset_active_get)
@@ -16856,6 +16931,7 @@ case "$ACTION" in
         # Cakisma korumasi: nozapret listesinden cikar (SSH ile ayni davranis)
         sed -i "\|^$(printf '%s' "$_ip" | sed 's/[.[*^$]/\\&/g')$|d" "/opt/zapret2/ipset/nozapret.txt" 2>/dev/null
         ipset del nozapret "$_ip" 2>/dev/null
+        ipset del zapret2_client_exclude "$_ip" 2>/dev/null
         kzm_rebuild_profile_restart
         ok "Eklendi: $_ip" ;;
     ip_del)
