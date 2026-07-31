@@ -454,6 +454,8 @@ Bu listedeki IP'ler Zapret2 işleminden **muaf** tutulur. IPTV kutuları gibi Za
 
 **Çift yönlü çakışma koruması:** Bir IP No Zapret2 listesine eklendiğinde otomatik olarak `zapret2_clients` listesinden çıkarılır ve tersi de geçerlidir.
 
+**Her iki modda da geçerlidir.** Muafiyet hem **Seçili IP** hem **Tüm Ağ** modunda çalışır; listeye eklenen cihaz her iki yönde (giden ve gelen trafik) DPI işleminden muaf tutulur. Ekleme ve çıkarma işlemi anında etkili olur, yeniden başlatma gerekmez.
+
 ---
 
 ### VPN Sunucu Subneti Ekle
@@ -503,6 +505,8 @@ Sistem ve ağ sağlığını kapsamlı şekilde analiz eder.
 
 ✔ Kontrol Çalıştır  
 ✔ OPKG Listesini Yenile  
+✔ Keenetic DNS Yönetimi (DoT/DoH)  
+✔ Bileşen Kontrolü  
 
 ### Kontroller:
 
@@ -529,8 +533,46 @@ Sistem ve ağ sağlığını kapsamlı şekilde analiz eder.
 ✔ OPKG paket durumu  
 ✔ Zapret2 çalışma durumu  
 ✔ KeenDNS durumu ve erişilebilirlik  
+✔ Entware SSH (dropbear) durumu ve portu  
+✔ Keenetic SSH durumu ve portu  
 
 👉 Bir şey çalışmıyorsa ilk buraya bak.
+
+---
+
+## Keenetic DNS Yönetimi (DoT/DoH)
+
+Bu bölüm router'ın **kendi** DNS yapılandırmasını yönetir (Keenetic arayüzündeki İnternet Güvenliği ayarları). KZM2'nin ayrı bir DNS servisi yoktur.
+
+### Alt Menü:
+
+✔ Hazır Paket Ekle — Google / Cloudflare / CF Families gibi hazır DoT+DoH setleri  
+✔ Manuel Ekle — IP + SNI (DoT) veya DoH URL  
+✔ Sunucu Sil  
+✔ Tümünü Temizle  
+✔ Rebind Koruma (aç/kapat)  
+✔ Yapılandırmayı Yedekle  
+✔ Yapılandırmayı Geri Yükle  
+
+### Yapılandırma Yedekleme
+
+Router'ın o anki DNS yapılandırmasını tek adımda kaydeder ve daha sonra aynı hâline döndürür. Deneme yaparken sunucuları silenler, adresleri tek tek yeniden girmek zorunda kalmaz.
+
+**Yedeğin kapsamı:**
+- DoT ve DoH sunucuları
+- Düz DNS adresleri
+- Filtreleme ayarları ve yeniden bağlanma koruması
+- VPN arayüzlerine atanmış DNS kayıtları
+
+Hazır paketlerle elle eklenmiş adresler arasında ayrım yapılmaz; yapılandırmada ne varsa yedeklenir.
+
+**Geri yükleme sırasında:** mevcut DNS sunucuları kaldırılır ve yedekteki hâl uygulanır, ardından yapılandırma kalıcı olarak kaydedilir. VPN arayüzlerine atanmış kayıtlara dokunulmaz, böylece VPN bağlantıları etkilenmez.
+
+Menüde geri yükleme satırının yanında son yedeğin tarihi ve kapsadığı kayıt sayısı gösterilir — yedeğin yanlışlıkla üzerine yazılması bu sayede önlenir.
+
+⚠️ Geri yükleme, yedek alındıktan **sonra** eklenen DNS sunucularını kaldırır.
+
+👉 Yedek dosyası genel yedeklemeye (Menü 8) dâhildir, ayrıca saklamaya gerek yoktur.
 
 ---
 
