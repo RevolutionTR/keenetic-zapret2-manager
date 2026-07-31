@@ -10,7 +10,7 @@
 <br>
 <br>
 [![Sıfırdan Tam Kurulum](https://img.shields.io/badge/Sıfırdan%20Tam%20Kurulum-Anlatım-success?style=for-the-badge)](https://github.com/RevolutionTR/keenetic-zapret2-manager/blob/main/docs/sifirdan_kurulum_anlatimi.md)
-[![User Guide](https://img.shields.io/badge/Kullanim-Menu_Kilavuzu-blue?style=for-the-badge)](https://github.com/RevolutionTR/keenetic-zapret2-manager/blob/main/docs/kullanim_klavuzu.md)
+[![User Guide](https://img.shields.io/badge/Kullanim-Menu_Kilavuzu-blue?style=for-the-badge)](https://github.com/RevolutionTR/keenetic-zapret2-manager/blob/main/docs/kullanim_kilavuzu.md)
 [![Telegram](https://img.shields.io/badge/Telegram-Kurulum-2CA5E0?style=for-the-badge)](https://github.com/RevolutionTR/keenetic-zapret2-manager/blob/main/docs/telegram.md)
 <br>
 [![Platform](https://img.shields.io/badge/Platform-Keenetic-1f6feb?style=for-the-badge)](https://keenetic.com.tr) [![Platform](https://img.shields.io/badge/Platform-Entware-orange?style=for-the-badge)](https://entware.net)
