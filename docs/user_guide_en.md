@@ -456,6 +456,8 @@ IPs on this list are **exempt** from Zapret2 processing. Ideal for devices that 
 
 **Two-way conflict protection:** When an IP is added to the No Zapret2 list, it is automatically removed from `zapret2_clients`, and vice versa.
 
+**Applies in both modes.** The exemption works in **Selected IP** and **Whole Network** mode alike; a device on the list is exempt from DPI processing in both directions (outgoing and incoming traffic). Adding or removing a device takes effect immediately, with no restart required.
+
 ---
 
 ### Add VPN Server Subnet
@@ -507,6 +509,8 @@ Performs a comprehensive analysis of system and network health.
 
 ✔ Run Diagnostics  
 ✔ Refresh OPKG Package List  
+✔ Keenetic DNS Management (DoT/DoH)  
+✔ Component Check  
 
 ### Checks:
 
@@ -533,8 +537,46 @@ Performs a comprehensive analysis of system and network health.
 ✔ OPKG package status  
 ✔ Zapret2 running state  
 ✔ KeenDNS status and reachability  
+✔ Entware SSH (dropbear) status and port  
+✔ Keenetic SSH status and port  
 
 👉 If something isn't working, check here first.
+
+---
+
+## Keenetic DNS Management (DoT/DoH)
+
+This section manages the router's **own** DNS configuration (the Internet Safety settings in the Keenetic interface). KZM2 does not run a separate DNS service.
+
+### Sub-menu:
+
+✔ Add Preset Package — ready-made DoT+DoH sets such as Google / Cloudflare / CF Families  
+✔ Add Manually — IP + SNI (DoT) or a DoH URL  
+✔ Delete Server  
+✔ Delete All  
+✔ Rebind Protection (on/off)  
+✔ Backup Configuration  
+✔ Restore Configuration  
+
+### Configuration Backup
+
+Saves the router's current DNS configuration in one step and restores it later. Users who delete servers while testing no longer have to re-enter addresses one by one.
+
+**What the backup covers:**
+- DoT and DoH servers
+- Plain DNS addresses
+- Filtering settings and rebind protection
+- DNS entries assigned to VPN interfaces
+
+No distinction is made between preset packages and manually added addresses; whatever is present in the configuration gets backed up.
+
+**During a restore:** current DNS servers are removed and the state from the backup is applied, after which the configuration is saved permanently. Entries assigned to VPN interfaces are left untouched, so VPN connections stay unaffected.
+
+The restore menu entry shows the date of the last backup and how many records it covers, which prevents an accidental overwrite.
+
+⚠️ Restoring removes DNS servers that were added **after** the backup was taken.
+
+👉 The backup file is included in the general backup (Menu 8), so no separate storage is needed.
 
 ---
 
