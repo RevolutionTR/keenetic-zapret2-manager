@@ -37,7 +37,7 @@
 # -------------------------------------------------------------------
 SCRIPT_NAME="keenetic_zapret2_manager.sh"
 # Version scheme: vYY.M.D[.N]  (YY=year, M=month, D=day, N=daily revision)
-SCRIPT_VERSION="v26.8.1"
+SCRIPT_VERSION="v26.8.1.1"
 SCRIPT_REPO="https://github.com/RevolutionTR/keenetic-zapret2-manager"
 KZM2_SCRIPT_PATH="/opt/lib/opkg/keenetic_zapret2_manager.sh"
 SCRIPT_AUTHOR="RevolutionTR"
@@ -8951,6 +8951,12 @@ run_health_check() {
         [ -z "$kdns_port" ] && kdns_port="443"
         [ "$kdns_port" = "443" ] && kdns_proto="https" || kdns_proto="http"
         kdns_http_code="$(curl -sk --max-time 5 -o /dev/null -w "%{http_code}"             "${kdns_proto}://${kdns_fqdn}:${kdns_port}" 2>/dev/null)"
+        # AAAA kaydi varsa curl once IPv6 dener; IPv6 calismiyorsa zaman asimina
+        # dusup IPv4'u HIC denemez ve yanlis FAIL uretir. Basarisizsa IPv4 ile tekrar dene.
+        case "$kdns_http_code" in
+            2*|3*|401|403) ;;
+            *) kdns_http_code="$(curl -4 -sk --max-time 5 -o /dev/null -w "%{http_code}" "${kdns_proto}://${kdns_fqdn}:${kdns_port}" 2>/dev/null)" ;;
+        esac
         case "$kdns_http_code" in
             2*|3*|401|403) kdns_reach="yes" ;;
             *)             kdns_reach="no"  ;;
@@ -13464,6 +13470,12 @@ healthmon_loop() {
                 [ -z "$kdns_port2" ] && kdns_port2="443"
                 [ "$kdns_port2" = "443" ] && kdns_proto2="https" || kdns_proto2="http"
                 kdns_http2="$(curl -sk --max-time 5 -o /dev/null -w "%{http_code}" "${kdns_proto2}://${kdns_fqdn}:${kdns_port2}" 2>/dev/null)"
+            # AAAA kaydi varsa curl once IPv6 dener; IPv6 calismiyorsa zaman asimina
+            # dusup IPv4'u HIC denemez ve yanlis alarm uretir. Basarisizsa IPv4 ile tekrar dene.
+            case "$kdns_http2" in
+                2*|3*|401|403) ;;
+                *) kdns_http2="$(curl -4 -sk --max-time 5 -o /dev/null -w "%{http_code}" "${kdns_proto2}://${kdns_fqdn}:${kdns_port2}" 2>/dev/null)" ;;
+            esac
                 case "$kdns_http2" in
                     2*|3*|401|403) kdns_reach2="yes" ;;
                     *)             kdns_reach2="no"  ;;
