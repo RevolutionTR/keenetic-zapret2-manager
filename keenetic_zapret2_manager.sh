@@ -37,7 +37,7 @@
 # -------------------------------------------------------------------
 SCRIPT_NAME="keenetic_zapret2_manager.sh"
 # Version scheme: vYY.M.D[.N]  (YY=year, M=month, D=day, N=daily revision)
-SCRIPT_VERSION="v26.7.30"
+SCRIPT_VERSION="v26.8.1"
 SCRIPT_REPO="https://github.com/RevolutionTR/keenetic-zapret2-manager"
 KZM2_SCRIPT_PATH="/opt/lib/opkg/keenetic_zapret2_manager.sh"
 SCRIPT_AUTHOR="RevolutionTR"
@@ -1986,8 +1986,10 @@ TXT_MENU14_DNS_SAVED_TR="DNS yapilandirmasi kaydedildi."
 TXT_MENU14_DNS_SAVED_EN="DNS configuration saved."
 TXT_MENU14_DNS_REBIND_TR="Rebind korumasi"
 TXT_MENU14_DNS_REBIND_EN="Rebind protection"
-TXT_DNS_MGMT_TITLE_TR="DNS Yonetimi (DoT/DoH)"
-TXT_DNS_MGMT_TITLE_EN="DNS Management (DoT/DoH)"
+TXT_DNS_MGMT_TITLE_TR="Keenetic DNS Yonetimi (DoT/DoH)"
+TXT_DNS_MGMT_TITLE_EN="Keenetic DNS Management (DoT/DoH)"
+TXT_DNS_MGMT_DESC_TR="Bu ayarlar routerin kendi DNS yapilandirmasidir (Internet Guvenligi)."
+TXT_DNS_MGMT_DESC_EN="These settings belong to the router's own DNS configuration (Internet Safety)."
 TXT_DNS_MGMT_CURRENT_TR="Mevcut Sunucular"
 TXT_DNS_MGMT_CURRENT_EN="Current Servers"
 TXT_DNS_GRP_FILTRESIZ_TR="Filtresiz"
@@ -2028,6 +2030,26 @@ TXT_DNS_MGMT_OPT4_TR="Tumunu Temizle"
 TXT_DNS_MGMT_OPT4_EN="Delete All"
 TXT_DNS_MGMT_OPT5_TR="Rebind Koruma"
 TXT_DNS_MGMT_OPT5_EN="Rebind Protection"
+TXT_DNS_MGMT_OPT6_TR="Yapilandirmayi Yedekle"
+TXT_DNS_MGMT_OPT6_EN="Backup Configuration"
+TXT_DNS_MGMT_OPT7_TR="Yapilandirmayi Geri Yukle"
+TXT_DNS_MGMT_OPT7_EN="Restore Configuration"
+TXT_DNS_BACKUP_OK_TR="DNS yedegi alindi (%N% satir)."
+TXT_DNS_BACKUP_OK_EN="DNS backup saved (%N% lines)."
+TXT_DNS_BACKUP_EMPTY_TR="Yedeklenecek DNS ayari bulunamadi."
+TXT_DNS_BACKUP_EMPTY_EN="No DNS settings found to back up."
+TXT_DNS_BACKUP_NONE_TR="Yedek dosyasi yok. Once yedek alin."
+TXT_DNS_BACKUP_NONE_EN="No backup file. Create a backup first."
+TXT_DNS_BACKUP_LINES_TR="%N% satir"
+TXT_DNS_BACKUP_LINES_EN="%N% lines"
+TXT_DNS_BACKUP_NOFILE_TR="yedek yok"
+TXT_DNS_BACKUP_NOFILE_EN="no backup"
+TXT_DNS_RESTORE_PREVIEW_TR="Yedekteki DNS ayarlari:"
+TXT_DNS_RESTORE_PREVIEW_EN="DNS settings in backup:"
+TXT_DNS_RESTORE_CONFIRM_TR="Mevcut DNS sunuculari kaldirilip yedekteki %N% satir uygulanacak. Devam? (e/h):"
+TXT_DNS_RESTORE_CONFIRM_EN="Current DNS servers will be removed and %N% lines from backup applied. Continue? (y/n):"
+TXT_DNS_RESTORE_OK_TR="DNS ayarlari geri yuklendi (%N% satir)."
+TXT_DNS_RESTORE_OK_EN="DNS settings restored (%N% lines)."
 TXT_DNS_MGMT_MANUAL_TITLE_TR="Manuel DNS Sunucusu Ekle"
 TXT_DNS_MGMT_MANUAL_TITLE_EN="Add DNS Server Manually"
 TXT_DNS_MGMT_MANUAL_IP_TR="IP adresi girin:"
@@ -3353,7 +3375,11 @@ check_keenetic_ssh() {
     _ks_status="INFO"
     _ks_port=""
     _ks_pids="$(pgrep -f '/usr/sbin/dropbear' 2>/dev/null)"
-    [ -n "$_ks_pids" ] || return 0
+    if [ -z "$_ks_pids" ]; then
+        # Surec yok. Ikili duruyorsa bilesen kurulu ama servis kapali demektir.
+        [ -x /usr/sbin/dropbear ] && _ks_status="OFF"
+        return 0
+    fi
     for _ks_p in $_ks_pids; do
         _ks_port="$(netstat -tlnp 2>/dev/null | grep -E "[[:space:]]${_ks_p}/" | awk '{print $4}' | sed 's/.*://' | head -n1)"
         if [ -n "$_ks_port" ]; then
@@ -7536,6 +7562,9 @@ display_menu() {
     if [ "$_ks_status" = "PASS" ]; then
         printf "  %b%-*s%b : %b%s%b\n" "${CLR_BOLD}" "$_lw" "$(T TXT_HEALTH_KEENETIC_SSH)" \
             "${CLR_RESET}" "${CLR_GREEN}" "$(T _ 'CALISIYOR' 'RUNNING') (port ${_ks_port})" "${CLR_RESET}"
+    elif [ "$_ks_status" = "OFF" ]; then
+        printf "  %b%-*s%b : %b%s%b\n" "${CLR_BOLD}" "$_lw" "$(T TXT_HEALTH_KEENETIC_SSH)" \
+            "${CLR_RESET}" "${CLR_DIM}" "$(T _ 'Kurulu, servis kapali' 'Installed, service off')" "${CLR_RESET}"
     fi
     # ISP DNS kontrolu
     _isp_dns="$(LD_LIBRARY_PATH= ndmc -c 'show ip name-server' 2>/dev/null | awk '/address:/{print $2}' | tr '\n' ' ' | sed 's/ $//;s/ / - /g')"
@@ -8090,9 +8119,121 @@ dns_rebind_toggle() {
     press_enter_to_continue
 }
 # Ana DNS yonetim menusu
+dns_backup_file() {
+    printf '%s' "/opt/zapret2/dns_backup.txt"
+}
+
+# Menude gosterilecek kisa yedek bilgisi: "2026-07-30 19:45, 25 satir" veya bos
+dns_backup_info() {
+    local _f _ts _n
+    _f="$(dns_backup_file)"
+    [ -s "$_f" ] || return 0
+    _ts="$(head -n1 "$_f" 2>/dev/null | sed -n 's/^# KZM2 DNS //p')"
+    _n="$(grep -cv '^#' "$_f" 2>/dev/null | tr -d '[:space:]')"
+    [ -z "$_n" ] && _n="0"
+    if [ -n "$_ts" ]; then
+        printf '%s, %s' "$_ts" "$(tpl_render "$(T TXT_DNS_BACKUP_LINES)" N "$_n")"
+    else
+        tpl_render "$(T TXT_DNS_BACKUP_LINES)" N "$_n"
+    fi
+}
+
+# running-config icindeki "dns-proxy" blogunu (dns-proxy satirindan "!" satirina
+# kadar) okur. Satirlar blok icinde onek olmadan durur; calistirilabilir komut
+# haline getirmek icin basina "dns-proxy " eklenir.
+dns_dump_section() {
+    LD_LIBRARY_PATH= ndmc -c 'show running-config' 2>/dev/null | \
+        awk '/^dns-proxy[[:space:]]*$/{f=1;next} f&&/^!/{f=0;next} f{sub(/^[[:space:]]+/,"");if(length($0))print "dns-proxy "$0}
+             /^ip name-server /{print} /^ipv6 name-server /{print}'
+}
+
+dns_backup_save() {
+    local _f _n
+    _f="$(dns_backup_file)"
+    echo ""
+    dns_dump_section > "${_f}.tmp" 2>/dev/null
+    _n="$(wc -l < "${_f}.tmp" 2>/dev/null | tr -d '[:space:]')"
+    # Tarih dosyanin ICINE yazilir: dosya kopyalansa da yedek tarihi korunur
+    if [ -n "$_n" ] && [ "$_n" -gt 0 ] 2>/dev/null; then
+        { printf '# KZM2 DNS %s\n' "$(date '+%Y-%m-%d %H:%M' 2>/dev/null)"; cat "${_f}.tmp"; } > "${_f}.tmp2" 2>/dev/null
+        mv "${_f}.tmp2" "${_f}.tmp" 2>/dev/null
+    fi
+    if [ -z "$_n" ] || [ "$_n" -eq 0 ] 2>/dev/null; then
+        rm -f "${_f}.tmp" 2>/dev/null
+        print_status WARN "$(T TXT_DNS_BACKUP_EMPTY)"
+        press_enter_to_continue
+        return 0
+    fi
+    mv "${_f}.tmp" "$_f" 2>/dev/null
+    chmod 600 "$_f" 2>/dev/null
+    print_status PASS "$(tpl_render "$(T TXT_DNS_BACKUP_OK)" N "$_n")"
+    printf " %b%s%b\n" "${CLR_DIM}" "$_f" "${CLR_RESET}"
+    press_enter_to_continue
+    return 0
+}
+
+dns_backup_restore() {
+    local _f _line _ans _n _arg _pfx
+    _f="$(dns_backup_file)"
+    echo ""
+    if [ ! -s "$_f" ]; then
+        print_status WARN "$(T TXT_DNS_BACKUP_NONE)"
+        press_enter_to_continue
+        return 0
+    fi
+    _n="$(grep -cv '^#' "$_f" 2>/dev/null | tr -d '[:space:]')"
+    printf " %b%s%b\n" "${CLR_BOLD}" "$(T TXT_DNS_RESTORE_PREVIEW)" "${CLR_RESET}"
+    while IFS= read -r _line; do
+        case "$_line" in ""|\#*) continue ;; esac
+        printf "   %s\n" "${_line#dns-proxy }"
+    done < "$_f"
+    echo ""
+    printf '%b%s%b ' "${CLR_ORANGE}" "$(tpl_render "$(T TXT_DNS_RESTORE_CONFIRM)" N "$_n")" "${CLR_RESET}"
+    read -r _ans </dev/tty
+    case "$_ans" in
+        e|E|y|Y) ;;
+        *) echo "$(T _ 'Iptal edildi.' 'Cancelled.')"; press_enter_to_continue; return 0 ;;
+    esac
+    # Mevcut upstream sunucularini kaldir. Yalnizca silme sozdizimi kesin bilinen
+    # iki tur temizlenir (tls/https upstream). Diger satirlar (filter, rebind-protect,
+    # route) yeniden yazildiginda uzerine gectigi icin silinmez.
+    dns_dump_section | while IFS= read -r _line; do
+        case "$_line" in
+            "dns-proxy tls upstream "*)
+                _arg="$(printf '%s' "$_line" | awk '{print $4}')"
+                [ -n "$_arg" ] && LD_LIBRARY_PATH= ndmc -c "no dns-proxy tls upstream $_arg" >/dev/null 2>&1
+                ;;
+            "dns-proxy https upstream "*)
+                _arg="$(printf '%s' "$_line" | awk '{print $4}')"
+                [ -n "$_arg" ] && LD_LIBRARY_PATH= ndmc -c "no dns-proxy https upstream $_arg" >/dev/null 2>&1
+                ;;
+            "ip name-server "*|"ipv6 name-server "*)
+                # Arayuze bagli kayitlar (… "" on <iface>) VPN yapilandirmasina aittir,
+                # SILINMEZ; yalnizca duz kayitlar temizlenir.
+                case "$_line" in *" on "*) ;; *)
+                    _arg="$(printf '%s' "$_line" | awk '{print $3}')"
+                    _pfx="$(printf '%s' "$_line" | awk '{print $1}')"
+                    [ -n "$_arg" ] && LD_LIBRARY_PATH= ndmc -c "no ${_pfx} name-server $_arg" >/dev/null 2>&1
+                    ;;
+                esac
+                ;;
+        esac
+    done
+    # Yedekteki satirlari sirayla uygula
+    while IFS= read -r _line; do
+        [ -n "$_line" ] || continue
+        case "$_line" in \#*) continue ;; esac
+        LD_LIBRARY_PATH= ndmc -c "$_line" >/dev/null 2>&1
+    done < "$_f"
+    LD_LIBRARY_PATH= ndmc -c "system configuration save" >/dev/null 2>&1
+    print_status PASS "$(tpl_render "$(T TXT_DNS_RESTORE_OK)" N "$_n")"
+    press_enter_to_continue
+    return 0
+}
+
 dns_management_menu() {
     while true; do
-        local _raw _rc _rebind_st
+        local _raw _rc _rebind_st _dns_bi
         _raw="$(LD_LIBRARY_PATH= ndmc -c 'show dns-proxy' 2>/dev/null)"
         _rc="$(LD_LIBRARY_PATH= ndmc -c 'show running-config' 2>/dev/null)"
         if echo "$_raw" | grep -q "norebind_ctl = on" && ! echo "$_rc" | grep -q "no rebind-protect"; then
@@ -8103,6 +8244,7 @@ dns_management_menu() {
         clear
         print_line "="
         printf " %b%s%b\n" "${CLR_CYAN}" "$(T TXT_DNS_MGMT_TITLE)" "${CLR_RESET}"
+    printf " %b%s%b\n" "${CLR_DIM}" "$(T TXT_DNS_MGMT_DESC)" "${CLR_RESET}"
         dns_show_current "$_raw"
         echo ""
         printf " %b 1.%b $(T TXT_DNS_MGMT_OPT1) %b[Google / Cloudflare / CF Families]%b\n" "${CLR_BOLD}" "${CLR_RESET}" "${CLR_DIM}" "${CLR_RESET}"
@@ -8110,6 +8252,13 @@ dns_management_menu() {
         printf " %b 3.%b $(T TXT_DNS_MGMT_OPT3)\n" "${CLR_BOLD}" "${CLR_RESET}"
         printf " %b 4.%b $(T TXT_DNS_MGMT_OPT4)\n" "${CLR_BOLD}" "${CLR_RESET}"
         printf " %b 5.%b $(T TXT_DNS_MGMT_OPT5) [%b]%b\n" "${CLR_BOLD}" "${CLR_RESET}" "$_rebind_st" "${CLR_RESET}"
+        printf " %b 6.%b $(T TXT_DNS_MGMT_OPT6)\n" "${CLR_BOLD}" "${CLR_RESET}"
+        _dns_bi="$(dns_backup_info)"
+        if [ -n "$_dns_bi" ]; then
+            printf " %b 7.%b $(T TXT_DNS_MGMT_OPT7) %b(%s)%b\n" "${CLR_BOLD}" "${CLR_RESET}" "${CLR_DIM}" "$_dns_bi" "${CLR_RESET}"
+        else
+            printf " %b 7.%b $(T TXT_DNS_MGMT_OPT7) %b(%s)%b\n" "${CLR_BOLD}" "${CLR_RESET}" "${CLR_DIM}" "$(T TXT_DNS_BACKUP_NOFILE)" "${CLR_RESET}"
+        fi
         printf " %b 0.%b $(T _ 'Geri' 'Back')\n" "${CLR_BOLD}" "${CLR_RESET}"
         echo ""
         printf " %b%s%b\n" "${CLR_ORANGE}" "$(T TXT_MENU14_DNS_VPN_WARN)" "${CLR_RESET}"
@@ -8122,6 +8271,8 @@ dns_management_menu() {
             3) dns_delete_menu ;;
             4) dns_delete_all ;;
             5) dns_rebind_toggle ;;
+            6) dns_backup_save ;;
+            7) dns_backup_restore ;;
             0) return 0 ;;
         esac
     done
@@ -8646,8 +8797,10 @@ run_health_check() {
     if [ "$_ks_status" = "PASS" ]; then
         keenssh_ok="PASS"
         keenssh_msg="$(T _ 'Calisiyor' 'Running') (port ${_ks_port})"
+    elif [ "$_ks_status" = "OFF" ]; then
+        keenssh_msg="$(T _ 'Kurulu, servis kapali' 'Installed, service off')"
     else
-        keenssh_msg="$(T _ 'Kapali veya kurulu degil' 'Disabled or not installed')"
+        keenssh_msg="$(T _ 'Kurulu degil' 'Not installed')"
     fi
     # curl
     local curl_ok="PASS" curl_msg
@@ -9782,6 +9935,7 @@ backup_zapret_settings() {
     add_rel "/opt/zapret2/dpi_profile_params"
     add_rel "/opt/zapret2/blockcheck_auto_params"
     add_rel "/opt/zapret2/blockcheck_result.json"
+    add_rel "/opt/zapret2/dns_backup.txt"
     add_rel "/opt/zapret2/dpi_profiles"
     add_rel "/opt/etc/healthmon.conf"
     add_rel "/opt/etc/telegram.conf"
@@ -14055,8 +14209,10 @@ DEOF
             check_keenetic_ssh
             if [ "$_ks_status" = "PASS" ]; then
                 _add "svc" "$(T TXT_HEALTH_KEENETIC_SSH)" "$(T _ 'Calisiyor' 'Running') (port ${_ks_port})" "PASS"
+            elif [ "$_ks_status" = "OFF" ]; then
+                _add "svc" "$(T TXT_HEALTH_KEENETIC_SSH)" "$(T _ 'Kurulu, servis kapali' 'Installed, service off')" "INFO"
             else
-                _add "svc" "$(T TXT_HEALTH_KEENETIC_SSH)" "$(T _ 'Kapali veya kurulu degil' 'Disabled or not installed')" "INFO"
+                _add "svc" "$(T TXT_HEALTH_KEENETIC_SSH)" "$(T _ 'Kurulu degil' 'Not installed')" "INFO"
             fi
             # curl
             if command -v curl >/dev/null 2>&1; then
@@ -18383,7 +18539,7 @@ var V={
     },100);
     return h;
   }},
-  dns:{title:'DNS Y&#246;netimi',titleEn:'DNS Management',sub:'DoT/DoH sunucu y&#246;netimi.',subEn:'DoT/DoH server management.',html:function(){
+  dns:{title:'Keenetic DNS Y&#246;netimi',titleEn:'Keenetic DNS Management',sub:'DoT/DoH sunucu y&#246;netimi.',subEn:'DoT/DoH server management.',html:function(){
     var h='<div class="grid">';
     h+='<div class="security-note" style="margin-bottom:8px;grid-column:1/-1"><b>&#9888; </b>'+(L?'If you use a VPN, assign a dedicated DNS to your VPN interface to prevent DNS leaks.':'VPN kullan&#305;yorsan&#305;z DNS s&#305;z&#305;nt&#305;s&#305;n&#305; &#246;nlemek i&#231;in VPN aray&#252;z&#252;n&#252;ze &#246;zel DNS atay&#305;n&#305;z.')+'</div>';
     // Mevcut sunucular
@@ -18456,7 +18612,7 @@ var V={
   docs:{title:'Belgeler',titleEn:'Documentation',sub:'KZM2 kullan&#305;m k&#305;lavuzlar&#305;.',subEn:'KZM2 user guides.',noPrefix:true,html:function(){
     setTimeout(function(){docsInit();},100);
     var docList=[
-      {key:'guide_tr',   label:'Kullan&#305;m K&#305;lavuzu',    file:'kullanim_klavuzu.md',           lang:'tr'},
+      {key:'guide_tr',   label:'Kullan&#305;m K&#305;lavuzu',    file:'kullanim_kilavuzu.md',           lang:'tr'},
       {key:'guide_en',   label:'User Guide',               file:'user_guide_en.md',               lang:'en'},
       {key:'install_tr', label:'S&#305;f&#305;rdan Kurulum',     file:'sifirdan_kurulum_anlatimi.md',   lang:'tr'},
       {key:'install_en', label:'Installation Guide',       file:'installation_guide_en.md',        lang:'en'},
@@ -18747,7 +18903,7 @@ function syncLang(){
   if(langBadge)langBadge.innerHTML=L?'<img src="data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjQiIGhlaWdodD0iMjQiIHZpZXdCb3g9IjAgMCAzNiAzNiIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cGF0aCBmaWxsPSIjMDAyNDdEIiBkPSJNMCA5LjA1OVYxM2g1LjYyOHpNNC42NjQgMzFIMTN2LTUuODM3ek0yMyAyNS4xNjRWMzFoOC4zMzV6TTAgMjN2My45NDFMNS42MyAyM3pNMzEuMzM3IDVIMjN2NS44Mzd6TTM2IDI2Ljk0MlYyM2gtNS42MzF6TTM2IDEzVjkuMDU5TDMwLjM3MSAxM3pNMTMgNUg0LjY2NEwxMyAxMC44Mzd6Ii8+PHBhdGggZmlsbD0iI0NGMUIyQiIgZD0iTTI1LjE0IDIzbDkuNzEyIDYuODAxYTMuOTc3IDMuOTc3IDAgMCAwIC45OS0xLjc0OUwyOC42MjcgMjNIMjUuMTR6TTEzIDIzaC0yLjE0MWwtOS43MTEgNi44Yy41MjEuNTMgMS4xODkuOTA5IDEuOTM4IDEuMDg1TDEzIDIzLjk0M1YyM3ptMTAtMTBoMi4xNDFsOS43MTEtNi44YTMuOTg4IDMuOTg4IDAgMCAwLTEuOTM3LTEuMDg1TDIzIDEyLjA1N1YxM3ptLTEyLjE0MSAwTDEuMTQ4IDYuMmEzLjk5NCAzLjk5NCAwIDAgMC0uOTkxIDEuNzQ5TDcuMzcyIDEzaDMuNDg3eiIvPjxwYXRoIGZpbGw9IiNFRUUiIGQ9Ik0zNiAyMUgyMXYxMGgydi01LjgzNkwzMS4zMzUgMzFIMzJhMy45OSAzLjk5IDAgMCAwIDIuODUyLTEuMTk5TDI1LjE0IDIzaDMuNDg3bDcuMjE1IDUuMDUyYy4wOTMtLjMzNy4xNTgtLjY4Ni4xNTgtMS4wNTJ2LS4wNThMMzAuMzY5IDIzSDM2di0yek0wIDIxdjJoNS42M0wwIDI2Ljk0MVYyN2MwIDEuMDkxLjQzOSAyLjA3OCAxLjE0OCAyLjhsOS43MTEtNi44SDEzdi45NDNsLTkuOTE0IDYuOTQxYy4yOTQuMDcuNTk4LjExNi45MTQuMTE2aC42NjRMMTMgMjUuMTYzVjMxaDJWMjFIMHpNMzYgOWEzLjk4MyAzLjk4MyAwIDAgMC0xLjE0OC0yLjhMMjUuMTQxIDEzSDIzdi0uOTQzbDkuOTE1LTYuOTQyQTQuMDAxIDQuMDAxIDAgMCAwIDMyIDVoLS42NjNMMjMgMTAuODM3VjVoLTJ2MTBoMTV2LTJoLTUuNjI5TDM2IDkuMDU5Vjl6TTEzIDV2NS44MzdMNC42NjQgNUg0YTMuOTg1IDMuOTg1IDAgMCAwLTIuODUyIDEuMmw5LjcxMSA2LjhINy4zNzJMLjE1NyA3Ljk0OUEzLjk2OCAzLjk2OCAwIDAgMCAwIDl2LjA1OUw1LjYyOCAxM0gwdjJoMTVWNWgtMnoiLz48cGF0aCBmaWxsPSIjQ0YxQjJCIiBkPSJNMjEgMTVWNWgtNnYxMEgwdjZoMTV2MTBoNlYyMWgxNXYtNnoiLz48L3N2Zz4=" width="24" height="24" style="vertical-align:middle"> EN':'<img src="data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjQiIGhlaWdodD0iMjQiIHZpZXdCb3g9IjAgMCAzNiAzNiIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIiB4bWxuczp4bGluaz0iaHR0cDovL3d3dy53My5vcmcvMTk5OS94bGluayI+PHBhdGggZmlsbD0iI0UzMDkxNyIgZD0iTTM2IDI3YTQgNCAwIDAgMS00IDRINGE0IDQgMCAwIDEtNC00VjlhNCA0IDAgMCAxIDQtNGgyOGE0IDQgMCAwIDEgNCA0djE4eiIvPjxwYXRoIGZpbGw9IiNFRUUiIGQ9Ik0xNiAyNGE2IDYgMCAxIDEgMC0xMmMxLjMxIDAgMi41Mi40MjUgMy41MDcgMS4xMzhBNy4zMzIgNy4zMzIgMCAwIDAgMTQgMTAuNjQ3QTcuMzUzIDcuMzUzIDAgMCAwIDYuNjQ3IDE4QTcuMzUzIDcuMzUzIDAgMCAwIDE0IDI1LjM1NGMyLjE5NSAwIDQuMTYtLjk2NyA1LjUwNy0yLjQ5MkE1Ljk2MyA1Ljk2MyAwIDAgMSAxNiAyNHptMy45MTMtNS43N2wyLjQ0LjU2MmwuMjIgMi40OTNsMS4yODgtMi4xNDZsMi40NC41NjFsLTEuNjQ0LTEuODg4bDEuMjg3LTIuMTQ3bC0yLjMwMy45OGwtMS42NDQtMS44ODlsLjIyIDIuNDk0eiIvPjwvc3ZnPg==" width="24" height="24" style="vertical-align:middle"> TR';
 }
 function fixTR(s){if(!s)return s;
-  return s.replace(/Calisiyor/g,'&#199;al&#305;&#351;&#305;yor').replace(/Calismiyor/g,'&#199;al&#305;&#351;m&#305;yor').replace(/calisiyor/g,'&#231;al&#305;&#351;&#305;yor').replace(/calismiyor/g,'&#231;al&#305;&#351;m&#305;yor')
+  return s.replace(/Calisiyor/g,'&#199;al&#305;&#351;&#305;yor').replace(/Calismiyor/g,'&#199;al&#305;&#351;m&#305;yor').replace(/calisiyor/g,'&#231;al&#305;&#351;&#305;yor').replace(/calismiyor/g,'&#231;al&#305;&#351;m&#305;yor').replace(/\bkapali\b/g,'kapal&#305;')
           .replace(/Durdurulmus/g,'Durdurulmu&#351;').replace(/durduruldu/g,'durduruldu')
           .replace(/Dogrulandi/g,'Do&#287;ruland&#305;').replace(/Farkli/g,'Farkl&#305;')
           .replace(/Varsayilan/g,'Varsay&#305;lan').replace(/butunlugu/g,'b&#252;t&#252;nl&#252;&#287;&#252;')
