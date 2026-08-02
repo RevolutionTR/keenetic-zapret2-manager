@@ -37,7 +37,7 @@
 # -------------------------------------------------------------------
 SCRIPT_NAME="keenetic_zapret2_manager.sh"
 # Version scheme: vYY.M.D[.N]  (YY=year, M=month, D=day, N=daily revision)
-SCRIPT_VERSION="v26.8.1.1"
+SCRIPT_VERSION="v26.8.2"
 SCRIPT_REPO="https://github.com/RevolutionTR/keenetic-zapret2-manager"
 KZM2_SCRIPT_PATH="/opt/lib/opkg/keenetic_zapret2_manager.sh"
 SCRIPT_AUTHOR="RevolutionTR"
@@ -2040,8 +2040,10 @@ TXT_DNS_BACKUP_EMPTY_TR="Yedeklenecek DNS ayari bulunamadi."
 TXT_DNS_BACKUP_EMPTY_EN="No DNS settings found to back up."
 TXT_DNS_BACKUP_NONE_TR="Yedek dosyasi yok. Once yedek alin."
 TXT_DNS_BACKUP_NONE_EN="No backup file. Create a backup first."
-TXT_DNS_BACKUP_LINES_TR="%N% satir"
-TXT_DNS_BACKUP_LINES_EN="%N% lines"
+TXT_DNS_BACKUP_COUNT_TR="%S% sunucu + %C% ayar"
+TXT_DNS_BACKUP_COUNT_EN="%S% servers + %C% settings"
+TXT_DNS_BACKUP_COUNT_SRV_TR="%S% sunucu"
+TXT_DNS_BACKUP_COUNT_SRV_EN="%S% servers"
 TXT_DNS_BACKUP_NOFILE_TR="yedek yok"
 TXT_DNS_BACKUP_NOFILE_EN="no backup"
 TXT_DNS_RESTORE_PREVIEW_TR="Yedekteki DNS ayarlari:"
@@ -8125,16 +8127,28 @@ dns_backup_file() {
 
 # Menude gosterilecek kisa yedek bilgisi: "2026-07-30 19:45, 25 satir" veya bos
 dns_backup_info() {
-    local _f _ts _n
+    local _f _ts _srv _cfg _tot _txt
     _f="$(dns_backup_file)"
     [ -s "$_f" ] || return 0
     _ts="$(head -n1 "$_f" 2>/dev/null | sed -n 's/^# KZM2 DNS //p')"
-    _n="$(grep -cv '^#' "$_f" 2>/dev/null | tr -d '[:space:]')"
-    [ -z "$_n" ] && _n="0"
-    if [ -n "$_ts" ]; then
-        printf '%s, %s' "$_ts" "$(tpl_render "$(T TXT_DNS_BACKUP_LINES)" N "$_n")"
+    # Sunucu satirlari: name-server / tls upstream / https upstream.
+    # Kalanlar (rebind-protect, route, filter ...) yapilandirma ayaridir.
+    # Kullanici Keenetic arayuzunde YALNIZCA sunuculari saydigi icin ikisi ayri gosterilir.
+    _srv="$(grep -v '^#' "$_f" 2>/dev/null | grep -cE '^(ip|ipv6) name-server |^dns-proxy (tls|https) upstream ' | tr -d '[:space:]')"
+    _tot="$(grep -cv '^#' "$_f" 2>/dev/null | tr -d '[:space:]')"
+    [ -z "$_srv" ] && _srv="0"
+    [ -z "$_tot" ] && _tot="0"
+    _cfg=$(( _tot - _srv ))
+    [ "$_cfg" -lt 0 ] 2>/dev/null && _cfg=0
+    if [ "$_cfg" -gt 0 ] 2>/dev/null; then
+        _txt="$(tpl_render "$(T TXT_DNS_BACKUP_COUNT)" S "$_srv" C "$_cfg")"
     else
-        tpl_render "$(T TXT_DNS_BACKUP_LINES)" N "$_n"
+        _txt="$(tpl_render "$(T TXT_DNS_BACKUP_COUNT_SRV)" S "$_srv")"
+    fi
+    if [ -n "$_ts" ]; then
+        printf '%s, %s' "$_ts" "$_txt"
+    else
+        printf '%s' "$_txt"
     fi
 }
 
@@ -14278,6 +14292,12 @@ DEOF
                 [ -z "$_kdns_port" ] && _kdns_port="443"
                 [ "$_kdns_port" = "443" ] && _kp="https" || _kp="http"
                 _kdns_code="$(curl -sk --max-time 5 -o /dev/null -w "%{http_code}" "${_kp}://${_kdns_fqdn}:${_kdns_port}" 2>/dev/null)"
+            # AAAA kaydi varsa curl once IPv6 dener; IPv6 calismiyorsa zaman asimina
+            # dusup IPv4'u HIC denemez ve yanlis FAIL uretir. Basarisizsa IPv4 ile tekrar dene.
+            case "$_kdns_code" in
+                2*|3*|401|403) ;;
+                *) _kdns_code="$(curl -4 -sk --max-time 5 -o /dev/null -w "%{http_code}" "${_kp}://${_kdns_fqdn}:${_kdns_port}" 2>/dev/null)" ;;
+            esac
                 case "$_kdns_code" in 2*|3*|401|403) _kdns_reach="yes" ;; *) _kdns_reach="no" ;; esac
                 if [ "$_kdns_acc" = "direct" ] && [ "$_kdns_reach" = "no" ]; then
                     _add "svc" "KeenDNS" "$_kdns_fqdn [$(T TXT_KEENDNS_UNKNOWN)]" "FAIL"
