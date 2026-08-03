@@ -37,7 +37,7 @@
 # -------------------------------------------------------------------
 SCRIPT_NAME="keenetic_zapret2_manager.sh"
 # Version scheme: vYY.M.D[.N]  (YY=year, M=month, D=day, N=daily revision)
-SCRIPT_VERSION="v26.8.2"
+SCRIPT_VERSION="v26.8.3"
 SCRIPT_REPO="https://github.com/RevolutionTR/keenetic-zapret2-manager"
 KZM2_SCRIPT_PATH="/opt/lib/opkg/keenetic_zapret2_manager.sh"
 SCRIPT_AUTHOR="RevolutionTR"
@@ -2194,6 +2194,8 @@ TXT_RESTORE_SCOPE_NFQWS_TR="Sadece Zapret2 Config (nfqws) Geri Yukle"
 TXT_RESTORE_SCOPE_NFQWS_EN="Restore Zapret2 Config (nfqws) Only"
 TXT_RESTORE_SCOPE_KZM_TR="KZM2 Ayarlarini Geri Yukle (HealthMon + Telegram)"
 TXT_RESTORE_SCOPE_KZM_EN="Restore KZM2 Settings (HealthMon + Telegram)"
+TXT_RESTORE_SCOPE_DNS_TR="Sadece DNS Yedek Dosyasini Geri Yukle"
+TXT_RESTORE_SCOPE_DNS_EN="Restore DNS Backup File Only"
 TXT_BACKUP_NO_BACKUPS_FOUND_TR="Yedek bulunamadi."
 TXT_BACKUP_NO_BACKUPS_FOUND_EN="No backups found."
 TXT_BACKUP_SUB_BACKUP_TR="1. IPSET Yedekle"
@@ -5203,6 +5205,13 @@ EOF
     chmod +x "$ZAPRET_CLIENT_HOOK" 2>/dev/null
     return 0
 }
+# IP listelerini sayisal olarak siralar (gosterim amacli; DOSYAYA DOKUNMAZ).
+# Duz "sort" alfabetik siralar ve .110 < .44 gibi yanlis sonuc verir; oktetler
+# ayri alan olarak sayisal siralanir. CIDR girdileri (192.168.1.0/24) de dogru oturur.
+kzm_sort_ips() {
+    sort -t. -k1,1n -k2,2n -k3,3n -k4,4n 2>/dev/null || cat
+}
+
 show_ipset_client_status() {
     MODE="all"
     [ -f "$IPSET_CLIENT_MODE_FILE" ] && MODE="$(cat "$IPSET_CLIENT_MODE_FILE" 2>/dev/null)"
@@ -5220,10 +5229,10 @@ show_ipset_client_status() {
             printf '%b%d IP%b\n' "${CLR_GREEN}" "$ip_count" "${CLR_RESET}"
             echo ""
             # awk ile numaralandirma - daha guvenli
-            awk -v cyan="${CLR_CYAN}" -v reset="${CLR_RESET}" '
+            kzm_sort_ips < "$IPSET_CLIENT_FILE" | awk -v cyan="${CLR_CYAN}" -v reset="${CLR_RESET}" '
                 NF > 0 {
                     printf "  %s%2d.%s %s\n", cyan, NR, reset, $0
-                }' "$IPSET_CLIENT_FILE"
+                }' 
         else
             printf '%b%s%b\n' "${CLR_RED}" "$(T empty "$TXT_EMPTY_TR" "$TXT_EMPTY_EN")" "${CLR_RESET}"
         fi
@@ -5237,10 +5246,10 @@ show_ipset_client_status() {
             local member_count="$(grep -c '[0-9]' "$IPSET_CLIENT_FILE" 2>/dev/null | tr -d ' ')"
             printf '%b%d IP%b\n' "${CLR_GREEN}" "$member_count" "${CLR_RESET}"
             echo ""
-            awk -v cyan="${CLR_CYAN}" -v reset="${CLR_RESET}" '
+            kzm_sort_ips < "$IPSET_CLIENT_FILE" | awk -v cyan="${CLR_CYAN}" -v reset="${CLR_RESET}" '
                 NF > 0 {
                     printf "  %s%2d.%s %s\n", cyan, NR, reset, $0
-                }' "$IPSET_CLIENT_FILE"
+                }' 
         else
             printf '%b%s%b\n' "${CLR_RED}" "$(T empty "$TXT_EMPTY_TR" "$TXT_EMPTY_EN")" "${CLR_RESET}"
         fi
@@ -5253,10 +5262,10 @@ show_ipset_client_status() {
             local noz_count="$(grep -c '[0-9]' "$NOZAPRET_FILE" 2>/dev/null | tr -d ' ')"
             printf '%b%d IP%b\n' "${CLR_GREEN}" "$noz_count" "${CLR_RESET}"
             echo ""
-            awk -v cyan="${CLR_CYAN}" -v reset="${CLR_RESET}" '
+            kzm_sort_ips < "$NOZAPRET_FILE" | awk -v cyan="${CLR_CYAN}" -v reset="${CLR_RESET}" '
                 NF > 0 {
                     printf "  %s%2d.%s %s\n", cyan, NR, reset, $0
-                }' "$NOZAPRET_FILE"
+                }' 
         else
             printf '%b%s%b\n' "${CLR_RED}" "$(T empty "$TXT_EMPTY_TR" "$TXT_EMPTY_EN")" "${CLR_RESET}"
         fi
@@ -5274,10 +5283,10 @@ show_ipset_client_status() {
             local noz_count2="$(grep -c '[0-9]' "$NOZAPRET_FILE" 2>/dev/null | tr -d ' ')"
             printf '%b%d IP%b\n' "${CLR_GREEN}" "$noz_count2" "${CLR_RESET}"
             echo ""
-            awk -v cyan="${CLR_CYAN}" -v reset="${CLR_RESET}" '
+            kzm_sort_ips < "$NOZAPRET_FILE" | awk -v cyan="${CLR_CYAN}" -v reset="${CLR_RESET}" '
                 NF > 0 {
                     printf "  %s%2d.%s %s\n", cyan, NR, reset, $0
-                }' "$NOZAPRET_FILE"
+                }' 
         else
             printf '%b%s%b\n' "${CLR_RED}" "$(T empty "$TXT_EMPTY_TR" "$TXT_EMPTY_EN")" "${CLR_RESET}"
         fi
@@ -5725,7 +5734,9 @@ nozapret_show_status() {
             [ -z "$line" ] && continue
             i=$((i+1))
             printf '  %b%2d.%b %s\n' "${CLR_ORANGE}${CLR_BOLD}" "$i" "${CLR_RESET}" "$line"
-        done < "$NOZAPRET_FILE"
+        done <<EOF_NOZ
+$(kzm_sort_ips < "$NOZAPRET_FILE")
+EOF_NOZ
         if [ "$i" -eq 0 ]; then
             echo "  $(T TXT_NOZAPRET_EMPTY)"
         fi
@@ -10160,6 +10171,7 @@ restore_zapret_settings() {
     printf " 4. %s\n" "$(T TXT_RESTORE_SCOPE_IPSET)"
     printf " 5. %s\n" "$(T TXT_RESTORE_SCOPE_NFQWS)"
     printf " 6. %s\n" "$(T TXT_RESTORE_SCOPE_KZM)"
+    printf " 7. %s\n" "$(T TXT_RESTORE_SCOPE_DNS)"
     print_line "-"
     printf " 0. %s\n" "$(T TXT_BACK)"
     print_line "-"
@@ -10245,6 +10257,10 @@ restore_zapret_settings() {
             _copy_if_exists "opt/zapret2/init.d/sysv/custom.d/90-keenetic-client-ipset" || true
             _copy_if_exists "opt/etc/init.d/S99kzm2_healthmon" || true
             ;;
+        7) # DNS yedek dosyasi (yalnizca dosya geri konur, router ayari DEGISMEZ;
+           # uygulamak icin Menu 14 > 3 > Yapilandirmayi Geri Yukle kullanilir)
+            _copy_if_exists "opt/zapret2/dns_backup.txt" || ok=1
+            ;;
         *)
             rm -rf "$tmp" 2>/dev/null
             print_status WARN "$(T TXT_INVALID_CHOICE)"
@@ -10255,6 +10271,12 @@ restore_zapret_settings() {
     rm -rf "$tmp" 2>/dev/null
     if [ "$ok" -eq 0 ]; then
         print_status PASS "$(T TXT_BACKUP_RESTORE_DONE)"
+		# Kapsam 7 yalnizca dns_backup.txt dosyasini yerine koyar. Zapret2, Web Panel,
+		# bot ve HealthMon bu dosyadan etkilenmez; yeniden baslatma GEREKSIZDIR.
+		if [ "$scope" = "7" ]; then
+			press_enter_to_continue
+			return 0
+		fi
 		# Restore sonrasi zapret'i yeniden baslat (kurallar tekrar uygulansin)
 		if is_zapret2_installed; then
 			echo "$(T TXT_RESTORE_RESTARTING)"
@@ -11510,6 +11532,7 @@ tgbot_handle_callback() {
                       /opt/zapret2/ipset_clients.txt /opt/zapret2/ipset_clients_mode \
                       /opt/zapret2/dpi_profile /opt/zapret2/dpi_profile_origin \
                       /opt/zapret2/dpi_profile_params /opt/zapret2/blockcheck_auto_params \
+                      /opt/zapret2/blockcheck_result.json /opt/zapret2/dns_backup.txt \
                       /opt/zapret2/dpi_profiles \
                       /opt/etc/healthmon.conf /opt/etc/telegram.conf /opt/etc/kzm2_gui.conf \
                       /opt/zapret2/init.d/sysv/zapret2.real \
@@ -16166,6 +16189,13 @@ json_arr() {
     [ -f "$1" ] || { printf '[]'; return; }
     awk 'BEGIN{printf "["} NF{if(NR>1)printf ","; printf "\"%s\"",$0} END{print "]"}' "$1" 2>/dev/null || printf '[]'
 }
+# IP listeleri icin sayisal siralamali surum. Alan adi listelerinde KULLANILMAZ:
+# "-t. -k1,1n" alan adlarinda tum alanlari 0 sayar ve siralamayi bozar.
+json_arr_ips() {
+    [ -f "$1" ] || { printf '[]'; return; }
+    sort -t. -k1,1n -k2,2n -k3,3n -k4,4n "$1" 2>/dev/null | \
+        awk 'BEGIN{printf "["; n=0} NF{if(n++)printf ","; printf "\"%s\"",$0} END{print "]"}' 2>/dev/null || printf '[]'
+}
 json_arr_domains_only() {
     # Web Panel exclude listesinde Zapret2 default IP/CIDR koruma satirlarini gizle.
     # Dosyada kalmalari gerekir; sadece domain yonetimi UI'sina karistirmiyoruz.
@@ -17088,7 +17118,7 @@ case "$ACTION" in
         kzm_rebuild_profile_restart
         ok "Silindi: $_d" ;;
     nozapret_get)
-        ok_data "$(json_arr "/opt/zapret2/ipset/nozapret.txt")" ;;
+        ok_data "$(json_arr_ips "/opt/zapret2/ipset/nozapret.txt")" ;;
     nozapret_add)
         _ip=$(get_param ip); [ -z "$_ip" ] && { fail "IP bos"; exit 0; }
         # Cakisma korumasi: ipset_clients.txt'den cikar
@@ -17108,9 +17138,9 @@ case "$ACTION" in
         kzm_rebuild_profile_restart
         ok "Silindi: $_ip" ;;
     ipset_active_get)
-        ok_data "$(json_arr "$IPSET_FILE")" ;;
+        ok_data "$(json_arr_ips "$IPSET_FILE")" ;;
     ip_get)
-        ok_data "$(json_arr "$IPSET_FILE")" ;;
+        ok_data "$(json_arr_ips "$IPSET_FILE")" ;;
     ip_add)
         _ip=$(get_param ip); [ -z "$_ip" ] && { fail "IP bos"; exit 0; }
         kzm_append_unique_line "$IPSET_FILE" "$_ip"
@@ -17198,6 +17228,8 @@ case "$ACTION" in
         _ar /opt/zapret2/dpi_profile_origin
         _ar /opt/zapret2/dpi_profile_params
         _ar /opt/zapret2/blockcheck_auto_params
+        _ar /opt/zapret2/blockcheck_result.json
+        _ar /opt/zapret2/dns_backup.txt
         _ar /opt/zapret2/dpi_profiles
         _ar /opt/etc/healthmon.conf
         _ar /opt/etc/telegram.conf
@@ -17301,11 +17333,13 @@ case "$ACTION" in
                _cpif opt/zapret2/init.d/sysv/zapret2.real
                _cpif opt/zapret2/init.d/sysv/custom.d/90-keenetic-client-ipset
                _cpif opt/etc/init.d/S99kzm2_healthmon ;;
+            7) _cpif opt/zapret2/dns_backup.txt ;;
         esac
         rm -rf "$_tmp" 2>/dev/null
         _kzm="/opt/lib/opkg/keenetic_zapret2_manager.sh"
         KZM2_SKIP_LOCK=1 sh "$_kzm" --cgi-action fix_permissions >/dev/null 2>&1
-        KZM2_SKIP_LOCK=1 sh "$_kzm" --cgi-action zapret_restart >/dev/null 2>&1 &
+        # Kapsam 7 yalnizca dns_backup.txt dosyasini yerine koyar; Zapret2 restart GEREKSIZ
+        [ "$_scope" != "7" ] && KZM2_SKIP_LOCK=1 sh "$_kzm" --cgi-action zapret_restart >/dev/null 2>&1 &
         ok "Geri yuklendi (kapsam:$_scope)" ;;
     settings_clean)
         _dir="/opt/zapret2_backups/zapret2_settings"
@@ -18612,6 +18646,9 @@ var V={
             '<option value="2">'+(L?'DPI Settings Only':'Sadece DPI Ayarlar&#305;')+'</option>'+
             '<option value="3">'+(L?'Hostlist Only':'Sadece Hostlist')+'</option>'+
             '<option value="4">'+(L?'IPSET Only':'Sadece IPSET')+'</option>'+
+            '<option value="5">'+(L?'Zapret2 Config Only':'Sadece Zapret2 Config')+'</option>'+
+            '<option value="6">'+(L?'KZM2 Settings (HealthMon + Telegram)':'KZM2 Ayarlar&#305; (HealthMon + Telegram)')+'</option>'+
+            '<option value="7">'+(L?'DNS Backup File Only':'Sadece DNS Yedek Dosyas&#305;')+'</option>'+
           '</select>'+
           '<div id="bkSetRestore" style="margin-top:4px"><div class="sub">&#8593; '+(L?'Click View Backups first':'Once Yedekleri G&#246;r\'e t&#305;klay&#305;n')+'</div></div>'+
         '</div>'+
@@ -18935,7 +18972,7 @@ function syncLang(){
   if(langBadge)langBadge.innerHTML=L?'<img src="data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjQiIGhlaWdodD0iMjQiIHZpZXdCb3g9IjAgMCAzNiAzNiIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cGF0aCBmaWxsPSIjMDAyNDdEIiBkPSJNMCA5LjA1OVYxM2g1LjYyOHpNNC42NjQgMzFIMTN2LTUuODM3ek0yMyAyNS4xNjRWMzFoOC4zMzV6TTAgMjN2My45NDFMNS42MyAyM3pNMzEuMzM3IDVIMjN2NS44Mzd6TTM2IDI2Ljk0MlYyM2gtNS42MzF6TTM2IDEzVjkuMDU5TDMwLjM3MSAxM3pNMTMgNUg0LjY2NEwxMyAxMC44Mzd6Ii8+PHBhdGggZmlsbD0iI0NGMUIyQiIgZD0iTTI1LjE0IDIzbDkuNzEyIDYuODAxYTMuOTc3IDMuOTc3IDAgMCAwIC45OS0xLjc0OUwyOC42MjcgMjNIMjUuMTR6TTEzIDIzaC0yLjE0MWwtOS43MTEgNi44Yy41MjEuNTMgMS4xODkuOTA5IDEuOTM4IDEuMDg1TDEzIDIzLjk0M1YyM3ptMTAtMTBoMi4xNDFsOS43MTEtNi44YTMuOTg4IDMuOTg4IDAgMCAwLTEuOTM3LTEuMDg1TDIzIDEyLjA1N1YxM3ptLTEyLjE0MSAwTDEuMTQ4IDYuMmEzLjk5NCAzLjk5NCAwIDAgMC0uOTkxIDEuNzQ5TDcuMzcyIDEzaDMuNDg3eiIvPjxwYXRoIGZpbGw9IiNFRUUiIGQ9Ik0zNiAyMUgyMXYxMGgydi01LjgzNkwzMS4zMzUgMzFIMzJhMy45OSAzLjk5IDAgMCAwIDIuODUyLTEuMTk5TDI1LjE0IDIzaDMuNDg3bDcuMjE1IDUuMDUyYy4wOTMtLjMzNy4xNTgtLjY4Ni4xNTgtMS4wNTJ2LS4wNThMMzAuMzY5IDIzSDM2di0yek0wIDIxdjJoNS42M0wwIDI2Ljk0MVYyN2MwIDEuMDkxLjQzOSAyLjA3OCAxLjE0OCAyLjhsOS43MTEtNi44SDEzdi45NDNsLTkuOTE0IDYuOTQxYy4yOTQuMDcuNTk4LjExNi45MTQuMTE2aC42NjRMMTMgMjUuMTYzVjMxaDJWMjFIMHpNMzYgOWEzLjk4MyAzLjk4MyAwIDAgMC0xLjE0OC0yLjhMMjUuMTQxIDEzSDIzdi0uOTQzbDkuOTE1LTYuOTQyQTQuMDAxIDQuMDAxIDAgMCAwIDMyIDVoLS42NjNMMjMgMTAuODM3VjVoLTJ2MTBoMTV2LTJoLTUuNjI5TDM2IDkuMDU5Vjl6TTEzIDV2NS44MzdMNC42NjQgNUg0YTMuOTg1IDMuOTg1IDAgMCAwLTIuODUyIDEuMmw5LjcxMSA2LjhINy4zNzJMLjE1NyA3Ljk0OUEzLjk2OCAzLjk2OCAwIDAgMCAwIDl2LjA1OUw1LjYyOCAxM0gwdjJoMTVWNWgtMnoiLz48cGF0aCBmaWxsPSIjQ0YxQjJCIiBkPSJNMjEgMTVWNWgtNnYxMEgwdjZoMTV2MTBoNlYyMWgxNXYtNnoiLz48L3N2Zz4=" width="24" height="24" style="vertical-align:middle"> EN':'<img src="data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjQiIGhlaWdodD0iMjQiIHZpZXdCb3g9IjAgMCAzNiAzNiIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIiB4bWxuczp4bGluaz0iaHR0cDovL3d3dy53My5vcmcvMTk5OS94bGluayI+PHBhdGggZmlsbD0iI0UzMDkxNyIgZD0iTTM2IDI3YTQgNCAwIDAgMS00IDRINGE0IDQgMCAwIDEtNC00VjlhNCA0IDAgMCAxIDQtNGgyOGE0IDQgMCAwIDEgNCA0djE4eiIvPjxwYXRoIGZpbGw9IiNFRUUiIGQ9Ik0xNiAyNGE2IDYgMCAxIDEgMC0xMmMxLjMxIDAgMi41Mi40MjUgMy41MDcgMS4xMzhBNy4zMzIgNy4zMzIgMCAwIDAgMTQgMTAuNjQ3QTcuMzUzIDcuMzUzIDAgMCAwIDYuNjQ3IDE4QTcuMzUzIDcuMzUzIDAgMCAwIDE0IDI1LjM1NGMyLjE5NSAwIDQuMTYtLjk2NyA1LjUwNy0yLjQ5MkE1Ljk2MyA1Ljk2MyAwIDAgMSAxNiAyNHptMy45MTMtNS43N2wyLjQ0LjU2MmwuMjIgMi40OTNsMS4yODgtMi4xNDZsMi40NC41NjFsLTEuNjQ0LTEuODg4bDEuMjg3LTIuMTQ3bC0yLjMwMy45OGwtMS42NDQtMS44ODlsLjIyIDIuNDk0eiIvPjwvc3ZnPg==" width="24" height="24" style="vertical-align:middle"> TR';
 }
 function fixTR(s){if(!s)return s;
-  return s.replace(/Calisiyor/g,'&#199;al&#305;&#351;&#305;yor').replace(/Calismiyor/g,'&#199;al&#305;&#351;m&#305;yor').replace(/calisiyor/g,'&#231;al&#305;&#351;&#305;yor').replace(/calismiyor/g,'&#231;al&#305;&#351;m&#305;yor').replace(/\bkapali\b/g,'kapal&#305;')
+  return s.replace(/Calisiyor/g,'&#199;al&#305;&#351;&#305;yor').replace(/Calismiyor/g,'&#199;al&#305;&#351;m&#305;yor').replace(/calisiyor/g,'&#231;al&#305;&#351;&#305;yor').replace(/calismiyor/g,'&#231;al&#305;&#351;m&#305;yor').replace(/\bkapali\b/g,'kapal&#305;').replace(/bulunamadi/g,'bulunamad&#305;')
           .replace(/Durdurulmus/g,'Durdurulmu&#351;').replace(/durduruldu/g,'durduruldu')
           .replace(/Dogrulandi/g,'Do&#287;ruland&#305;').replace(/Farkli/g,'Farkl&#305;')
           .replace(/Varsayilan/g,'Varsay&#305;lan').replace(/butunlugu/g,'b&#252;t&#252;nl&#252;&#287;&#252;')
@@ -19320,8 +19357,8 @@ function bkSettingsList(btn){
     var el=document.getElementById('bkSetList'),er=document.getElementById('bkSetRestore');
     if(!el)return;
     if(!r.ok||!r.data||!r.data.length){
-      el.innerHTML='<div class="sub">'+(L?'No backup found':'Yedek bulunamadi')+'</div>';
-      if(er)er.innerHTML='<div class="sub">'+(L?'No backup found':'Yedek bulunamadi')+'</div>';
+      el.innerHTML='<div class="sub">'+(L?'No backup found':'Yedek bulunamad&#305;')+'</div>';
+      if(er)er.innerHTML='<div class="sub">'+(L?'No backup found':'Yedek bulunamad&#305;')+'</div>';
       return;
     }
     var html='<div style="font-size:11px;color:#888;margin-bottom:4px">'+(L?'Last 10 backups:':'Son 10 yedek:')+'</div>';
@@ -19349,14 +19386,14 @@ function bkIpsetList(btn){
     var el=document.getElementById('bkIpList'),er=document.getElementById('bkIpRestore');
     if(!el)return;
     if(!r.ok||!r.files){
-      el.innerHTML='<div class="sub">'+(L?'No backup found':'Yedek bulunamadi')+'</div>';
-      if(er)er.innerHTML='<div class="sub">'+(L?'No backup found':'Yedek bulunamadi')+'</div>';
+      el.innerHTML='<div class="sub">'+(L?'No backup found':'Yedek bulunamad&#305;')+'</div>';
+      if(er)er.innerHTML='<div class="sub">'+(L?'No backup found':'Yedek bulunamad&#305;')+'</div>';
       return;
     }
     var files=r.files?r.files.split('|').filter(function(x){return x;}):[]; 
     if(!files.length){
-      el.innerHTML='<div class="sub">'+(L?'No backup found':'Yedek bulunamadi')+'</div>';
-      if(er)er.innerHTML='<div class="sub">'+(L?'No backup found':'Yedek bulunamadi')+'</div>';
+      el.innerHTML='<div class="sub">'+(L?'No backup found':'Yedek bulunamad&#305;')+'</div>';
+      if(er)er.innerHTML='<div class="sub">'+(L?'No backup found':'Yedek bulunamad&#305;')+'</div>';
       return;
     }
     var html='<div style="font-size:11px;color:#888;margin-bottom:4px">'+(L?'Current backups:':'Mevcut Yedekler:')+'</div>';
