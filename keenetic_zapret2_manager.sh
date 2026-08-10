@@ -37,7 +37,7 @@
 # -------------------------------------------------------------------
 SCRIPT_NAME="keenetic_zapret2_manager.sh"
 # Version scheme: vYY.M.D[.N]  (YY=year, M=month, D=day, N=daily revision)
-SCRIPT_VERSION="v26.8.3"
+SCRIPT_VERSION="v26.8.10"
 SCRIPT_REPO="https://github.com/RevolutionTR/keenetic-zapret2-manager"
 KZM2_SCRIPT_PATH="/opt/lib/opkg/keenetic_zapret2_manager.sh"
 SCRIPT_AUTHOR="RevolutionTR"
@@ -1389,12 +1389,18 @@ TXT_HM_DISK_WARN_MSG_TR="📌 HealthMon %TS%\n⚠️ Disk dolu: /opt %DISK%%%\n�
 TXT_HM_DISK_WARN_MSG_EN="📌 HealthMon %TS%\n⚠️ Disk high: /opt %DISK%%%\n🧠 CPU: %CPU%%\n📊 Load: %LOAD%\n🧮 RAM free: %RAM% MB"
 TXT_HM_RAM_WARN_MSG_TR="📌 HealthMon %TS%\n⚠️ RAM dusuk: %RAM% MB\n🧠 CPU: %CPU%%\n📊 Yuk: %LOAD%\n💾 Disk(/opt): %DISK%%"
 TXT_HM_RAM_WARN_MSG_EN="📌 HealthMon %TS%\n⚠️ Low RAM: %RAM% MB\n🧠 CPU: %CPU%%\n📊 Load: %LOAD%\n💾 Disk(/opt): %DISK%%"
-TXT_HM_ZAPRET_DOWN_MSG_TR="📌 HealthMon %TS%\n🚨 Zapret2 durmus olabilir!\n🧠 CPU: %CPU%%\n📊 Yuk: %LOAD%\n🧮 RAM bos: %RAM% MB\n💾 Disk(/opt): %DISK%%\n📡 DPI: %DPI%"
+# TG-UTF8-BEGIN  --- Telegram-only sozluk: SSH terminaline CIKMAZ, UTF-8 TR karakter serbest.
+# UYARI: Buraya SSH/menu/ekran metni EKLEME. --self-test bu blokta TR karakter taramaz.
+TXT_HM_ZAPRET_DOWN_MSG_TR="📌 HealthMon %TS%\n🚨 Zapret2 durmuş olabilir!\n🧠 CPU: %CPU%%\n📊 Yük: %LOAD%\n🧮 RAM boş: %RAM% MB\n💾 Disk(/opt): %DISK%%\n📡 DPI: %DPI%"
 TXT_HM_ZAPRET_DOWN_MSG_EN="📌 HealthMon %TS%\n🚨 Zapret2 may be down!\n🧠 CPU: %CPU%%\n📊 Load: %LOAD%\n🧮 RAM free: %RAM% MB\n💾 Disk(/opt): %DISK%%\n📡 DPI: %DPI%"
+# TG-UTF8-END
 TXT_HM_ZAPRET_FW_MISSING_MSG_TR="📌 HealthMon %TS%\n⚠️ NFQUEUE kurallari eksikti, yenilendi!\n🧠 CPU: %CPU%%\n📊 Yuk: %LOAD%\n🧮 RAM bos: %RAM% MB\n💾 Disk(/opt): %DISK%%\n📡 DPI: %DPI%"
 TXT_HM_ZAPRET_FW_MISSING_MSG_EN="📌 HealthMon %TS%\n⚠️ NFQUEUE rules were missing, renewed!\n🧠 CPU: %CPU%%\n📊 Load: %LOAD%\n🧮 RAM free: %RAM% MB\n💾 Disk(/opt): %DISK%%\n📡 DPI: %DPI%"
-TXT_HM_ZAPRET_UP_MSG_TR="📌 HealthMon %TS%\n✅ Zapret2 tekrar calisiyor.\n🧠 CPU: %CPU%%\n📊 Yuk: %LOAD%\n🧮 RAM bos: %RAM% MB\n💾 Disk(/opt): %DISK%%\n📡 DPI: %DPI%"
+# TG-UTF8-BEGIN  --- Telegram-only sozluk: SSH terminaline CIKMAZ, UTF-8 TR karakter serbest.
+# UYARI: Buraya SSH/menu/ekran metni EKLEME. --self-test bu blokta TR karakter taramaz.
+TXT_HM_ZAPRET_UP_MSG_TR="📌 HealthMon %TS%\n✅ Zapret2 tekrar çalışıyor.\n🧠 CPU: %CPU%%\n📊 Yük: %LOAD%\n🧮 RAM boş: %RAM% MB\n💾 Disk(/opt): %DISK%%\n📡 DPI: %DPI%"
 TXT_HM_ZAPRET_UP_MSG_EN="📌 HealthMon %TS%\n✅ Zapret2 is running again.\n🧠 CPU: %CPU%%\n📊 Load: %LOAD%\n🧮 RAM free: %RAM% MB\n💾 Disk(/opt): %DISK%%\n📡 DPI: %DPI%"
+# TG-UTF8-END
 TXT_HM_DISK_HEALTH_DOWN_MSG_TR="📌 HealthMon %TS%\n⚠️ Disk bakimi gerekiyor: /opt\n💾 Durum: %REASON%\n🧠 CPU: %CPU%%\n📊 Yuk: %LOAD%\n🧮 RAM bos: %RAM% MB"
 TXT_HM_DISK_HEALTH_DOWN_MSG_EN="📌 HealthMon %TS%\n⚠️ Disk maintenance required: /opt\n💾 Status: %REASON%\n🧠 CPU: %CPU%%\n📊 Load: %LOAD%\n🧮 RAM free: %RAM% MB"
 TXT_HM_DISK_HEALTH_UP_MSG_TR="📌 HealthMon %TS%\n✅ Disk sagligi normale dondu: /opt\n🧠 CPU: %CPU%%\n📊 Yuk: %LOAD%\n🧮 RAM bos: %RAM% MB"
@@ -1577,11 +1583,11 @@ TXT_HM_SYSLOG_IKE_MSG_TR="📌 Keenetic Sistem Log Uyarısı\n🛡️ IKE bağla
 TXT_HM_SYSLOG_IKE_MSG_EN="📌 Keenetic System Log Alert\n🛡️ IKE connection attempt: %CNT% new\n\n📎 Note: This message is not related to KZM2 or Zapret2. It is sent for informational purposes as an important event detected in the Keenetic system log."
 TXT_HM_SYSLOG_TLS_MSG_TR="⚠️ Zapret2 TLS Müdahalesi Uyarısı\n🔒 Son %MIN% dakikada %CNT% adet TLS bağlantı hatası tespit edildi.\n\nBu hata Zapret2 bypass'inin TLS bağlantılarını bozduğunun işareti olabilir. ISS'inizde DPI olmayabilir veya TTL değeriniz çok yüksek olabilir.\n\nÖneri: Blockcheck2 çalıştırın (Menu B) veya Zapret2'yi geçici olarak durdurun (Menu 4) ve bağlantınızı test edin."
 TXT_HM_SYSLOG_TLS_MSG_EN="⚠️ Zapret2 TLS Interference Warning\n🔒 %CNT% TLS connection errors detected in the last %MIN% minutes.\n\nThis may indicate that Zapret2 bypass is interfering with TLS connections. Your ISP may not have DPI or your TTL value may be too high.\n\nSuggestion: Run Blockcheck2 (Menu B) or temporarily stop Zapret2 (Menu 4) and test your connection."
-# TG-UTF8-END
-TXT_HM_NFQWS_ALERT_MSG_TR="⚠️ nfqws2 Kuyruk Uyarisi\n📦 queue=%QL% drops=%DR%\n\nNFQUEUE kuyrugundan paket dusuyor veya kuyruk dolmaya basladi. Bu ag yavaslamasi veya DPI bypass sorununa isaret edebilir.\n\nDetay icin Menu 16 - 4 uzerinden Debug modunu acin."
+TXT_HM_NFQWS_ALERT_MSG_TR="⚠️ nfqws2 Kuyruk Uyarısı\n📦 queue=%QL% drops=%DR%\n\nNFQUEUE kuyruğundan paket düşüyor veya kuyruk dolmaya başladı. Bu ağ yavaşlaması veya DPI bypass sorununa işaret edebilir.\n\nDetay için Menü 16 - 4 üzerinden Debug modunu açın."
 TXT_HM_NFQWS_ALERT_MSG_EN="⚠️ nfqws2 Queue Alert\n📦 queue=%QL% drops=%DR%\n\nPackets are being dropped or the NFQUEUE is starting to fill up. This may indicate network slowdown or DPI bypass issues.\n\nFor details enable Debug mode via Menu 16 - 4."
-TXT_HM_NFQWS_ALERT_OK_MSG_TR="✅ nfqws2 Kuyruk Normal\n📦 queue=0 drops=0\n\nNFQUEUE kuyrugu normale dondu."
+TXT_HM_NFQWS_ALERT_OK_MSG_TR="✅ nfqws2 Kuyruk Normal\n📦 queue=0 drops=0\n\nNFQUEUE kuyruğu normale döndü."
 TXT_HM_NFQWS_ALERT_OK_MSG_EN="✅ nfqws2 Queue Normal\n📦 queue=0 drops=0\n\nNFQUEUE queue returned to normal."
+# TG-UTF8-END
 TXT_HM_NFQWS_ALERT_ITEM_TR="nfqws2 Kuyruk Alarmi"
 TXT_HM_NFQWS_ALERT_ITEM_EN="nfqws2 Queue Alert"
 TXT_HM_PROMPT_COOLDOWN_TR="Bildirim soguma (sn) [or: 600]:"
@@ -12857,13 +12863,15 @@ kzm2_nfqws_alert_check() {
             touch "$_flag" 2>/dev/null
             healthmon_log "$(date '+%Y-%m-%d %H:%M:%S') | nfqws_alert | queue=${_ql:-0} drops=${_dr:-0}"
             _msg="$(tpl_render "$(T TXT_HM_NFQWS_ALERT_MSG)" QL "${_ql:-0}" DR "${_dr:-0}")"
-            telegram_send "$_msg" &
+            telegram_send "$_msg
+" &
         fi
     else
         if [ -f "$_flag" ]; then
             rm -f "$_flag" 2>/dev/null
             healthmon_log "$(date '+%Y-%m-%d %H:%M:%S') | nfqws_alert | recovered"
-            telegram_send "$(tpl_render "$(T TXT_HM_NFQWS_ALERT_OK_MSG)")" &
+            telegram_send "$(tpl_render "$(T TXT_HM_NFQWS_ALERT_OK_MSG)")
+" &
         fi
     fi
 }
@@ -13253,7 +13261,8 @@ healthmon_loop() {
                             # iptables_missing start-fw ile sessizce duzeltildi, Telegram gonderme
                             if [ "$_zap_reason" != "iptables_missing" ]; then
                                 if healthmon_should_alert "zapret_up" "$HM_ZAPRET_COOLDOWN_SEC"; then
-                                    telegram_send "$(tpl_render "$(T TXT_HM_ZAPRET_UP_MSG)" CPU "$cpu" LOAD "$load" RAM "$ram" DISK "$disk" DPI "$(T dpi_pname "$(dpi_profile_name_tr "$(get_dpi_profile)")" "$(dpi_profile_name_en "$(get_dpi_profile)")")")" &
+                                    telegram_send "$(tpl_render "$(T TXT_HM_ZAPRET_UP_MSG)" CPU "$cpu" LOAD "$load" RAM "$ram" DISK "$disk" DPI "$(T dpi_pname "$(dpi_profile_name_tr "$(get_dpi_profile)")" "$(dpi_profile_name_en "$(get_dpi_profile)")")")
+" &
                                     healthmon_log "$now | zapret_autorestart_ok | reason=$_zap_reason cpu=$cpu load=$load ram=${ram}MB disk=${disk}%"
                                 fi
                             else
@@ -13276,7 +13285,8 @@ healthmon_loop() {
                                 local _ar_note=""
                                 [ "${HM_ZAPRET_AUTORESTART:-0}" != "1" ] && \
                                     _ar_note="$(printf '\n%s' "$(T _ '⚠️ Oto-restart KAPALI (Menu 16 > 4 > 5)' '⚠️ Auto-restart OFF (Menu 16 > 4 > 5)')")"
-                                telegram_send "$(tpl_render "$(T TXT_HM_ZAPRET_DOWN_MSG)" CPU "$cpu" LOAD "$load" RAM "$ram" DISK "$disk" DPI "$(T dpi_pname "$(dpi_profile_name_tr "$(get_dpi_profile)")" "$(dpi_profile_name_en "$(get_dpi_profile)")")")${_ar_note}" &
+                                telegram_send "$(tpl_render "$(T TXT_HM_ZAPRET_DOWN_MSG)" CPU "$cpu" LOAD "$load" RAM "$ram" DISK "$disk" DPI "$(T dpi_pname "$(dpi_profile_name_tr "$(get_dpi_profile)")" "$(dpi_profile_name_en "$(get_dpi_profile)")")")${_ar_note}
+" &
                                 healthmon_log "$now | zapret_down | reason=$_zap_reason cpu=$cpu load=$load ram=${ram}MB disk=${disk}%"
                             fi
                             echo "1" >"$zapret_flag" 2>/dev/null
@@ -13288,7 +13298,8 @@ healthmon_loop() {
                 # recovered
                 if [ -f "$zapret_flag" ] && is_zapret2_installed && is_zapret2_running; then
                     if healthmon_should_alert "zapret_up" "$HM_ZAPRET_COOLDOWN_SEC"; then
-                        telegram_send "$(tpl_render "$(T TXT_HM_ZAPRET_UP_MSG)" CPU "$cpu" LOAD "$load" RAM "$ram" DISK "$disk" DPI "$(T dpi_pname "$(dpi_profile_name_tr "$(get_dpi_profile)")" "$(dpi_profile_name_en "$(get_dpi_profile)")")")" &
+                        telegram_send "$(tpl_render "$(T TXT_HM_ZAPRET_UP_MSG)" CPU "$cpu" LOAD "$load" RAM "$ram" DISK "$disk" DPI "$(T dpi_pname "$(dpi_profile_name_tr "$(get_dpi_profile)")" "$(dpi_profile_name_en "$(get_dpi_profile)")")")
+" &
                         healthmon_log "$now | zapret_up | cpu=$cpu load=$load ram=${ram}MB disk=${disk}%"
                     fi
                     rm -f "$zapret_flag" 2>/dev/null
@@ -13342,7 +13353,8 @@ healthmon_loop() {
                         # Hala yuksek: gercek stall, restart_zapret2
                         healthmon_log "$now | qlen_crit | qnum=300 qlen=$qlen_val cnt=$qlen_cnt triggers=restart_zapret2"
                         if healthmon_should_alert "qlen_crit" "${HM_ZAPRET_COOLDOWN_SEC:-120}"; then
-                            telegram_send "$(tpl_render "$(T TXT_HM_ZAPRET_DOWN_MSG)" CPU "$cpu" LOAD "$load" RAM "$ram" DISK "$disk" DPI "$(T dpi_pname "$(dpi_profile_name_tr "$(get_dpi_profile)")" "$(dpi_profile_name_en "$(get_dpi_profile)")")") [qlen=$qlen_val]" &
+                            telegram_send "$(tpl_render "$(T TXT_HM_ZAPRET_DOWN_MSG)" CPU "$cpu" LOAD "$load" RAM "$ram" DISK "$disk" DPI "$(T dpi_pname "$(dpi_profile_name_tr "$(get_dpi_profile)")" "$(dpi_profile_name_en "$(get_dpi_profile)")")") [qlen=$qlen_val]
+" &
                         fi
                         restart_zapret2 >/dev/null 2>&1
                         sleep 2
@@ -13354,7 +13366,8 @@ healthmon_loop() {
                         if is_zapret2_running; then
                             healthmon_log "$now | qlen_restart_ok | qnum=300 zapret2 is running"
                             if healthmon_should_alert "qlen_restart_ok" "${HM_ZAPRET_COOLDOWN_SEC:-120}"; then
-                                telegram_send "$(tpl_render "$(T TXT_HM_ZAPRET_UP_MSG)" CPU "$cpu" LOAD "$load" RAM "$ram" DISK "$disk" DPI "$(T dpi_pname "$(dpi_profile_name_tr "$(get_dpi_profile)")" "$(dpi_profile_name_en "$(get_dpi_profile)")")") [qlen watchdog ok]" &
+                                telegram_send "$(tpl_render "$(T TXT_HM_ZAPRET_UP_MSG)" CPU "$cpu" LOAD "$load" RAM "$ram" DISK "$disk" DPI "$(T dpi_pname "$(dpi_profile_name_tr "$(get_dpi_profile)")" "$(dpi_profile_name_en "$(get_dpi_profile)")")") [qlen watchdog ok]
+" &
                             fi
                         else
                             healthmon_log "$now | qlen_restart_fail | qnum=300 zapret2 still not running after restart"
