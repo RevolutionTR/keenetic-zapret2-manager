@@ -37,7 +37,7 @@
 # -------------------------------------------------------------------
 SCRIPT_NAME="keenetic_zapret2_manager.sh"
 # Version scheme: vYY.M.D[.N]  (YY=year, M=month, D=day, N=daily revision)
-SCRIPT_VERSION="v26.8.10"
+SCRIPT_VERSION="v26.8.22"
 SCRIPT_REPO="https://github.com/RevolutionTR/keenetic-zapret2-manager"
 KZM2_SCRIPT_PATH="/opt/lib/opkg/keenetic_zapret2_manager.sh"
 SCRIPT_AUTHOR="RevolutionTR"
@@ -10544,6 +10544,22 @@ telegram_ready() {
 telegram_send() {
     # $1 message (UTF-8)
     [ -n "$1" ] || return 1
+    # --- Boot sonrasi saat senkronizasyonu beklemesi ---
+    # Keenetic'te RTC yoktur. Elektrik kesintisinde saat, en son kaydedilen
+    # degerden baslar ve GUNLERCE geride olabilir; NTP ancak WAN kurulduktan
+    # ~1 dk sonra oturur. Mesajdaki Tarih/Saat satiri asagida telegram_build_msg
+    # ile uretildigi icin bekleme MUTLAKA burada, mesaj olusturulmadan once olmali.
+    # Yalnizca HealthMon daemon'inda uygulanir; menu/CLI cagrilarinda terminal
+    # beklemesin. Loop'taki tum telegram_send cagrilari "&" ile arka plandadir,
+    # bu nedenle bekleme dongunun kendisini bloklamaz.
+    if [ "${HEALTHMON_DAEMON:-0}" = "1" ]; then
+        local _tg_up
+        _tg_up="$(cut -d' ' -f1 /proc/uptime 2>/dev/null | cut -d. -f1)"
+        case "${_tg_up:-}" in
+            ''|*[!0-9]*) : ;;
+            *) [ "$_tg_up" -lt 120 ] 2>/dev/null && sleep $(( 120 - _tg_up )) ;;
+        esac
+    fi
     # Telegram basic pre-req
     telegram_ready || return 1
     # Optional: include device header + timestamp (same format as other TG alerts)
@@ -12486,9 +12502,23 @@ hm_wanmon_tick() {
         echo "$oks" >"$oks_f" 2>/dev/null
         if [ "$state" = "DOWN" ] && [ "$oks" -ge "${HM_WANMON_OK_TH:-2}" ]; then
             # transition DOWN -> UP, send single rich UP message with duration
-            local down_ts down_hms up_hms dur wan_disp
-            down_ts="$(cat "$down_ts_f" 2>/dev/null)"; case "$down_ts" in ''|*[!0-9]*) down_ts="$now";; esac
+            local down_ts down_hms up_hms dur wan_disp _wm_up_sec
+            down_ts="$(cat "$down_ts_f" 2>/dev/null)"
+            case "$down_ts" in
+                ''|*[!0-9]*)
+                    # Dosya yok = boot sonrasi ilk gecis (router yeni acildi).
+                    # Kesinti baslangici olarak router'in acilis anini kullan.
+                    # uptime kernel sayacidir; Keenetic'te RTC olmadigi icin boot'ta
+                    # bayat olan sistem saatinden ve NTP sicramasindan etkilenmez.
+                    # Bu satir olmadan down_ts="$now" olur ve sure hep 00:00:00 cikar.
+                    _wm_up_sec="$(cut -d' ' -f1 /proc/uptime 2>/dev/null | cut -d. -f1)"
+                    case "${_wm_up_sec:-}" in ''|*[!0-9]*) _wm_up_sec=0 ;; esac
+                    down_ts=$(( now - _wm_up_sec ))
+                    ;;
+            esac
             down_hms="$(cat "$down_hms_f" 2>/dev/null)"
+            # Dosya yoksa down_ts'ten (boot ani) saati uret; BusyBox date destekli.
+            [ -z "$down_hms" ] && down_hms="$(date -D %s -d "$down_ts" '+%H:%M:%S' 2>/dev/null)"
             [ -z "$down_hms" ] && down_hms="$(date '+%H:%M:%S' 2>/dev/null)"
             up_hms="$(date '+%H:%M:%S' 2>/dev/null)"
             dur="$(hm_fmt_hms $((now - down_ts)))"
@@ -12667,6 +12697,11 @@ healthmon_updatecheck_do() {
     esac
     local now last_ts f sec
     f="/tmp/healthmon_updatecheck.ts"
+    # Boot sonrasi ilk dakikalarda sistem saati henuz NTP ile eslesmemis olabilir
+    # (Keenetic'te RTC yok, saat son bilinen degerden baslar). Bu asamada yapilan
+    # kontrol hem mesaja yanlis tarih yazar hem de saat ileri sicradiginda asagidaki
+    # throttle karsilastirmasi devrilip ikinci bir mesaj gonderilmesine yol acar.
+    kzm2_boot_grace_active && return 0
     now="$(healthmon_now)"
     sec="${HM_UPDATECHECK_SEC:-21600}"   # default 6h
     # Throttle: only run the GitHub API check every HM_UPDATECHECK_SEC seconds.
@@ -12838,6 +12873,18 @@ healthmon_wan_is_up() {
 healthmon_wan_tick() {
     hm_wanmon_tick
 }
+# Boot sonrasi ilk 300 saniyede zaman/kuyruk tabanli kontrolleri atlamak icin kullanilir.
+# Elektrik kesintisi sonrasi tum LAN cihazlari ayni anda acilir; connbytes 1:N kurali
+# geregi her yeni baglantinin ilk paketleri NFQUEUE'ya girer ve qlen gecici olarak
+# sisers (drops=0 kalir, yani tikanma degil yogunluktur). Normal router restart'inda
+# cihazlar zaten acik oldugu icin bu patlama olusmaz.
+# /proc/uptime okunamazsa 1 doner - grace uygulanmaz, mevcut davranis korunur.
+kzm2_boot_grace_active() {
+    local _up
+    _up="$(cut -d' ' -f1 /proc/uptime 2>/dev/null | cut -d. -f1)"
+    case "${_up:-}" in ''|*[!0-9]*) return 1 ;; esac
+    [ "$_up" -lt 300 ] 2>/dev/null
+}
 kzm2_nfqws_alert_check() {
     [ "${HM_NFQWS_ALERT:-1}" = "1" ] || return 0
     # Queue 300 yoksa (nfqws2 durmus) - yanlis recovery mesaji gonderme
@@ -12856,6 +12903,10 @@ kzm2_nfqws_alert_check() {
     _dr_prev="$(cat "$_dr_prev_f" 2>/dev/null)"
     case "${_dr_prev:-}" in ''|*[!0-9]*) _dr_prev=0 ;; esac
     echo "${_dr:-0}" > "$_dr_prev_f" 2>/dev/null
+    # Boot sonrasi ilk dakikalarda qlen gecici sisebilir - yanlis alarm gonderme.
+    # Bu kontrol drops sayaci yukarida guncellendikten SONRA yapilir; aksi halde
+    # grace bitiminde boot sirasinda birikmis drops "yeni artis" gibi gorunur.
+    kzm2_boot_grace_active && return 0
     local _dr_inc=0
     [ "${_dr:-0}" -gt "$_dr_prev" ] 2>/dev/null && _dr_inc=1
     if [ "${_ql:-0}" -gt "$_ql_th" ] || [ "$_dr_inc" = "1" ] 2>/dev/null; then
@@ -13313,7 +13364,13 @@ healthmon_loop() {
         # Spike/stall ayrimi: qlen esigi asildiktan sonra dusuyorsa spike (sayac sifirla),
         # artiyorsa veya sabit kaliyorsa gercek stall (sayac artar, N turda restart).
         _qlen_wan_ifc="$(cat /opt/zapret2/wan_if 2>/dev/null | tr -d '[:space:]')"
-        if [ "${HM_QLEN_WATCHDOG:-1}" = "1" ] && hm_wanmon_is_up "$_qlen_wan_ifc" 2>/dev/null; then
+        if kzm2_boot_grace_active; then
+            # Boot grace: watchdog atlanir. prev degeri yine de guncel tutulur ki
+            # grace bitiminde spike/stall ayrimi ilk turdan itibaren dogru calissin.
+            awk '$1 == 300 { print $3; exit }' /proc/net/netfilter/nfnetlink_queue 2>/dev/null \
+                > /tmp/healthmon_qlen.prev
+            healthmon_log "$now | qlen_boot_grace | uptime<300s - qlen watchdog atlandi"
+        elif [ "${HM_QLEN_WATCHDOG:-1}" = "1" ] && hm_wanmon_is_up "$_qlen_wan_ifc" 2>/dev/null; then
             local qlen_th qlen_turns qlen_val qlen_cnt_f qlen_prev_f qlen_cnt qlen_prev
             qlen_th="${HM_QLEN_WARN_TH:-50}"
             qlen_turns="${HM_QLEN_CRIT_TURNS:-1}"
