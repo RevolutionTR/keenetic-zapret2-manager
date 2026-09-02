@@ -37,7 +37,7 @@
 # -------------------------------------------------------------------
 SCRIPT_NAME="keenetic_zapret2_manager.sh"
 # Version scheme: vYY.M.D[.N]  (YY=year, M=month, D=day, N=daily revision)
-SCRIPT_VERSION="v26.8.22"
+SCRIPT_VERSION="v26.9.2"
 SCRIPT_REPO="https://github.com/RevolutionTR/keenetic-zapret2-manager"
 KZM2_SCRIPT_PATH="/opt/lib/opkg/keenetic_zapret2_manager.sh"
 SCRIPT_AUTHOR="RevolutionTR"
@@ -1407,8 +1407,8 @@ TXT_HM_DISK_HEALTH_UP_MSG_TR="📌 HealthMon %TS%\n✅ Disk sagligi normale dond
 TXT_HM_DISK_HEALTH_UP_MSG_EN="📌 HealthMon %TS%\n✅ Disk health restored: /opt\n🧠 CPU: %CPU%%\n📊 Load: %LOAD%\n🧮 RAM free: %RAM% MB"
 # TG-UTF8-BEGIN  --- Telegram-only sozluk: SSH terminaline CIKMAZ, UTF-8 TR karakter serbest.
 # UYARI: Buraya SSH/menu/ekran metni EKLEME. --self-test bu blokta TR karakter taramaz.
-TXT_HM_DROPBEAR_DOWN_MSG_TR="📌 HealthMon %TS%\n⚠️ Entware SSH (port %PORT%) çalışmıyor!\n\nBu uyarı KZM2 kaynaklı değildir; Entware'in kendi SSH sunucusudur.\nBaşlatmak için: /opt/etc/init.d/S51dropbear start\n\n🧠 CPU: %CPU%%\n📊 Yük: %LOAD%\n🧮 RAM boş: %RAM% MB"
-TXT_HM_DROPBEAR_DOWN_MSG_EN="📌 HealthMon %TS%\n⚠️ Entware SSH (port %PORT%) is not running!\n\nThis is not caused by KZM2; it is Entware's own SSH server.\nTo start: /opt/etc/init.d/S51dropbear start\n\n🧠 CPU: %CPU%%\n📊 Load: %LOAD%\n🧮 RAM free: %RAM% MB"
+TXT_HM_DROPBEAR_DOWN_MSG_TR="📌 HealthMon %TS%\n⚠️ Entware SSH (port %PORT%) çalışmıyor!\n\nBu uyarı KZM2 kaynaklı değildir; Entware'in kendi SSH sunucusudur.\nBaşlatmak için: Sistem menüsü > Entware SSH Başlat\nveya SSH Menü 14 > 5\n\n🧠 CPU: %CPU%%\n📊 Yük: %LOAD%\n🧮 RAM boş: %RAM% MB"
+TXT_HM_DROPBEAR_DOWN_MSG_EN="📌 HealthMon %TS%\n⚠️ Entware SSH (port %PORT%) is not running!\n\nThis is not caused by KZM2; it is Entware's own SSH server.\nTo start: System menu > Start Entware SSH\nor SSH Menu 14 > 5\n\n🧠 CPU: %CPU%%\n📊 Load: %LOAD%\n🧮 RAM free: %RAM% MB"
 TXT_HM_DROPBEAR_UP_MSG_TR="📌 HealthMon %TS%\n✅ Entware SSH (port %PORT%) tekrar çalışıyor.\n🧠 CPU: %CPU%%\n📊 Yük: %LOAD%\n🧮 RAM boş: %RAM% MB"
 TXT_HM_DROPBEAR_UP_MSG_EN="📌 HealthMon %TS%\n✅ Entware SSH (port %PORT%) is running again.\n🧠 CPU: %CPU%%\n📊 Load: %LOAD%\n🧮 RAM free: %RAM% MB"
 # TG-UTF8-END
@@ -1859,6 +1859,18 @@ TXT_TGBOT_BOT_NOT_CONFIG_EN="Bot not configured. Enter Telegram token and chat I
 # UYARI: Buraya SSH/menu/ekran metni EKLEME. --self-test bu blokta TR karakter taramaz.
 TXT_TGBOT_BTN_WAN_RESET_TR="WAN Süreli Kapatma"
 TXT_TGBOT_BTN_WAN_RESET_EN="Timed WAN Shutdown"
+TXT_TGBOT_BTN_SSH_START_TR="Entware SSH Başlat"
+TXT_TGBOT_BTN_SSH_START_EN="Start Entware SSH"
+TXT_TGBOT_SSH_OK_TR="✅ Entware SSH başlatıldı."
+TXT_TGBOT_SSH_OK_EN="✅ Entware SSH started."
+TXT_TGBOT_SSH_ALREADY_TR="ℹ️ Entware SSH zaten çalışıyor."
+TXT_TGBOT_SSH_ALREADY_EN="ℹ️ Entware SSH is already running."
+TXT_TGBOT_SSH_FAIL_TR="❌ Entware SSH başlatılamadı. Ayrıntı için SSH Menü 14 > 1 (Kontrol Çalıştır)."
+TXT_TGBOT_SSH_FAIL_EN="❌ Could not start Entware SSH. See SSH Menu 14 > 1 (Run Diagnostics) for details."
+TXT_TGBOT_SSH_NOTINST_TR="ℹ️ Entware SSH (dropbear) kurulu değil."
+TXT_TGBOT_SSH_NOTINST_EN="ℹ️ Entware SSH (dropbear) is not installed."
+TXT_TGBOT_SSH_PORTBUSY_TR="ℹ️ Port başka bir SSH sunucusu tarafından kullanılıyor. Bu bir arıza değil, yapılandırma çakışmasıdır."
+TXT_TGBOT_SSH_PORTBUSY_EN="ℹ️ The port is in use by another SSH server. This is a configuration conflict, not a fault."
 TXT_TGBOT_BTN_PINGCHECK_OFF_TR="Ping Kontrolü Kapat"
 TXT_TGBOT_BTN_PINGCHECK_OFF_EN="Disable Ping Check"
 TXT_TGBOT_BTN_PINGCHECK_ON_TR="Ping Kontrolü Aç"
@@ -1974,6 +1986,18 @@ TXT_MENU14_OPT3_TR="3. DoT/DoH DNS Yapilandir (Guvenli DNS)"
 TXT_MENU14_OPT3_EN="3. Configure DoT/DoH DNS (Secure DNS)"
 TXT_MENU14_OPT4_TR="4. Bilesen Kontrolu (OPKG/iptables/ipset/vs)"
 TXT_MENU14_OPT4_EN="4. Component Check (OPKG/iptables/ipset/etc)"
+TXT_MENU14_OPT5_TR="5. Entware SSH Baslat (dropbear)"
+TXT_MENU14_OPT5_EN="5. Start Entware SSH (dropbear)"
+TXT_SSH_START_ALREADY_TR="Entware SSH zaten calisiyor."
+TXT_SSH_START_ALREADY_EN="Entware SSH is already running."
+TXT_SSH_START_OK_TR="Entware SSH baslatildi."
+TXT_SSH_START_OK_EN="Entware SSH started."
+TXT_SSH_START_FAIL_TR="Entware SSH baslatilamadi. Ayrintili bilgi icin Menu 14 > 1 (Kontrol Calistir)."
+TXT_SSH_START_FAIL_EN="Could not start Entware SSH. See Menu 14 > 1 (Run Diagnostics) for details."
+TXT_SSH_START_NOTINST_TR="Entware SSH (dropbear) kurulu degil."
+TXT_SSH_START_NOTINST_EN="Entware SSH (dropbear) is not installed."
+TXT_SSH_START_PORTBUSY_TR="Port baska bir SSH sunucusu tarafindan kullaniliyor. Bu bir ariza degil, yapilandirma cakismasidir."
+TXT_SSH_START_PORTBUSY_EN="The port is in use by another SSH server. This is a configuration conflict, not a fault."
 TXT_MENU14_DNS_TITLE_TR="Guvenli DNS Yapilandirmasi (DoT/DoH)"
 TXT_MENU14_DNS_TITLE_EN="Secure DNS Configuration (DoT/DoH)"
 TXT_MENU14_DNS_CONFIRM_TR="Bu islem eksik olan ve en cok tercih edilen DoT/DoH DNS sunucularini ekleyecek. Devam? (e/h):"
@@ -3377,7 +3401,47 @@ check_entware_dropbear() {
     return 0
 }
 
-# Keenetic firmware SSH (dropbear, /usr/sbin) durum kontrolu — yalnizca bilgi amacli
+# Entware SSH (dropbear) tek eylemle baslatma.
+# Cikti: _es_result = already | started | failed | notinstalled | portbusy
+#        _es_port   = yapilandirilmis port (check_entware_dropbear'dan)
+#
+# Neden gerekli: S51dropbear init scripti yalnizca PID DOSYASINA bakar. Surec
+# olmus ama dosya kalmissa ("bayat PID") "already running" deyip cikar ve servis
+# hicbir zaman baslamaz. Kullanici komutu elle calistirsa da ayni duvara toslar.
+#
+# Guvenlik: PID dosyasi KORU KORUNE silinmez. Once dosyadaki numaraya ait surec
+# gercekten var mi diye bakilir; surec canliysa dosyaya DOKUNULMAZ.
+entware_ssh_start() {
+    _es_result=""
+    check_entware_dropbear
+    case "$_ed_reason" in
+        notinstalled) _es_result="notinstalled"; return 0 ;;
+        portbusy)     _es_result="portbusy";     return 0 ;;
+    esac
+    if [ "$_ed_status" = "PASS" ]; then
+        _es_result="already"
+        return 0
+    fi
+    # Bayat PID temizligi
+    local _es_pidf _es_pid
+    _es_pidf="/opt/var/run/dropbear.pid"
+    if [ -f "$_es_pidf" ]; then
+        _es_pid="$(cat "$_es_pidf" 2>/dev/null | tr -d '[:space:]')"
+        case "${_es_pid:-}" in
+            ''|*[!0-9]*) rm -f "$_es_pidf" 2>/dev/null ;;
+            *) [ -d "/proc/${_es_pid}" ] || rm -f "$_es_pidf" 2>/dev/null ;;
+        esac
+    fi
+    [ -x /opt/etc/init.d/S51dropbear ] || { _es_result="failed"; return 0; }
+    /opt/etc/init.d/S51dropbear start >/dev/null 2>&1
+    sleep 2
+    if pgrep -f '/opt/sbin/dropbear' >/dev/null 2>&1; then
+        _es_result="started"
+    else
+        _es_result="failed"
+    fi
+    return 0
+}
 # Cikti: _ks_status (PASS/INFO), _ks_port
 # netstat program sutununda her iki dropbear da sadece "dropbear" gorunur, bu yuzden
 # PID eslestirmesi yapilir. Oturum sureclerinin dinleyen portu yoktur, atlanir.
@@ -7573,7 +7637,7 @@ display_menu() {
         printf "  %b%-*s%b : %b%s%b\n" "${CLR_BOLD}" "$_lw" "$(T TXT_HEALTH_DROPBEAR)" \
             "${CLR_RESET}" "${CLR_RED}" "$(T _ 'CALISMIYOR' 'DOWN') (port ${_ed_port:-222})" "${CLR_RESET}"
         printf "  %-*s   %b%s%b\n" "$_lw" "" \
-            "${CLR_ORANGE}" "$(T _ 'Baslatmak icin: /opt/etc/init.d/S51dropbear start' 'To start: /opt/etc/init.d/S51dropbear start')" "${CLR_RESET}"
+            "${CLR_ORANGE}" "$(T _ 'Baslatmak icin: Menu 14 > 5' 'To start: Menu 14 > 5')" "${CLR_RESET}"
     fi
     # Keenetic firmware SSH — yalnizca bilgi, uyari verilmez (firmware bileseni,
     # KZM2 sorumlulugunda degil). Bulunamazsa satir hic cikmaz.
@@ -8477,6 +8541,7 @@ network_diag_menu() {
         echo " $(T TXT_MENU14_OPT2)"
         echo " $(T TXT_MENU14_OPT3)"
         echo " $(T TXT_MENU14_OPT4)"
+        echo " $(T TXT_MENU14_OPT5)"
         echo " 0. $(T TXT_BACK)"
         print_line "="
         printf '%s' "$(T TXT_CHOICE) "
@@ -8504,6 +8569,17 @@ network_diag_menu() {
                            print_status WARN "$(T _ 'Kurulum basarisiz. Internet baglantisini kontrol edin.' 'Installation failed. Check internet connection.')"
                    fi
                fi
+               press_enter_to_continue ;;
+            5) clear
+               print_status INFO "$(T _ 'Entware SSH baslatiliyor...' 'Starting Entware SSH...')"
+               entware_ssh_start
+               case "$_es_result" in
+                   already)      print_status PASS "$(T TXT_SSH_START_ALREADY)" ;;
+                   started)      print_status PASS "$(T TXT_SSH_START_OK)" ;;
+                   notinstalled) print_status INFO "$(T TXT_SSH_START_NOTINST)" ;;
+                   portbusy)     print_status INFO "$(T TXT_SSH_START_PORTBUSY)" ;;
+                   *)            print_status FAIL "$(T TXT_SSH_START_FAIL)" ;;
+               esac
                press_enter_to_continue ;;
             0) return 0 ;;
             *) print_status WARN "$(T TXT_INVALID_CHOICE)"; sleep 1 ;;
@@ -10888,12 +10964,20 @@ tgbot_kb_sistem() {
         _pc_btn="$(T TXT_TGBOT_BTN_PINGCHECK_ON)"
         _pc_action="sys_pingcheck_on"
     fi
-    printf '[[{"text":"📡 %s","callback_data":"%s:sys_net_devices"},{"text":"📶 %s","callback_data":"%s:sys_wifi"}],[{"text":"🌐 %s","callback_data":"%s:sys_wan_reset"},{"text":"🔔 %s","callback_data":"%s:%s"}],[{"text":"🟢 %s","callback_data":"%s:sys_device_detail"}],[{"text":"⬅️ %s","callback_data":"%s:menu_main"}]]' \
+    # Entware SSH butonu: yalnizca dropbear KURULU ise gosterilir.
+    # Kurulu degilse satir hic uretilmez (bos buton/anlamsiz hata onlenir).
+    local _ssh_row=""
+    if [ -f /opt/etc/config/dropbear.conf ]; then
+        _ssh_row="$(printf ',[{"text":"🔑 %s","callback_data":"%s:sys_ssh_start"}]' \
+            "$(T TXT_TGBOT_BTN_SSH_START)" "$rid")"
+    fi
+    printf '[[{"text":"📡 %s","callback_data":"%s:sys_net_devices"},{"text":"📶 %s","callback_data":"%s:sys_wifi"}],[{"text":"🌐 %s","callback_data":"%s:sys_wan_reset"},{"text":"🔔 %s","callback_data":"%s:%s"}],[{"text":"🟢 %s","callback_data":"%s:sys_device_detail"}]%s,[{"text":"⬅️ %s","callback_data":"%s:menu_main"}]]' \
         "$(T TXT_TGBOT_BTN_NET_DEVICES)" "$rid" \
         "$(T TXT_TGBOT_BTN_WIFI)" "$rid" \
         "$(T TXT_TGBOT_BTN_WAN_RESET)" "$rid" \
         "$_pc_btn" "$rid" "$_pc_action" \
         "$_dev_label" "$rid" \
+        "$_ssh_row" \
         "$(T TXT_TGBOT_BTN_BACK)" "$rid"
 }
 # Cihaz detay klavyesi: Reboot / KZM Log + Sistem Log / Selftest / Geri
@@ -11719,6 +11803,18 @@ tgbot_handle_callback() {
             tgbot_edit "$chat_id" "$msg_id" "$(T TXT_TGBOT_REBOOT_SENT)" ""
             sleep 2
             LD_LIBRARY_PATH= ndmc -c "system reboot" >/dev/null 2>&1 || true
+            ;;
+        sys_ssh_start)
+            local _ss_msg
+            entware_ssh_start
+            case "$_es_result" in
+                already)      _ss_msg="$(T TXT_TGBOT_SSH_ALREADY)" ;;
+                started)      _ss_msg="$(T TXT_TGBOT_SSH_OK)" ;;
+                notinstalled) _ss_msg="$(T TXT_TGBOT_SSH_NOTINST)" ;;
+                portbusy)     _ss_msg="$(T TXT_TGBOT_SSH_PORTBUSY)" ;;
+                *)            _ss_msg="$(T TXT_TGBOT_SSH_FAIL)" ;;
+            esac
+            tgbot_edit "$chat_id" "$msg_id" "$_ss_msg" "$(tgbot_kb_sistem)"
             ;;
         sys_pingcheck_off)
             local _pc_wan _pc_prof
@@ -13369,7 +13465,15 @@ healthmon_loop() {
             # grace bitiminde spike/stall ayrimi ilk turdan itibaren dogru calissin.
             awk '$1 == 300 { print $3; exit }' /proc/net/netfilter/nfnetlink_queue 2>/dev/null \
                 > /tmp/healthmon_qlen.prev
-            healthmon_log "$now | qlen_boot_grace | uptime<300s - qlen watchdog atlandi"
+            # TESHIS (yalnizca kayit; hicbir karar bu veriye baglanmaz):
+            # portid=0  -> nfqws2 kuyruga hic baglanmamis
+            # seq sabit -> baglanmis ama paket islemiyor (donmus)
+            # Boot sonrasi kuyruk tikanmasinin kok nedenini ayirt etmek icin.
+            local _bg_diag
+            _bg_diag="$(awk '$1 == 300 { printf "qlen=%s portid=%s kdrop=%s udrop=%s seq=%s", $3, $2, $6, $7, $8; exit }' \
+                /proc/net/netfilter/nfnetlink_queue 2>/dev/null)"
+            [ -z "$_bg_diag" ] && _bg_diag="qnum300-yok"
+            healthmon_log "$now | qlen_boot_grace | uptime<300s $_bg_diag pid=$(pgrep -f nfqws2 2>/dev/null | head -n1)"
         elif [ "${HM_QLEN_WATCHDOG:-1}" = "1" ] && hm_wanmon_is_up "$_qlen_wan_ifc" 2>/dev/null; then
             local qlen_th qlen_turns qlen_val qlen_cnt_f qlen_prev_f qlen_cnt qlen_prev
             qlen_th="${HM_QLEN_WARN_TH:-50}"
@@ -13850,6 +13954,11 @@ if [ "$1" = "--cgi-action" ]; then
             if [ -f /tmp/kzm2_healthmon.pid ]; then
                 kill "$(cat /tmp/kzm2_healthmon.pid 2>/dev/null)" 2>/dev/null
             fi
+            ;;
+        ssh_start)
+            # Web panel Dashboard "Entware SSH" karti. Cikti tek kelime, CGI okur.
+            entware_ssh_start
+            printf '%s\n' "${_es_result:-failed}"
             ;;
         tg_test)
             if [ -f /opt/etc/telegram.conf ]; then
@@ -14518,9 +14627,14 @@ start() {
     fi
   fi
   
-  wait_for_network
-  
-  log_init "Starting daemon..."
+  # NOT: wait_for_network BURADAN CAGRILMAZ.
+  # Keenetic'te NDM, rc.unslung'u ~140sn'lik bir sinirla calistirir ve asilirsa
+  # "Opkg shell" surec grubunun TAMAMINI oldurur (zapret2 dahil). rc.unslung
+  # scriptleri ". $i" ile source ettiginden burada beklemek TUM zinciri bloklar.
+  # DSL/PPPoE hatlarda ag hazir olmasi 120sn'yi asabildigi icin bu, elektrik
+  # kesintisi sonrasi HealthMon + Zapret2'nin hic baslamamasina yol aciyordu.
+  # Daemon zaten kendi dongusunde agi bekler; init hizli donmelidir.
+  log_init "Starting daemon (network wait handled by daemon)..."
   "$SCRIPT" --healthmon-daemon </dev/null >>/tmp/kzm2_healthmon.log 2>&1 &
   
   sleep 2
@@ -15151,12 +15265,17 @@ TXT_OPKG_SCHED_BANNER_LABEL_TR="OPKG Guncelleme"
 TXT_OPKG_SCHED_BANNER_LABEL_EN="OPKG Upgrade"
 TXT_OPKG_SCHED_RUN_START_TR="Zamanlanmis OPKG guncelleme basliyor..."
 TXT_OPKG_SCHED_RUN_START_EN="Scheduled OPKG upgrade starting..."
-TXT_OPKG_SCHED_RUN_NOUPDATE_TR="✅ Guncellenecek paket bulunamadi."
+# TG-UTF8-BEGIN  --- Telegram-only sozluk: SSH terminaline CIKMAZ, UTF-8 TR karakter serbest.
+# UYARI: Buraya SSH/menu/ekran metni EKLEME. --self-test bu blokta TR karakter taramaz.
+TXT_OPKG_SCHED_TITLE_TG_TR="[KZM2] Zamanlanmış OPKG Güncelleme"
+TXT_OPKG_SCHED_TITLE_TG_EN="[KZM2] Scheduled OPKG Upgrade"
+TXT_OPKG_SCHED_RUN_NOUPDATE_TR="✅ Güncellenecek paket bulunamadı."
 TXT_OPKG_SCHED_RUN_NOUPDATE_EN="✅ No packages to upgrade."
-TXT_OPKG_SCHED_RUN_OK_TR="✅ OPKG guncelleme tamamlandi. Yukseltilen: %COUNT% paket."
+TXT_OPKG_SCHED_RUN_OK_TR="✅ OPKG güncelleme tamamlandı. Yükseltilen: %COUNT% paket."
 TXT_OPKG_SCHED_RUN_OK_EN="✅ OPKG upgrade completed. Upgraded: %COUNT% packages."
-TXT_OPKG_SCHED_RUN_FAIL_TR="❌ OPKG guncelleme basarisiz."
+TXT_OPKG_SCHED_RUN_FAIL_TR="❌ OPKG güncelleme başarısız."
 TXT_OPKG_SCHED_RUN_FAIL_EN="❌ OPKG upgrade failed."
+# TG-UTF8-END
 TXT_OPKG_SCHED_TIME_WARN_TR="UYARI: Router saatinin dogru oldugunu kontrol edin (Sistem Ayarlari > Genel)."
 TXT_OPKG_SCHED_TIME_WARN_EN="WARNING: Make sure the router time is set correctly (System Settings > General)."
 # TR/EN Dictionary (Scheduled Tasks wrapper menu)
@@ -15756,6 +15875,19 @@ kzm_gui_gen_status() {
         _hm_pid="$(cat "$_hm_pid_file" 2>/dev/null)"
         [ -n "$_hm_pid" ] && kill -0 "$_hm_pid" 2>/dev/null && _hm_run=1
     fi
+    # Entware SSH (dropbear) durumu — web panel Dashboard karti icin
+    # 0=calismiyor 1=calisiyor ; ssh_state: running|down|notinstalled|portbusy
+    local _essh_run=0 _essh_state="down" _essh_port=""
+    if [ -f /opt/etc/config/dropbear.conf ]; then
+        _essh_port="$(grep '^PORT=' /opt/etc/config/dropbear.conf 2>/dev/null | cut -d= -f2 | tr -d '"[:space:]')"
+        if pgrep -f '/opt/sbin/dropbear' >/dev/null 2>&1; then
+            _essh_run=1; _essh_state="running"
+        elif netstat -tln 2>/dev/null | grep -qE ":${_essh_port:-222}[[:space:]]"; then
+            _essh_state="portbusy"
+        fi
+    else
+        _essh_state="notinstalled"
+    fi
     # HealthMon etkin mi? (config)
     local _hm_enabled=0
     [ "$(grep -s '^HM_ENABLE=' /opt/etc/healthmon.conf | cut -d= -f2 | tr -d '"')" = "1" ] && _hm_enabled=1
@@ -15908,6 +16040,9 @@ kzm_gui_gen_status() {
   "telegram_enabled": $_tg_enabled,
   "telegram_running": $_tg_run,
   "telegram_configured": $_tg_configured,
+  "entware_ssh_running": $_essh_run,
+  "entware_ssh_state": "$_essh_state",
+  "entware_ssh_port": "${_essh_port:-222}",
   "load1": "$_load1",
   "load5": "$_load5",
   "load15": "$_load15",
@@ -15964,6 +16099,18 @@ _tg_configured=0
 _tg_tok="$(grep -s '^TG_BOT_TOKEN=' /opt/etc/telegram.conf | cut -d= -f2 | tr -d '"')"
 _tg_chat="$(grep -s '^TG_CHAT_ID=' /opt/etc/telegram.conf | cut -d= -f2 | tr -d '"')"
 [ -n "$_tg_tok" ] && [ -n "$_tg_chat" ] && _tg_configured=1
+_essh_run=0; _essh_state="down"; _essh_port=""
+if [ -f /opt/etc/config/dropbear.conf ]; then
+    _essh_port="$(grep '^PORT=' /opt/etc/config/dropbear.conf 2>/dev/null | cut -d= -f2 | tr -d '"[:space:]')"
+    if pgrep -f '/opt/sbin/dropbear' >/dev/null 2>&1; then
+        _essh_run=1; _essh_state="running"
+    elif netstat -tln 2>/dev/null | grep -qE ":${_essh_port:-222}[[:space:]]"; then
+        _essh_state="portbusy"
+    fi
+else
+    _essh_state="notinstalled"
+fi
+[ -z "$_essh_port" ] && _essh_port="222"
 _load1="$(awk '{print $1}' /proc/loadavg 2>/dev/null)"; [ -z "$_load1" ] && _load1="0.00"
 _load5="$(awk '{print $2}' /proc/loadavg 2>/dev/null)"; [ -z "$_load5" ] && _load5="0.00"
 _load15="$(awk '{print $3}' /proc/loadavg 2>/dev/null)"; [ -z "$_load15" ] && _load15="0.00"
@@ -16195,10 +16342,11 @@ if [ -f /opt/zapret2/blockcheck_result.json ]; then
     [ -z "$_bc_tests_total" ] && _bc_tests_total=0
 
 fi
-printf '{\n  "ts": %s,\n  "lang": "%s",\n  "theme": "%s",\n  "kzm_version": "%s",\n  "model": "%s",\n  "firmware": "%s",\n  "wan_dev": "%s",\n  "wan_ip": "%s",\n  "lan_ip": "%s",\n  "keendns_fqdn": "%s",\n  "keendns_access": "%s",\n  "iss_name": "%s",\n  "isp_dns": "%s",\n  "zapret_running": %s,\n  "zapret_version": "%s",\n  "healthmon_running": %s,\n  "healthmon_enabled": %s,\n  "telegram_enabled": %s,\n  "telegram_running": %s,\n  "telegram_configured": %s,\n  "lighttpd_running": %s,\n  "curl_ok": %s,\n  "load1": "%s",\n  "load5": "%s",\n  "load15": "%s",\n  "ram_used_mb": %s,\n  "ram_free_mb": %s,\n  "ram_total_mb": %s,\n  "ram_buffer_mb": %s,\n  "swap_used_mb": %s,\n  "swap_total_mb": %s,\n  "disk_used_pct": %s,\n  "disk_used_mb": %s,\n  "disk_total_mb": %s,\n  "disk_tmp_pct": %s,\n  "disk_tmp_used_mb": %s,\n  "disk_tmp_total_mb": %s,\n  "storage_type": "%s",\n  "storage_label": "%s",\n  "disk_health_status": "%s",\n  "disk_health_msg": "%s",\n  "cpu_temp": %s,\n  "wifi0_temp": %s,\n  "wifi1_temp": %s,\n  "wifi2_temp": %s,\n  "dpi_profile": "%s",\n  "dpi_origin": "%s",\n  "filter_mode": "%s",\n  "scope_mode": "%s",\n  "ipset_mode": "%s",\n  "ipset_count": %s,\n  "bc_score": %s,\n  "bc_dns_ok": %s,\n  "bc_tls12_ok": %s,\n  "bc_udp_weak": %s,\n  "bc_tests_ok": %s,\n  "bc_tests_total": %s,\n  "bc_ts": %s,\n  "sha_kzm": "%s",\n  "sha_zapret": "%s"\n}\n' \
+printf '{\n  "ts": %s,\n  "lang": "%s",\n  "theme": "%s",\n  "kzm_version": "%s",\n  "model": "%s",\n  "firmware": "%s",\n  "wan_dev": "%s",\n  "wan_ip": "%s",\n  "lan_ip": "%s",\n  "keendns_fqdn": "%s",\n  "keendns_access": "%s",\n  "iss_name": "%s",\n  "isp_dns": "%s",\n  "zapret_running": %s,\n  "zapret_version": "%s",\n  "healthmon_running": %s,\n  "healthmon_enabled": %s,\n  "telegram_enabled": %s,\n  "telegram_running": %s,\n  "telegram_configured": %s,\n  "entware_ssh_running": %s,\n  "entware_ssh_state": "%s",\n  "entware_ssh_port": "%s",\n  "lighttpd_running": %s,\n  "curl_ok": %s,\n  "load1": "%s",\n  "load5": "%s",\n  "load15": "%s",\n  "ram_used_mb": %s,\n  "ram_free_mb": %s,\n  "ram_total_mb": %s,\n  "ram_buffer_mb": %s,\n  "swap_used_mb": %s,\n  "swap_total_mb": %s,\n  "disk_used_pct": %s,\n  "disk_used_mb": %s,\n  "disk_total_mb": %s,\n  "disk_tmp_pct": %s,\n  "disk_tmp_used_mb": %s,\n  "disk_tmp_total_mb": %s,\n  "storage_type": "%s",\n  "storage_label": "%s",\n  "disk_health_status": "%s",\n  "disk_health_msg": "%s",\n  "cpu_temp": %s,\n  "wifi0_temp": %s,\n  "wifi1_temp": %s,\n  "wifi2_temp": %s,\n  "dpi_profile": "%s",\n  "dpi_origin": "%s",\n  "filter_mode": "%s",\n  "scope_mode": "%s",\n  "ipset_mode": "%s",\n  "ipset_count": %s,\n  "bc_score": %s,\n  "bc_dns_ok": %s,\n  "bc_tls12_ok": %s,\n  "bc_udp_weak": %s,\n  "bc_tests_ok": %s,\n  "bc_tests_total": %s,\n  "bc_ts": %s,\n  "sha_kzm": "%s",\n  "sha_zapret": "%s"\n}\n' \
     "$_ts" "$(cat /opt/zapret2/lang 2>/dev/null | tr -d '[:space:]' | head -c2)" "$(cat /opt/zapret2/theme 2>/dev/null | tr -d '[:space:]' | head -c5)" "$_kzmver" "$_model" "$_fw" "$_wan_display" "$_wip" "$_lan_ip" \
     "$_kdns_fqdn" "$_kdns_access" "$_iss_name" "$_isp_dns_json" \
     "$_zap" "$_zver" "$_hm" "$_hm_en" "$_tg_en" "$_tg" "$_tg_configured" \
+    "$_essh_run" "$_essh_state" "$_essh_port" \
     "$_lighttpd" "$_curl_ok" \
     "$_load1" "$_load5" "$_load15" \
     "$_rumb" "$_rfree_mb" "$_rtmb" "$_rbuf_mb" "$_swap_used_mb" "$_swap_total_mb" \
@@ -16751,6 +16899,21 @@ case "$ACTION" in
         [ -f "$_kzm" ] && KZM2_SKIP_LOCK=1 sh "$_kzm" --cgi-action fix_permissions >/dev/null 2>&1
         sh /opt/etc/init.d/S90-zapret2 start >/dev/null 2>&1
         wait_zapret2 up; refresh; ok "Zapret2 baslatildi" ;;
+    ssh_start)
+        _kzm="/opt/lib/opkg/keenetic_zapret2_manager.sh"
+        if [ ! -f "$_kzm" ]; then
+            fail "Betik bulunamadi"
+        else
+            _r="$(KZM2_SKIP_LOCK=1 sh "$_kzm" --cgi-action ssh_start 2>/dev/null | tr -d '[:space:]')"
+            refresh
+            case "$_r" in
+                started)      ok "Entware SSH baslatildi" ;;
+                already)      ok "Entware SSH zaten calisiyor" ;;
+                notinstalled) fail "Entware SSH (dropbear) kurulu degil" ;;
+                portbusy)     fail "Port baska bir SSH sunucusunda" ;;
+                *)            fail "Entware SSH baslatilamadi" ;;
+            esac
+        fi ;;
     zapret_stop)
         touch /tmp/.zapret2_paused 2>/dev/null
         sh /opt/etc/init.d/S90-zapret2 stop >/dev/null 2>&1
@@ -17998,6 +18161,44 @@ var opkgState={status:null,count:0,upgraded:false};
 var zapUpdState={checked:false,update:false,current:'',latest:'',statusHtml:'',updBtnEnabled:false};
 var hmConfCache=null;
 var dnsCache=null;
+var sshBusy=false;
+// Entware SSH karti. Durum S (status JSON) uzerinden gelir; ayri bir state
+// degiskeni tutulmaz, boylece 15sn'lik otomatik yenilemede kart bayatlamaz.
+// sshBusy yalnizca buton tiklamasi sirasinda cift gonderimi engeller.
+function fmtSshCard(){
+  var st=(S&&S.entware_ssh_state)?S.entware_ssh_state:'down';
+  var port=(S&&S.entware_ssh_port)?S.entware_ssh_port:'222';
+  var badge,info,btn='';
+  if(st==='running'){
+    badge='<span class="badge good">'+(L?'RUNNING':'&#199;ALI&#350;IYOR')+'</span>';
+    info=(L?'Port':'Port')+': <b>'+port+'</b>';
+  } else if(st==='notinstalled'){
+    badge='<span class="badge off">'+(L?'NOT INSTALLED':'KURULU DE&#286;&#304;L')+'</span>';
+    info=L?'Entware SSH (dropbear) is not installed.':'Entware SSH (dropbear) kurulu de&#287;il.';
+  } else if(st==='portbusy'){
+    badge='<span class="badge warn">'+(L?'PORT IN USE':'PORT DOLU')+'</span>';
+    info=L?'Port '+port+' is used by another SSH server.':'Port '+port+' ba&#351;ka bir SSH sunucusunda.';
+  } else {
+    badge='<span class="badge bad">'+(L?'DOWN':'&#199;ALI&#350;MIYOR')+'</span>';
+    info=(L?'Port':'Port')+': <b>'+port+'</b>';
+    btn='<div class="btns" style="margin-top:10px">'+
+      '<button class="ok" id="sshStartBtn" onclick="sshStart(this)">&#9654; '+(L?'Start':'Ba&#351;lat')+'</button>'+
+    '</div>';
+  }
+  return '<div class="card" id="sshCard">'+
+    '<h3>Entware SSH</h3>'+
+    '<div class="row" style="margin-bottom:6px">'+badge+'</div>'+
+    '<div style="font-size:12.5px;color:var(--muted)">'+info+'</div>'+
+    btn+
+    '<div style="font-size:11px;color:var(--muted);margin-top:10px">SSH: Menu 14 &gt; 5</div>'+
+  '</div>';
+}
+function sshStart(b){
+  if(sshBusy)return; sshBusy=true;
+  var old=b.innerHTML; b.disabled=true; b.innerHTML=L?'Starting...':'Ba&#351;lat&#305;l&#305;yor...';
+  act('ssh_start',b,L?'Started':'Baslatildi');
+  setTimeout(function(){ sshBusy=false; b.disabled=false; b.innerHTML=old; },4000);
+}
 function fmtOpkgCard(){
   var statusHtml=L?'Press the button to refresh the package list.':'Paket listesini yenilemek i&#231;in butona bas&#305;n.';
   var upgradeShow='none';
@@ -18011,7 +18212,7 @@ function fmtOpkgCard(){
   } else if(opkgState.status==='err'){
     statusHtml='<span style="color:var(--bad)">&#10007; '+(L?'Error occurred.':'Hata olustu.')+'</span>';
   }
-  return '<div class="card" id="opkgCard" style="grid-column:span 2">'+
+  return '<div class="card" id="opkgCard">'+
     '<h3>'+(L?'OPKG Packages':'OPKG Paketleri')+'</h3>'+
     '<div id="opkgStatus" style="font-size:12.5px;color:var(--muted);margin:8px 0 10px">'+statusHtml+'</div>'+
     '<div class="btns">'+
@@ -18294,6 +18495,7 @@ var V={
       '</div>'+
       fmtBcCard(S)+
       fmtOpkgCard()+
+      fmtSshCard()+
       '</div>'+
       '<div class="card wide"><h3>'+(L?'System Info':'Sistem Bilgisi')+'</h3><div class="info-grid">'+
         ir('Model',S.model||'—')+ir('Firmware',(L?fixTR(S.firmware||'—').replace('Kararl\u0131','Stable').replace('Kararl&#305;','Stable').replace('Kararli','Stable').replace('Ar\u015fiv','Archive').replace('Arsiv','Archive').replace('\u00d6nizleme','Preview').replace('&#214;nizleme','Preview').replace('Onizleme','Preview').replace('Geli\u015ftirici','Developer').replace('Geli&#351;tirici','Developer').replace('Gelistirici','Developer'):fixTR(S.firmware||'—')))+
@@ -20210,7 +20412,7 @@ if [ "$1" = "--opkg-upgrade" ]; then
     load_lang
     _log="/tmp/kzm2_healthmon.log"
     _ts="$(date '+%Y-%m-%d %H:%M:%S')"
-    _title="🔄 $(T TXT_OPKG_SCHED_TITLE)"
+    _title="🔄 $(T TXT_OPKG_SCHED_TITLE_TG)"
     printf '%s | opkg_upgrade | start\n' "$_ts" >> "$_log"
     # opkg.lock varsa 30s bekle, tekrar dene
     if ! opkg update >> "$_log" 2>&1; then
@@ -20221,14 +20423,16 @@ if [ "$1" = "--opkg-upgrade" ]; then
                 printf '%s | opkg_upgrade | opkg update FAIL\n' "$_ts" >> "$_log"
                 telegram_load_config 2>/dev/null
                 [ -n "$TG_BOT_TOKEN" ] && [ -n "$TG_CHAT_ID" ] && \
-                    telegram_send "$(printf '%s\n%s' "$_title" "$(T TXT_OPKG_SCHED_RUN_FAIL)")" >/dev/null 2>&1
+                    telegram_send "$(printf '%s\n%s' "$_title" "$(T TXT_OPKG_SCHED_RUN_FAIL)")
+" >/dev/null 2>&1
                 exit 1
             fi
         else
             printf '%s | opkg_upgrade | opkg update FAIL\n' "$_ts" >> "$_log"
             telegram_load_config 2>/dev/null
             [ -n "$TG_BOT_TOKEN" ] && [ -n "$TG_CHAT_ID" ] && \
-                telegram_send "$(printf '%s\n%s' "$_title" "$(T TXT_OPKG_SCHED_RUN_FAIL)")" >/dev/null 2>&1
+                telegram_send "$(printf '%s\n%s' "$_title" "$(T TXT_OPKG_SCHED_RUN_FAIL)")
+" >/dev/null 2>&1
             exit 1
         fi
     fi
@@ -20238,7 +20442,8 @@ if [ "$1" = "--opkg-upgrade" ]; then
         printf '%s | opkg_upgrade | %s\n' "$_ts" "$_noupdate_msg" >> "$_log"
         telegram_load_config 2>/dev/null
         if [ -n "$TG_BOT_TOKEN" ] && [ -n "$TG_CHAT_ID" ]; then
-            telegram_send "$(printf '%s\n%s' "$_title" "$_noupdate_msg")" >/dev/null 2>&1
+            telegram_send "$(printf '%s\n%s' "$_title" "$_noupdate_msg")
+" >/dev/null 2>&1
         fi
         exit 0
     fi
@@ -20251,13 +20456,15 @@ if [ "$1" = "--opkg-upgrade" ]; then
         printf '%s | opkg_upgrade | %s\n' "$_ts" "$_msg" >> "$_log"
         telegram_load_config 2>/dev/null
         if [ -n "$TG_BOT_TOKEN" ] && [ -n "$TG_CHAT_ID" ]; then
-            telegram_send "$(printf '%s\n%s\n%s' "$_title" "$_msg" "$_pkglist")" >/dev/null 2>&1
+            telegram_send "$(printf '%s\n%s\n%s' "$_title" "$_msg" "$_pkglist")
+" >/dev/null 2>&1
         fi
     else
         printf '%s | opkg_upgrade | FAIL rc=%s\n' "$_ts" "$_rc" >> "$_log"
         telegram_load_config 2>/dev/null
         [ -n "$TG_BOT_TOKEN" ] && [ -n "$TG_CHAT_ID" ] && \
-            telegram_send "$(printf '%s\n%s' "$_title" "$(T TXT_OPKG_SCHED_RUN_FAIL)")" >/dev/null 2>&1
+            telegram_send "$(printf '%s\n%s' "$_title" "$(T TXT_OPKG_SCHED_RUN_FAIL)")
+" >/dev/null 2>&1
         exit 1
     fi
     exit 0
@@ -20267,7 +20474,7 @@ if [ "$1" = "--opkg-upgrade-test" ]; then
     load_lang
     _log="/tmp/kzm2_healthmon.log"
     _ts="$(date '+%Y-%m-%d %H:%M:%S')"
-    _title="🔄 $(T TXT_OPKG_SCHED_TITLE)"
+    _title="🔄 $(T TXT_OPKG_SCHED_TITLE_TG)"
     _upgradable="htop 3.3.0-1 - 3.4.1-1
 curl 8.5.0-1 - 8.6.0-1"
     _count="$(printf '%s\n' "$_upgradable" | grep -c .)"
@@ -20276,7 +20483,8 @@ curl 8.5.0-1 - 8.6.0-1"
     printf '%s | opkg_upgrade_test | %s\n' "$_ts" "$_msg" >> "$_log"
     telegram_load_config 2>/dev/null
     if [ -n "$TG_BOT_TOKEN" ] && [ -n "$TG_CHAT_ID" ]; then
-        telegram_send "$(printf '%s\n%s\n%s' "$_title" "$_msg" "$_pkglist")" >/dev/null 2>&1
+        telegram_send "$(printf '%s\n%s\n%s' "$_title" "$_msg" "$_pkglist")
+" >/dev/null 2>&1
     fi
     echo "Test mesaji gonderildi. Log: $_log"
     exit 0
