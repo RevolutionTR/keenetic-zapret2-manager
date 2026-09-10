@@ -408,6 +408,8 @@ When a DPI-blocked connection is detected, the relevant domain is automatically 
 
 **A true set-and-forget feature.**
 
+Zapret2 expands the `<HOSTLIST>` marker only when `MODE_FILTER` in `/opt/zapret2/config` is `hostlist` or `autohostlist`. KZM2 syncs the `hostlist_mode` state file into that `MODE_FILTER` line on every DPI write and every Zapret2 start. If the two diverge, the menu can show Auto Hostlist while nfqws2 desyncs all HTTPS (including banking apps).
+
 ⚠️ To prevent autohostlist from growing indefinitely, `/opt/zapret2/nfqws_autohostlist.log` is trimmed to the last 500 lines when it exceeds 1 MB (managed by Health Monitor).
 
 ---

@@ -37,7 +37,7 @@
 # -------------------------------------------------------------------
 SCRIPT_NAME="keenetic_zapret2_manager.sh"
 # Version scheme: vYY.M.D[.N]  (YY=year, M=month, D=day, N=daily revision)
-SCRIPT_VERSION="v26.9.2"
+SCRIPT_VERSION="v26.9.10"
 SCRIPT_REPO="https://github.com/RevolutionTR/keenetic-zapret2-manager"
 KZM2_SCRIPT_PATH="/opt/lib/opkg/keenetic_zapret2_manager.sh"
 SCRIPT_AUTHOR="RevolutionTR"
@@ -3981,6 +3981,9 @@ update_nfqws_parameters() {
         echo "$(T nfqws_cfg_missing "UYARI: /opt/zapret2/config bulunamadi." "WARNING: /opt/zapret2/config not found.")"
         return 1
     fi
+    # <HOSTLIST> in NFQWS2_OPT is inert unless Zapret2 config has MODE_FILTER=hostlist|autohostlist.
+    # Keep config in lockstep with KZM2 hostlist_mode (install_easy.sh always writes none).
+    sync_mode_filter_to_config >/dev/null 2>&1
     # Config degisiklik logu: yazilmadan once eski degeri oku
     local _old_opt
     _old_opt="$(grep '^NFQWS2_OPT=' /opt/zapret2/config 2>/dev/null | cut -d'"' -f2)"
@@ -4715,6 +4718,9 @@ start_zapret2() {
     # Start edilecekse pause kaldir
     zapret_resume
     install_zapret_pause_guard
+    # Zapret2 reads MODE_FILTER from config, not hostlist_mode. Re-sync on every start
+    # so DPI profile changes / install_easy / updates cannot leave <HOSTLIST> unexpanded.
+    sync_mode_filter_to_config >/dev/null 2>&1
     # Tum runtime izinlerini duzelt (nfqws2 nobody user ile calisir)
     fix_zapret2_runtime_permissions
     # Zapret2 icin gerekli kernel modullerini yukle (bitmap:port dahil)
@@ -6170,7 +6176,7 @@ run_zapret2_install_easy() {
     (
         echo "1"            # firewall: iptables
         echo "$_ipv6"        # IPv6 support
-        echo "1"            # filtering mode: none
+        echo "1"            # filtering mode: none (KZM2 restores MODE_FILTER from hostlist_mode afterwards)
         echo "y"            # enable NFQWS2
         echo "n"            # edit config: no
         echo ""             # LAN interface: default NONE (if asked)
@@ -6184,7 +6190,7 @@ run_zapret2_install_easy() {
         echo "y"            # continue on unsupported generic linux/Keenetic
         echo "1"            # firewall: iptables
         echo "$_ipv6"        # IPv6 support
-        echo "1"            # filtering mode: none
+        echo "1"            # filtering mode: none (KZM2 restores MODE_FILTER from hostlist_mode afterwards)
         echo "y"            # enable NFQWS2
         echo "n"            # edit config: no
         echo ""             # LAN interface: default NONE (if asked)
@@ -6725,6 +6731,19 @@ set_mode_filter() {
         fi
     fi
     return 0
+}
+sync_mode_filter_to_config() {
+    # KZM2 UI/state: /opt/zapret2/hostlist_mode
+    # Zapret2 runtime: MODE_FILTER in /opt/zapret2/config
+    # If they diverge, <HOSTLIST> expands to empty and nfqws2 desyncs ALL TLS
+    # (internet banking, e-Devlet, pinned-cert apps).
+    local mf
+    mf="$(get_mode_filter)"
+    case "$mf" in
+        none|hostlist|autohostlist|ipset) ;;
+        *) mf="none" ;;
+    esac
+    set_mode_filter "$mf"
 }
 normalize_domain() {
     # stdin or $1; output normalized domain or empty

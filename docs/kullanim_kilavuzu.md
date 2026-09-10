@@ -408,6 +408,8 @@ DPI tarafından engellenen bağlantılar tespit edildiğinde ilgili domain otoma
 
 **Kur → unut özelliğidir.**
 
+Zapret2 `<HOSTLIST>` işaretini yalnızca config içindeki `MODE_FILTER=hostlist` / `autohostlist` iken gerçek listeye çevirir. KZM2 her DPI yazımında ve her Zapret2 start’ta `hostlist_mode` dosyasını `MODE_FILTER` satırına senkronlar. Bu kopya yapılmazsa menü “Otomatik Liste” gösterirken nfqws2 tüm HTTPS’e desync uygular (bankacılık uygulamaları dahil).
+
 ⚠️ Autohostlist dolup taşmasın diye `/opt/zapret2/nfqws_autohostlist.log` 1 MB'ı aşınca son 500 satıra kırpılır (Health Monitor tarafından yönetilir).
 
 # 🔹 Menü 12 — IPSet Yönetimi
