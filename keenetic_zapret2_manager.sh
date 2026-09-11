@@ -37,7 +37,7 @@
 # -------------------------------------------------------------------
 SCRIPT_NAME="keenetic_zapret2_manager.sh"
 # Version scheme: vYY.M.D[.N]  (YY=year, M=month, D=day, N=daily revision)
-SCRIPT_VERSION="v26.9.11"
+SCRIPT_VERSION="v26.9.11.1"
 SCRIPT_REPO="https://github.com/RevolutionTR/keenetic-zapret2-manager"
 KZM2_SCRIPT_PATH="/opt/lib/opkg/keenetic_zapret2_manager.sh"
 SCRIPT_AUTHOR="RevolutionTR"
@@ -5073,14 +5073,19 @@ check_remote_update() {
 # --- ZAPRET IPV6 DURUM KONTROLU ---
 _zapret2_ipv6_enabled() {
     # KZM2 source of truth: /opt/zapret2/config
-    #   DISABLE_IPV6=0 -> IPv6 support ON
     #   DISABLE_IPV6=1 -> IPv6 support OFF
-    # Menu 7 changes this value, so all IPv6 decisions must read it.
+    #   DISABLE_IPV6=0 -> IPv6 support ON
+    #   satir YOK        -> IPv6 support ON
+    # install_easy.sh bu satiri YALNIZCA IPv6 kapatilinca yazar. IPv6 acik
+    # birakildiginda satir config'e hic eklenmez (zapret2'nin kendi varsayilani
+    # IPv6 destekli calismaktir). Bu nedenle "satir yoksa KAPALI" varsaymak
+    # yanlistir: IPv6 gercekten calisirken menu/panel KAPALI gosterir.
+    # Menu 7 bu degeri degistirir, tum IPv6 kararlari buradan okunur.
     # Do NOT infer from ip6_ttl in NFQWS2_OPT or ip6tables runtime rules.
     local _v
     [ -f /opt/zapret2/config ] || return 1
     _v="$(grep -E '^DISABLE_IPV6=' /opt/zapret2/config 2>/dev/null | tail -n 1 | cut -d= -f2- | tr -d '\042\047[:space:]')"
-    [ "$_v" = "0" ]
+    [ "$_v" != "1" ]
 }
 check_zapret_ipv6_status() {
     if [ ! -f "/opt/zapret2/config" ]; then
