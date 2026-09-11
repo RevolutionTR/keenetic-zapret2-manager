@@ -37,7 +37,7 @@
 # -------------------------------------------------------------------
 SCRIPT_NAME="keenetic_zapret2_manager.sh"
 # Version scheme: vYY.M.D[.N]  (YY=year, M=month, D=day, N=daily revision)
-SCRIPT_VERSION="v26.9.11.1"
+SCRIPT_VERSION="v26.9.11.2"
 SCRIPT_REPO="https://github.com/RevolutionTR/keenetic-zapret2-manager"
 KZM2_SCRIPT_PATH="/opt/lib/opkg/keenetic_zapret2_manager.sh"
 SCRIPT_AUTHOR="RevolutionTR"
@@ -3992,6 +3992,12 @@ update_nfqws_parameters() {
         BEGIN { cleanup=0; repl=ENVIRON["NFQWS_BLOCK"] }
         /^NFQWS2_OPT="/ {
             print repl
+            # NFQWS2_OPT tek satirlik ise (ayni satirda kapanis tirnagi var)
+            # temizlik modu ACILMAZ. Aksi halde bu satirdan SONRAKI ilk satir
+            # kosulsuz atlanir; kapanis tirnagi tasimayan satirlar da silinmeye
+            # devam eder ve config sonuna eklenen ayarlar (ornek: DISABLE_IPV6)
+            # sessizce kaybolur.
+            if (match($0, /^NFQWS2_OPT="/) && substr($0, RSTART+RLENGTH) ~ /"[[:space:]]*$/) next
             cleanup=1
             next
         }
