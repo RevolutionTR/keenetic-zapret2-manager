@@ -37,7 +37,7 @@
 # -------------------------------------------------------------------
 SCRIPT_NAME="keenetic_zapret2_manager.sh"
 # Version scheme: vYY.M.D[.N]  (YY=year, M=month, D=day, N=daily revision)
-SCRIPT_VERSION="v26.9.2"
+SCRIPT_VERSION="v26.9.11"
 SCRIPT_REPO="https://github.com/RevolutionTR/keenetic-zapret2-manager"
 KZM2_SCRIPT_PATH="/opt/lib/opkg/keenetic_zapret2_manager.sh"
 SCRIPT_AUTHOR="RevolutionTR"
@@ -3769,6 +3769,9 @@ update_kernel_module_config() {
 }
 # NFQWS parametrelerini gunceller
 update_nfqws_parameters() {
+    # <HOSTLIST> markeri asagida NFQWS2_OPT'a yazilir; marker tek basina yetmez,
+    # config'teki MODE_FILTER de esit olmalidir. Aksi halde marker bos dizeye duser.
+    sync_mode_filter_to_config 2>/dev/null
     local profile="$(get_dpi_profile)"
     local ipv6="n"
     # Source of truth for Zapret2 IPv6 support is /opt/zapret2/config:
@@ -4697,6 +4700,10 @@ start_zapret2() {
         echo "$(T TXT_START_NOT_INSTALLED)"
         return 1
     fi
+    # Her baslatmada MODE_FILTER'i UI durumuyla esitle. Zapret2 kurulumu/guncellemesi
+    # config'i MODE_FILTER=none ile yeniden yazdigindan, bu kontrol olmadan hostlist
+    # filtresi sessizce devre disi kalir. HealthMon restartlari da buradan gecer.
+    sync_mode_filter_to_config 2>/dev/null
     # none profili: nfqws2 ve NFQUEUE kurallari olmadan calisir
     if [ "$(cat /opt/zapret2/dpi_profile 2>/dev/null | tr -d '[:space:]')" = "none" ]; then
         zapret_resume
@@ -6693,6 +6700,34 @@ set_scope_mode() {
         *) return 1 ;;
     esac
     echo "$1" > "$SCOPE_MODE_FILE" 2>/dev/null || return 1
+    return 0
+}
+sync_mode_filter_to_config() {
+    # KZM2'nin UI durumu ($HOSTLIST_MODE_FILE) ile zapret2 config'indeki
+    # MODE_FILTER'i esitler. Zapret2, NFQWS2_OPT icindeki <HOSTLIST> markerini
+    # YALNIZCA MODE_FILTER=hostlist|autohostlist iken --hostlist/--hostlist-auto
+    # olarak genisletir; aksi halde marker BOS DIZEYE duser ve hicbir filtre
+    # uygulanmaz -> DPI tum TLS trafigine uygulanir.
+    #
+    # Ayrisma nedeni: install_easy.sh'a filtre modu her zaman "none" verilir
+    # (KZM2 kendi yapilandirmasini uygular), bu nedenle Zapret2 kurulumu veya
+    # guncellemesi config'i MODE_FILTER=none ile yeniden yazar. hostlist_mode
+    # dosyasi ise eski degerinde kalir. Menu "Autohostlist" gosterirken fiilen
+    # filtre KAPALI olur ve kullanicinin bunu fark etmesinin yolu yoktur.
+    [ -f /opt/zapret2/config ] || return 0
+    local _smf_ui _smf_cfg
+    _smf_ui="$(head -n1 "$HOSTLIST_MODE_FILE" 2>/dev/null | tr -d '\r\n' | tr 'A-Z' 'a-z')"
+    case "$_smf_ui" in
+        none|hostlist|autohostlist|ipset) ;;
+        *) return 0 ;;
+    esac
+    _smf_cfg="$(sed -n 's/^MODE_FILTER=\(.*\)$/\1/p' /opt/zapret2/config 2>/dev/null | head -n1)"
+    [ "$_smf_cfg" = "$_smf_ui" ] && return 0
+    if grep -q '^MODE_FILTER=' /opt/zapret2/config 2>/dev/null; then
+        sed -i "s/^MODE_FILTER=.*/MODE_FILTER=$_smf_ui/" /opt/zapret2/config 2>/dev/null
+    else
+        echo "MODE_FILTER=$_smf_ui" >> /opt/zapret2/config 2>/dev/null
+    fi
     return 0
 }
 get_mode_filter() {
@@ -13960,6 +13995,12 @@ if [ "$1" = "--cgi-action" ]; then
             entware_ssh_start
             printf '%s\n' "${_es_result:-failed}"
             ;;
+        sync_mode_filter)
+            # Web panel "Baslat" butonu S90-zapret2'yi DOGRUDAN calistirir ve
+            # start_zapret2 fonksiyonuna ugramaz; bu nedenle MODE_FILTER senkronu
+            # oradan tetiklenmez. CGI bu aksiyonu start oncesi cagirir.
+            sync_mode_filter_to_config
+            ;;
         tg_test)
             if [ -f /opt/etc/telegram.conf ]; then
                 . /opt/etc/telegram.conf 2>/dev/null
@@ -16897,6 +16938,7 @@ case "$ACTION" in
         rm -f /tmp/.zapret2_paused 2>/dev/null
         _kzm="/opt/lib/opkg/keenetic_zapret2_manager.sh"
         [ -f "$_kzm" ] && KZM2_SKIP_LOCK=1 sh "$_kzm" --cgi-action fix_permissions >/dev/null 2>&1
+        [ -f "$_kzm" ] && KZM2_SKIP_LOCK=1 sh "$_kzm" --cgi-action sync_mode_filter >/dev/null 2>&1
         sh /opt/etc/init.d/S90-zapret2 start >/dev/null 2>&1
         wait_zapret2 up; refresh; ok "Zapret2 baslatildi" ;;
     ssh_start)
