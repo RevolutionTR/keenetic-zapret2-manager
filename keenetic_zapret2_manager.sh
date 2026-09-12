@@ -37,7 +37,7 @@
 # -------------------------------------------------------------------
 SCRIPT_NAME="keenetic_zapret2_manager.sh"
 # Version scheme: vYY.M.D[.N]  (YY=year, M=month, D=day, N=daily revision)
-SCRIPT_VERSION="v26.9.11.2"
+SCRIPT_VERSION="v26.9.12"
 SCRIPT_REPO="https://github.com/RevolutionTR/keenetic-zapret2-manager"
 KZM2_SCRIPT_PATH="/opt/lib/opkg/keenetic_zapret2_manager.sh"
 SCRIPT_AUTHOR="RevolutionTR"
@@ -5119,10 +5119,11 @@ configure_zapret_ipv6_support() {
     echo "$(T ipv6_cfg_desc 'Bu, Zapret2 IPv6 (ip6tables) tarafinda da kural/yonlendirme kurar.' 'This enables Zapret2 to also set up rules/routing on the IPv6 (ip6tables) side.')"
     check_zapret_ipv6_status
     echo ""
-    printf '%s' "$(T ipv6_cfg_prompt 'IPv6 destegi etkinlestirilsin mi? (e/h) [h]: ' 'Enable IPv6 support? (y/n) [n]: ')"; read -r ans
+    printf '%s' "$(T ipv6_cfg_prompt 'IPv6 destegi etkinlestirilsin mi? (0=Iptal, e/h) [h]: ' 'Enable IPv6 support? (0=Cancel, y/n) [n]: ')"; read -r ans
     IPV6_ANSWER="n"
     case "$ans" in
         [eEyY]) IPV6_ANSWER="y" ;;
+        0|"") echo "$(T _ 'Iptal edildi.' 'Cancelled.')"; press_enter_to_continue; clear; return 0 ;;
         *)    IPV6_ANSWER="n" ;;
     esac
     # Secimi global degiskene yaz (install_easy cevabi icin)
@@ -7645,6 +7646,19 @@ display_menu() {
             "${CLR_ORANGE}" "${CLR_BOLD}" "${_ohh}:${_omm}" "${CLR_RESET}" "$_olabel"
     fi
     printf "  %b%-*s%b : %b%b\n"        "${CLR_BOLD}" "$_lw" "$(T TXT_MAIN_ZAPRET_LABEL)"                     "${CLR_RESET}" "${CLR_RESET}"  "$(kzm2_banner_fmt_zapret_state "$_zap_state")"
+    # Zapret2 IPv6 durumu — config varsa goster, kirmizi renk kullanma
+    if [ -f "/opt/zapret2/config" ]; then
+        local _ipv6_txt _clr_ipv6
+        if _zapret2_ipv6_enabled; then
+            _ipv6_txt="$(T _ 'ACIK' 'ON')"
+            _clr_ipv6="${CLR_DIM}"
+        else
+            _ipv6_txt="$(T _ 'KAPALI' 'OFF')"
+            _clr_ipv6="${CLR_ORANGE}"
+        fi
+        printf "  %b%-*s%b : %b%s%b\n" "${CLR_BOLD}" "$_lw" "$(T _ 'Zapret2 IPv6' 'Zapret2 IPv6')" \
+            "${CLR_RESET}" "${_clr_ipv6}" "${_ipv6_txt}" "${CLR_RESET}"
+    fi
     healthmon_load_config 2>/dev/null
     if healthmon_is_running 2>/dev/null; then
         printf "  %b%-*s%b : %b%s%b\n"  "${CLR_BOLD}" "$_lw" "$(T TXT_HM_BANNER_LABEL)" \
@@ -16066,6 +16080,13 @@ kzm_gui_gen_status() {
     local _ipset_count
     _ipset_count="$(grep -c '[0-9]' /opt/zapret2/ipset_clients.txt 2>/dev/null | tr -d ' ')"
     [ -z "$_ipset_count" ] && _ipset_count="0"
+    # Zapret2 IPv6 durumu
+    local _ipv6_enabled=0
+    if [ -f /opt/zapret2/config ]; then
+        local _ipv6_v
+        _ipv6_v="$(grep -E '^DISABLE_IPV6=' /opt/zapret2/config 2>/dev/null | tail -n 1 | cut -d= -f2- | tr -d '\042\047[:space:]')"
+        [ "$_ipv6_v" != "1" ] && _ipv6_enabled=1
+    fi
     # Timestamp
     local _ts
     _ts="$(date +%s 2>/dev/null)"
@@ -16113,7 +16134,8 @@ kzm_gui_gen_status() {
   "bc_dns_ok": $_bc_dns_ok,
   "bc_tls12_ok": $_bc_tls12_ok,
   "bc_udp_weak": $_bc_udp_weak,
-  "bc_ts": $_bc_ts
+  "bc_ts": $_bc_ts,
+  "ipv6_enabled": $_ipv6_enabled
 }
 EOF
 }
@@ -16376,6 +16398,11 @@ _sha_kzm="$(cat /opt/etc/kzm2_sha256_kzm.state 2>/dev/null | tr -d '[:space:]')"
 [ -z "$_sha_kzm" ] && _sha_kzm="unknown"
 _sha_zapret="$(cat /opt/etc/kzm2_sha256_zapret.state 2>/dev/null | tr -d '[:space:]')"
 [ -z "$_sha_zapret" ] && _sha_zapret="unknown"
+_ipv6_en=0
+if [ -f /opt/zapret2/config ]; then
+    _ipv6_v="$(grep -E '^DISABLE_IPV6=' /opt/zapret2/config 2>/dev/null | tail -n 1 | cut -d= -f2- | tr -d '\042\047[:space:]')"
+    [ "$_ipv6_v" != "1" ] && _ipv6_en=1
+fi
 _bc_score=0; _bc_dns_ok=1; _bc_tls12_ok=0; _bc_udp_weak=2; _bc_tests_ok=0; _bc_tests_total=0; _bc_ts=0
 if [ -f /opt/zapret2/blockcheck_result.json ]; then
     _bc_score="$(grep '"score"'    /opt/zapret2/blockcheck_result.json | grep -o '[0-9]*' | head -1)"
@@ -16394,7 +16421,7 @@ if [ -f /opt/zapret2/blockcheck_result.json ]; then
     [ -z "$_bc_tests_total" ] && _bc_tests_total=0
 
 fi
-printf '{\n  "ts": %s,\n  "lang": "%s",\n  "theme": "%s",\n  "kzm_version": "%s",\n  "model": "%s",\n  "firmware": "%s",\n  "wan_dev": "%s",\n  "wan_ip": "%s",\n  "lan_ip": "%s",\n  "keendns_fqdn": "%s",\n  "keendns_access": "%s",\n  "iss_name": "%s",\n  "isp_dns": "%s",\n  "zapret_running": %s,\n  "zapret_version": "%s",\n  "healthmon_running": %s,\n  "healthmon_enabled": %s,\n  "telegram_enabled": %s,\n  "telegram_running": %s,\n  "telegram_configured": %s,\n  "entware_ssh_running": %s,\n  "entware_ssh_state": "%s",\n  "entware_ssh_port": "%s",\n  "lighttpd_running": %s,\n  "curl_ok": %s,\n  "load1": "%s",\n  "load5": "%s",\n  "load15": "%s",\n  "ram_used_mb": %s,\n  "ram_free_mb": %s,\n  "ram_total_mb": %s,\n  "ram_buffer_mb": %s,\n  "swap_used_mb": %s,\n  "swap_total_mb": %s,\n  "disk_used_pct": %s,\n  "disk_used_mb": %s,\n  "disk_total_mb": %s,\n  "disk_tmp_pct": %s,\n  "disk_tmp_used_mb": %s,\n  "disk_tmp_total_mb": %s,\n  "storage_type": "%s",\n  "storage_label": "%s",\n  "disk_health_status": "%s",\n  "disk_health_msg": "%s",\n  "cpu_temp": %s,\n  "wifi0_temp": %s,\n  "wifi1_temp": %s,\n  "wifi2_temp": %s,\n  "dpi_profile": "%s",\n  "dpi_origin": "%s",\n  "filter_mode": "%s",\n  "scope_mode": "%s",\n  "ipset_mode": "%s",\n  "ipset_count": %s,\n  "bc_score": %s,\n  "bc_dns_ok": %s,\n  "bc_tls12_ok": %s,\n  "bc_udp_weak": %s,\n  "bc_tests_ok": %s,\n  "bc_tests_total": %s,\n  "bc_ts": %s,\n  "sha_kzm": "%s",\n  "sha_zapret": "%s"\n}\n' \
+printf '{\n  "ts": %s,\n  "lang": "%s",\n  "theme": "%s",\n  "kzm_version": "%s",\n  "model": "%s",\n  "firmware": "%s",\n  "wan_dev": "%s",\n  "wan_ip": "%s",\n  "lan_ip": "%s",\n  "keendns_fqdn": "%s",\n  "keendns_access": "%s",\n  "iss_name": "%s",\n  "isp_dns": "%s",\n  "zapret_running": %s,\n  "zapret_version": "%s",\n  "healthmon_running": %s,\n  "healthmon_enabled": %s,\n  "telegram_enabled": %s,\n  "telegram_running": %s,\n  "telegram_configured": %s,\n  "entware_ssh_running": %s,\n  "entware_ssh_state": "%s",\n  "entware_ssh_port": "%s",\n  "lighttpd_running": %s,\n  "curl_ok": %s,\n  "load1": "%s",\n  "load5": "%s",\n  "load15": "%s",\n  "ram_used_mb": %s,\n  "ram_free_mb": %s,\n  "ram_total_mb": %s,\n  "ram_buffer_mb": %s,\n  "swap_used_mb": %s,\n  "swap_total_mb": %s,\n  "disk_used_pct": %s,\n  "disk_used_mb": %s,\n  "disk_total_mb": %s,\n  "disk_tmp_pct": %s,\n  "disk_tmp_used_mb": %s,\n  "disk_tmp_total_mb": %s,\n  "storage_type": "%s",\n  "storage_label": "%s",\n  "disk_health_status": "%s",\n  "disk_health_msg": "%s",\n  "cpu_temp": %s,\n  "wifi0_temp": %s,\n  "wifi1_temp": %s,\n  "wifi2_temp": %s,\n  "dpi_profile": "%s",\n  "dpi_origin": "%s",\n  "filter_mode": "%s",\n  "scope_mode": "%s",\n  "ipset_mode": "%s",\n  "ipset_count": %s,\n  "bc_score": %s,\n  "bc_dns_ok": %s,\n  "bc_tls12_ok": %s,\n  "bc_udp_weak": %s,\n  "bc_tests_ok": %s,\n  "bc_tests_total": %s,\n  "bc_ts": %s,\n  "sha_kzm": "%s",\n  "sha_zapret": "%s",\n  "ipv6_enabled": %s\n}\n' \
     "$_ts" "$(cat /opt/zapret2/lang 2>/dev/null | tr -d '[:space:]' | head -c2)" "$(cat /opt/zapret2/theme 2>/dev/null | tr -d '[:space:]' | head -c5)" "$_kzmver" "$_model" "$_fw" "$_wan_display" "$_wip" "$_lan_ip" \
     "$_kdns_fqdn" "$_kdns_access" "$_iss_name" "$_isp_dns_json" \
     "$_zap" "$_zver" "$_hm" "$_hm_en" "$_tg_en" "$_tg" "$_tg_configured" \
@@ -16408,7 +16435,7 @@ printf '{\n  "ts": %s,\n  "lang": "%s",\n  "theme": "%s",\n  "kzm_version": "%s"
     "$_cpu_temp" "$_wifi0_temp" "$_wifi1_temp" "$_wifi2_temp" \
     "$_dpi_profile" "$_dpi_origin" "$_filter_mode" "$_scope_mode" "$_ipset_mode" "$_ipset_count" \
     "$_bc_score" "$_bc_dns_ok" "$_bc_tls12_ok" "$_bc_udp_weak" "$_bc_tests_ok" "$_bc_tests_total" "$_bc_ts" \
-    "$_sha_kzm" "$_sha_zapret" \
+    "$_sha_kzm" "$_sha_zapret" "$_ipv6_en" \
     > /tmp/kzm_status.json.tmp && mv -f /tmp/kzm_status.json.tmp /tmp/kzm_status.json
 STATEOF
     chmod +x "$KZM2_GUI_STATUS_SCRIPT"
@@ -18562,6 +18589,7 @@ var V={
         ir(L?'Scope':'Kapsam Modu',(function(){var m=S.scope_mode||'';if(m==='smart')return '<span style="color:var(--good)">'+(L?'Smart':'Ak&#305;ll&#305;')+'</span>';if(m==='global')return '<span style="color:var(--warn)">'+(L?'Global':'Global')+'</span>';return m||'—';})())+
         ir(L?'IPSET Mode':'IPSET Modu',(function(){var m=S.ipset_mode||'all';var c=S.ipset_count||0;if(m==='list')return '<span style="color:var(--info)">'+(L?'Selected IPs':'Se&#231;ili IP')+' ('+c+')</span>';return '<span style="color:var(--good)">'+(L?'Whole Network':'T&#252;m A&#287;')+'</span>';})())+
         ir('Zapret2',bdgZap(S.zapret_running,L?'ACTIVE':'AKT&#304;F',L?'INACTIVE':'PAS&#304;F'))+
+        ir('Zapret2 IPv6',(S.ipv6_enabled===1?'<span style="color:var(--muted)">'+(L?'ON':'ACIK')+'</span>':'<span style="color:var(--warn)">'+(L?'OFF':'KAPALI')+'</span>'))+
         ir(L?'Health Monitor':'Sa&#287;l&#305;k Mon.',bdg(S.healthmon_running,L?'ACTIVE':'AKT&#304;F',L?'INACTIVE':'PAS&#304;F'))+
         ir('Telegram Bot',bdgO(S.telegram_enabled&&S.telegram_running,L?'ACTIVE':'AKT&#304;F',L?'OFF':'KAPALI'))+
         ir(L?'Web Panel (lighttpd)':'Web Panel (lighttpd)',bdg(S.lighttpd_running,L?'RUNNING':'&#199;ALI&#350;IYOR',L?'STOPPED':'DURDU'))+
