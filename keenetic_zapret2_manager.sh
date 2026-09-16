@@ -37,7 +37,7 @@
 # -------------------------------------------------------------------
 SCRIPT_NAME="keenetic_zapret2_manager.sh"
 # Version scheme: vYY.M.D[.N]  (YY=year, M=month, D=day, N=daily revision)
-SCRIPT_VERSION="v26.9.15"
+SCRIPT_VERSION="v26.9.16"
 SCRIPT_REPO="https://github.com/RevolutionTR/keenetic-zapret2-manager"
 KZM2_SCRIPT_PATH="/opt/lib/opkg/keenetic_zapret2_manager.sh"
 SCRIPT_AUTHOR="RevolutionTR"
@@ -2570,10 +2570,10 @@ TXT_NOZAPRET_0_TR=" 0. Geri"
 TXT_NOZAPRET_0_EN=" 0. Back"
 TXT_NOZAPRET_PROMPT_TR=" Seciminizi Yapin (0-4): "
 TXT_NOZAPRET_PROMPT_EN=" Select an Option (0-4): "
-TXT_NOZAPRET_ADD_TR="Muaf tutulacak IP veya CIDR girin (ornek: 192.168.1.1 veya 10.0.0.0/24, Enter=iptal): "
-TXT_NOZAPRET_ADD_EN="Enter IP or CIDR to exempt (example: 192.168.1.1 or 10.0.0.0/24, Enter=cancel): "
-TXT_NOZAPRET_DEL_TR="Silmek istediginiz IP veya CIDR girin (Enter=iptal): "
-TXT_NOZAPRET_DEL_EN="Enter IP or CIDR to remove (Enter=cancel): "
+TXT_NOZAPRET_ADD_TR="Muaf tutulacak IP girin (ornek: 192.168.1.1, 10.0.0.0/24 veya 2a02:610:7501::205, Enter=iptal): "
+TXT_NOZAPRET_ADD_EN="Enter IP to exempt (example: 192.168.1.1, 10.0.0.0/24 or 2a02:610:7501::205, Enter=cancel): "
+TXT_NOZAPRET_DEL_TR="Silmek istediginiz IP girin (ornek: 192.168.1.1 veya 2a02:610:7501::205, Enter=iptal): "
+TXT_NOZAPRET_DEL_EN="Enter IP to remove (example: 192.168.1.1 or 2a02:610:7501::205, Enter=cancel): "
 TXT_NOZAPRET_EMPTY_TR="Muafiyet listesi bos."
 TXT_NOZAPRET_EMPTY_EN="Exemption list is empty."
 TXT_NOZAPRET_ADDED_TR="Tamam: IP muafiyet listesine eklendi."
@@ -2851,7 +2851,12 @@ IPSET_CLIENT_FILE="/opt/zapret2/ipset_clients.txt"
 IPSET_CLIENT_MODE_FILE="/opt/zapret2/ipset_clients_mode"  # all | list
 # No Zapret2 (muafiyet) ayarlari
 NOZAPRET_IPSET_NAME="nozapret"
+NOZAPRET_IP6SET_NAME="nozapret6"
 NOZAPRET_FILE="/opt/zapret2/ipset/nozapret.txt"
+# Girdinin IPv6 olup olmadigini tespit eder (basit ':' kontrolu yeterli - IPv4/CIDR'de ':' gecmez)
+_kzm2_is_ipv6() {
+    case "$1" in *:*) return 0 ;; *) return 1 ;; esac
+}
 # WAN arayuzu (cikis) secimi / otomatik algilama
 WAN_IF_FILE="/opt/zapret2/wan_if"
 detect_recommended_wan_if() {
@@ -5757,12 +5762,18 @@ manage_ipset_clients() {
 nozapret_ensure_and_load() {
     ipset list "$NOZAPRET_IPSET_NAME" >/dev/null 2>&1 || \
         ipset create "$NOZAPRET_IPSET_NAME" hash:ip 2>/dev/null
+    ipset list "$NOZAPRET_IP6SET_NAME" >/dev/null 2>&1 || \
+        ipset create "$NOZAPRET_IP6SET_NAME" hash:ip family inet6 2>/dev/null
     if [ -f "$NOZAPRET_FILE" ]; then
         while IFS= read -r line; do
             line="${line%%#*}"
             line="$(echo "$line" | tr -d '[:space:]')"
             [ -z "$line" ] && continue
-            ipset -exist add "$NOZAPRET_IPSET_NAME" "$line" 2>/dev/null
+            if _kzm2_is_ipv6 "$line"; then
+                ipset -exist add "$NOZAPRET_IP6SET_NAME" "$line" 2>/dev/null
+            else
+                ipset -exist add "$NOZAPRET_IPSET_NAME" "$line" 2>/dev/null
+            fi
         done < "$NOZAPRET_FILE"
     fi
 }
@@ -5859,7 +5870,8 @@ manage_nozapret_menu() {
                 read -r noz_ip
                 if [ -z "$noz_ip" ]; then
                     echo "$(T cancelled 'Iptal edildi.' 'Cancelled.')"
-                elif echo "$noz_ip" | grep -Eq '^([0-9]{1,3}[.]){3}[0-9]{1,3}(/([0-9]|[1-2][0-9]|3[0-2]))?$'; then
+                elif echo "$noz_ip" | grep -Eq '^([0-9]{1,3}[.]){3}[0-9]{1,3}(/([0-9]|[1-2][0-9]|3[0-2]))?$' || \
+                     echo "$noz_ip" | grep -Eq '^[0-9a-fA-F:]+(/([0-9]|[1-9][0-9]|1[01][0-9]|12[0-8]))?$'; then
                     mkdir -p "$(dirname "$NOZAPRET_FILE")"
                     touch "$NOZAPRET_FILE"
                     if grep -Fqx "$noz_ip" "$NOZAPRET_FILE" 2>/dev/null; then
@@ -5893,7 +5905,11 @@ manage_nozapret_menu() {
                     tmpf="/tmp/nozapret_del.$$"
                     grep -Fvx "$noz_ip" "$NOZAPRET_FILE" > "$tmpf" 2>/dev/null
                     cp "$tmpf" "$NOZAPRET_FILE" 2>/dev/null; rm -f "$tmpf"
-                    ipset del "$NOZAPRET_IPSET_NAME" "$noz_ip" 2>/dev/null
+                    if _kzm2_is_ipv6 "$noz_ip"; then
+                        ipset del "$NOZAPRET_IP6SET_NAME" "$noz_ip" 2>/dev/null
+                    else
+                        ipset del "$NOZAPRET_IPSET_NAME" "$noz_ip" 2>/dev/null
+                    fi
                     nozapret_apply_rules
                     kzm2_apply_ip_exclude_rules >/dev/null 2>&1
                     echo "$(T TXT_NOZAPRET_REMOVED)"
@@ -5909,6 +5925,7 @@ manage_nozapret_menu() {
                     e|E|y|Y)
                         rm -f "$NOZAPRET_FILE"
                         ipset flush "$NOZAPRET_IPSET_NAME" 2>/dev/null
+                        ipset flush "$NOZAPRET_IP6SET_NAME" 2>/dev/null
                         nozapret_remove_rules
                         echo "$(T TXT_NOZAPRET_CLEARED)"
                         ;;
@@ -6026,7 +6043,7 @@ cleanup_zapret_firewall_leftovers() {
     done
     # ipset kalintilari
     if command -v ipset >/dev/null 2>&1; then
-        for s in zapret zapret2_clients nozapret zapret2_client_exclude ipban; do
+        for s in zapret zapret2_clients nozapret nozapret6 zapret2_client_exclude ipban; do
             ipset list "$s" >/dev/null 2>&1 && ipset flush "$s" >/dev/null 2>&1
             ipset list "$s" >/dev/null 2>&1 && ipset destroy "$s" >/dev/null 2>&1
         done
@@ -6081,7 +6098,7 @@ verify_zapret_clean() {
     fi
     # ipset kalintisi?
     if command -v ipset >/dev/null 2>&1; then
-        for _s in zapret zapret2_clients nozapret ipban; do
+        for _s in zapret zapret2_clients nozapret nozapret6 ipban; do
             ipset list "$_s" >/dev/null 2>&1 && { _dirty=1; break; }
         done
     fi
@@ -17516,16 +17533,26 @@ case "$ACTION" in
         sed -i "\|^$(printf '%s' "$_ip" | sed 's/[.[*^$]/\\&/g')$|d" "$IPSET_FILE" 2>/dev/null
         kzm_append_unique_line "/opt/zapret2/ipset/nozapret.txt" "$_ip"
         # Canli ipset senkronu: dosyaya yazmak tek basina muafiyeti aktif etmez
-        ipset -exist add nozapret "$_ip" 2>/dev/null
-        ipset -exist add zapret2_client_exclude "$_ip" 2>/dev/null
-        ipset del zapret2_clients "$_ip" 2>/dev/null
+        case "$_ip" in
+            *:*)
+                ipset list nozapret6 >/dev/null 2>&1 || ipset create nozapret6 hash:ip family inet6 2>/dev/null
+                ipset -exist add nozapret6 "$_ip" 2>/dev/null ;;
+            *)
+                ipset -exist add nozapret "$_ip" 2>/dev/null
+                ipset -exist add zapret2_client_exclude "$_ip" 2>/dev/null
+                ipset del zapret2_clients "$_ip" 2>/dev/null ;;
+        esac
         kzm_rebuild_profile_restart
         ok "Eklendi: $_ip" ;;
     nozapret_del)
         _ip=$(get_param ip); [ -z "$_ip" ] && { fail "IP bos"; exit 0; }
         sed -i "\|^$(printf '%s' "$_ip" | sed 's/[.[*^$]/\\&/g')$|d" "/opt/zapret2/ipset/nozapret.txt" 2>/dev/null
-        ipset del nozapret "$_ip" 2>/dev/null
-        ipset del zapret2_client_exclude "$_ip" 2>/dev/null
+        case "$_ip" in
+            *:*) ipset del nozapret6 "$_ip" 2>/dev/null ;;
+            *)
+                ipset del nozapret "$_ip" 2>/dev/null
+                ipset del zapret2_client_exclude "$_ip" 2>/dev/null ;;
+        esac
         kzm_rebuild_profile_restart
         ok "Silindi: $_ip" ;;
     ipset_active_get)
@@ -18832,7 +18859,7 @@ var V={
         '<div class="lw" id="ipaL"><div class="empty">'+(L?'Loading...':'Y&#252;kleniyor...')+'</div></div></div>'+
       '<div class="card wide"><h3>No Zapret2 <span id="nzCnt" class="tag">0 IP</span></h3>'+
         '<div class="hint" style="margin-bottom:6px">'+(L?'IPs exempt from Zapret2 processing':'Zapret2 i&#351;leminden muaf IP&#39;ler')+'</div>'+
-        '<div class="irow" style="margin-bottom:8px"><input id="nzIn" type="text" placeholder="192.168.1.x / 10.0.0.0/24" style="flex:1;padding:6px 10px;background:var(--card2);border:1px solid var(--line);border-radius:6px;color:var(--fg)"/>'+
+        '<div class="irow" style="margin-bottom:8px"><input id="nzIn" type="text" placeholder="192.168.1.x / 10.0.0.0/24 / 2a02:610::1" style="flex:1;padding:6px 10px;background:var(--card2);border:1px solid var(--line);border-radius:6px;color:var(--fg)"/>'+
         '<button onclick="nzAdd()">'+(L?'Add':'Ekle')+'</button></div>'+
         '<div class="lw" id="nzL"><div class="empty">'+(L?'Loading...':'Y&#252;kleniyor...')+'</div></div></div>'+
       '</div>';
