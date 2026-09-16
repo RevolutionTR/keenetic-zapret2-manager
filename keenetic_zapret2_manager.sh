@@ -37,7 +37,7 @@
 # -------------------------------------------------------------------
 SCRIPT_NAME="keenetic_zapret2_manager.sh"
 # Version scheme: vYY.M.D[.N]  (YY=year, M=month, D=day, N=daily revision)
-SCRIPT_VERSION="v26.9.16"
+SCRIPT_VERSION="v26.9.16.1"
 SCRIPT_REPO="https://github.com/RevolutionTR/keenetic-zapret2-manager"
 KZM2_SCRIPT_PATH="/opt/lib/opkg/keenetic_zapret2_manager.sh"
 SCRIPT_AUTHOR="RevolutionTR"
@@ -3339,15 +3339,22 @@ ipset_ensure_and_load_clients() {
 kzm2_disk_health_check() {
     _dh_status="PASS"
     _dh_reason=""
+    # ETKIN mount: /proc/mounts'ta /opt icin SON satir. Firmware'in salt-okunur
+    # squashfs /opt'u altta durur, Entware (ubifs/USB) uzerine bindirilir; ilk satira
+    # bakmak (eski kod) dahili-flash kullanicilarinda 10 dk'da bir sahte "Salt okunur"
+    # alarmi uretiyordu. 4. alan secenek listesi, ilk secenegi rw/ro'dur — "errors=
+    # remount-ro" gibi ic seceneklerle karismamasi icin yalnizca bas token'a bakilir.
+    local _mnt_line _dev_full _dev_base _is_usb _mnt_opts
+    _mnt_line="$(awk '$2=="/opt"{l=$0} END{print l}' /proc/mounts 2>/dev/null)"
+    _mnt_opts="$(printf '%s' "$_mnt_line" | awk '{print $4}')"
     # Read-only kontrolu (FAIL)
-    if mount 2>/dev/null | grep -q "on /opt .*ro,"; then
+    if printf '%s' "$_mnt_opts" | grep -qE '^ro(,|$)'; then
         _dh_status="FAIL"
         _dh_reason="ro"
         return 0
     fi
-    # /opt'un bagli oldugu cihazi bul (sda1, ubi0 vb.)
-    local _dev_full _dev_base _is_usb
-    _dev_full="$(mount 2>/dev/null | awk '/on \/opt /{print $1}' | sed 's|/dev/||' | head -1)"
+    # /opt'un bagli oldugu cihazi bul (sda1, ubi0_0 vb.) — etkin mount'tan
+    _dev_full="$(printf '%s' "$_mnt_line" | awk '{print $1}' | sed 's|/dev/||')"
     _dev_base="$(printf '%s' "$_dev_full" | sed 's/[0-9]*$//')"
     # USB depolama cihazi mi? (dmesg'de usb-storage + dev adi geciyorsa)
     _is_usb=0
@@ -16437,9 +16444,11 @@ _lan_ip="$(ip -4 addr show br0 2>/dev/null | awk '/inet /{print $2;exit}' | cut 
 # Depolama tipi ve disk sagligi
 _st_type="unknown"; _st_label="Storage (/opt)"
 _dh_status="ok"; _dh_msg=""
-_st_line="$(awk '$2=="/opt"{print; exit}' /proc/mounts 2>/dev/null)"
+# ETKIN mount = /opt icin SON satir (firmware squashfs altta, Entware ustte bindirili)
+_st_line="$(awk '$2=="/opt"{l=$0} END{print l}' /proc/mounts 2>/dev/null)"
 _st_dev="$(printf '%s' "$_st_line" | awk '{print $1}')"
 _st_fs="$(printf '%s' "$_st_line" | awk '{print $3}')"
+_st_opts="$(printf '%s' "$_st_line" | awk '{print $4}')"
 _st_bdev="$(printf '%s' "$_st_dev" | sed 's|/dev/||; s/[0-9]*$//')"
 _st_removable="$(cat "/sys/block/${_st_bdev}/removable" 2>/dev/null)"
 _st_is_usb=0
@@ -16462,8 +16471,8 @@ if [ -n "$_st_dev" ]; then
     else
         _st_type="generic"; _st_label="Storage (/opt)"
     fi
-    # Disk sagligi: read-only
-    if mount 2>/dev/null | grep -q "on /opt .*ro,"; then
+    # Disk sagligi: read-only — etkin mount'un ilk secenegi "ro" ise
+    if printf '%s' "$_st_opts" | grep -qE '^ro(,|$)'; then
         _dh_status="fail"; _dh_msg="Read-only mount"
     # Kritik I/O hatasi
     elif [ -n "$_st_bdev" ] && dmesg 2>/dev/null | grep -q "critical medium error.*dev ${_st_bdev}"; then
