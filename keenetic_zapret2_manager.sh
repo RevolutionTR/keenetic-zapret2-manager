@@ -37,7 +37,7 @@
 # -------------------------------------------------------------------
 SCRIPT_NAME="keenetic_zapret2_manager.sh"
 # Version scheme: vYY.M.D[.N]  (YY=year, M=month, D=day, N=daily revision)
-SCRIPT_VERSION="v26.9.16.1"
+SCRIPT_VERSION="v26.9.22"
 SCRIPT_REPO="https://github.com/RevolutionTR/keenetic-zapret2-manager"
 KZM2_SCRIPT_PATH="/opt/lib/opkg/keenetic_zapret2_manager.sh"
 SCRIPT_AUTHOR="RevolutionTR"
@@ -6726,6 +6726,9 @@ _kzm2_prune_localnets_from_user_lists() {
         [ -f "$_f" ] || continue
         _tmp="/tmp/kzm2_prune.$$"
         awk 'NR==FNR{a[$0]=1;next} !($0 in a)' "$_defs" "$_f" > "$_tmp" 2>/dev/null && mv "$_tmp" "$_f"
+        # mv yeni inode olusturur, mod cagiranin umask'indan gelir (HealthMon 077 -> 600,
+        # nfqws2/nobody okuyamaz). fix_zapret2_runtime_permissions ile ayni deger: 644
+        chmod 644 "$_f" 2>/dev/null
         rm -f "$_tmp" 2>/dev/null
     done
     rm -f "$_defs" 2>/dev/null
@@ -6900,7 +6903,7 @@ remove_line_exact() {
     # $1 file $2 line
     [ -f "$1" ] || return 0
     tmp="/tmp/hostlist.$$"
-    grep -Fvx -- "$2" "$1" 2>/dev/null > "$tmp" && mv "$tmp" "$1"
+    grep -Fvx -- "$2" "$1" 2>/dev/null > "$tmp" && mv "$tmp" "$1" && chmod 644 "$1" 2>/dev/null
 }
 hostlist_stats() {
     # $1 file
@@ -17671,6 +17674,15 @@ case "$ACTION" in
         sed -i "/^$(printf '%s' "$_d" | sed 's/[.[\*^$]/\\&/g')$/d" "$HL_USER" 2>/dev/null
         kzm_rebuild_profile_restart
         ok "Silindi: $_d" ;;
+    hl_del_bulk)
+        # Coklu domain, tek dosya duzenlemesi + tek restart (bkz. auto_del_bulk)
+        _doms=$(get_param domains); [ -z "$_doms" ] && { fail "Domain listesi bos"; exit 0; }
+        printf '%s\n' "$_doms" | tr ',' '\n' | while IFS= read -r _d; do
+            [ -z "$_d" ] && continue
+            sed -i "/^$(printf '%s' "$_d" | sed 's/[.[\*^$]/\\&/g')$/d" "$HL_USER" 2>/dev/null
+        done
+        kzm_rebuild_profile_restart
+        ok "Silindi" ;;
     ex_get)
         ok_data "$(json_arr_domains_only "$HL_EXCL")" ;;
     ex_add)
@@ -17685,6 +17697,21 @@ case "$ACTION" in
         _nzn="$(_cgi_nozapret_resolve_del "$_d")"
         kzm_rebuild_profile_restart
         if [ -n "$_nzn" ]; then ok "Silindi: $_d (No Zapret: -$_nzn adres)"; else ok "Silindi: $_d"; fi ;;
+    ex_del_bulk)
+        # Coklu domain, tek restart. No Zapret IP temizligi domain basina korunur;
+        # toplam sayi icin pipe/subshell yerine IFS+for (degisken disari cikabilsin).
+        _doms=$(get_param domains); [ -z "$_doms" ] && { fail "Domain listesi bos"; exit 0; }
+        _nzt=0
+        _oifs="$IFS"; IFS=','; set -f
+        for _d in $_doms; do
+            [ -z "$_d" ] && continue
+            sed -i "/^$(printf '%s' "$_d" | sed 's/[.[\*^$]/\\&/g')$/d" "$HL_EXCL" 2>/dev/null
+            _nzn="$(_cgi_nozapret_resolve_del "$_d")"
+            case "$_nzn" in ''|*[!0-9]*) ;; *) _nzt=$((_nzt+_nzn)) ;; esac
+        done
+        set +f; IFS="$_oifs"
+        kzm_rebuild_profile_restart
+        if [ "$_nzt" -gt 0 ]; then ok "Silindi (No Zapret: -$_nzt adres)"; else ok "Silindi"; fi ;;
     auto_get)
         ok_data "$(json_arr "/opt/zapret2/ipset/zapret-hosts-auto.txt")" ;;
     auto_del)
@@ -17692,6 +17719,18 @@ case "$ACTION" in
         sed -i "/^$(printf '%s' "$_d" | sed 's/[.[\\*^$]/\\&/g')$/d" "/opt/zapret2/ipset/zapret-hosts-auto.txt" 2>/dev/null
         kzm_rebuild_profile_restart
         ok "Silindi: $_d" ;;
+    auto_del_bulk)
+        # Coklu domain, tek dosya duzenlemesi + tek restart (art arda tek tek silmede
+        # olusan kilitsiz arka plan restart yarisini onler)
+        _doms=$(get_param domains); [ -z "$_doms" ] && { fail "Domain listesi bos"; exit 0; }
+        # printf sonuna \n eklenmezse tr sonrasi son domain satiri sonlanmiyor,
+        # while read son (sonlandirilmamis) satiri POSIX kuralina gore atliyor.
+        printf '%s\n' "$_doms" | tr ',' '\n' | while IFS= read -r _d; do
+            [ -z "$_d" ] && continue
+            sed -i "/^$(printf '%s' "$_d" | sed 's/[.[\\*^$]/\\&/g')$/d" "/opt/zapret2/ipset/zapret-hosts-auto.txt" 2>/dev/null
+        done
+        kzm_rebuild_profile_restart
+        ok "Silindi" ;;
     nozapret_get)
         ok_data "$(json_arr_ips "/opt/zapret2/ipset/nozapret.txt")" ;;
     nozapret_add)
@@ -19005,12 +19044,12 @@ var V={
         '<div class="irow">'+
           '<input type="text" id="hlIn" placeholder="example.com" style="flex:1"/>'+
           '<button onclick="hlAdd()">'+(L?'Add':'Ekle')+'</button></div></div>'+
-      '<div class="card wide"><h3>User Hostlist <span id="hlCnt" class="tag">0 Domain</span></h3>'+
+      '<div class="card wide"><h3>User Hostlist <span id="hlCnt" class="tag">0 Domain</span> <button id="hlBulkBtn" class="danger" disabled style="padding:3px 8px;font-size:11px;margin-left:8px" onclick="hlBulkDel()">'+(L?'Delete Selected':'Se&#231;ilenleri Sil')+'</button></h3>'+
         '<div class="lw" id="hlL"><div class="empty">'+(L?'Loading...':'Y&#252;kleniyor...')+'</div></div></div>'+
-      '<div class="card wide"><h3>Auto Hostlist <span id="autoCnt" class="tag">0 Domain</span></h3>'+
-        '<div class="hint" style="margin-bottom:6px">'+(L?'Auto-generated list (read-only)':'Otomatik olu&#351;turulan liste (salt okunur)')+'</div>'+
+      '<div class="card wide"><h3>Auto Hostlist <span id="autoCnt" class="tag">0 Domain</span> <button id="autoBulkBtn" class="danger" disabled style="padding:3px 8px;font-size:11px;margin-left:8px" onclick="autoBulkDel()">'+(L?'Delete Selected':'Se&#231;ilenleri Sil')+'</button></h3>'+
+        '<div class="security-note" style="margin-bottom:8px"><b>'+(L?'Auto-generated list.':'Otomatik olu&#351;turulan liste.')+'</b> '+(L?'Sites whose connections stall are added automatically. Unblocked sites like google.com may also appear (from momentary packet loss); this is normal, no need to delete them.':'Ba&#287;lant&#305;s&#305; tak&#305;lan siteler buraya kendili&#287;inden eklenir. google.com gibi engelsiz siteler de (anl&#305;k paket kayb&#305;ndan) g&#246;r&#252;nebilir; bu normaldir, silmeniz gerekmez.')+'</div>'+
         '<div class="lw" id="autoL"><div class="empty">'+(L?'Loading...':'Y&#252;kleniyor...')+'</div></div></div>'+
-      '<div class="card wide"><h3>'+(L?'Exclude List':'Exclude Listesi')+' <span id="exCnt" class="tag">0 Domain</span></h3>'+
+      '<div class="card wide"><h3>'+(L?'Exclude List':'Exclude Listesi')+' <span id="exCnt" class="tag">0 Domain</span> <button id="exBulkBtn" class="danger" disabled style="padding:3px 8px;font-size:11px;margin-left:8px" onclick="exBulkDel()">'+(L?'Delete Selected':'Se&#231;ilenleri Sil')+'</button></h3>'+
         '<div class="irow hl-ex-row">'+
           '<input type="text" id="exIn" placeholder="example.com" style="flex:1;min-width:0"/>'+
           '<button onclick="exAdd()">'+(L?'Add':'Ekle')+'</button></div>'+
@@ -19332,32 +19371,35 @@ function hlLoad(retry){
   getD('hl_get',function(r){
     var el=document.getElementById('hlL'),ec=document.getElementById('hlCnt');
     if(!el)return;
-    if(!r.ok){el.innerHTML='<div class="empty">Liste bo&#351;</div>';if(ec)ec.textContent='0 Domain';return;}
+    if(!r.ok){el.innerHTML='<div class="empty">Liste bo&#351;</div>';if(ec)ec.textContent='0 Domain';hlBulkUpdate();return;}
     if(!r.data||!r.data.length){
       if(!retry){setTimeout(function(){hlLoad(true);},800);return;}
-      el.innerHTML='<div class="empty">Liste bo&#351;</div>';if(ec)ec.textContent='0 Domain';return;
+      el.innerHTML='<div class="empty">Liste bo&#351;</div>';if(ec)ec.textContent='0 Domain';hlBulkUpdate();return;
     }
     if(ec)ec.textContent=r.data.length+' Domain';
     el.innerHTML=r.data.map(function(d){return '<div class="li"><span>'+d+'</span>'+
-      '<button class="danger" style="padding:3px 8px;font-size:11px" onclick="hlDel(\''+d+'\',this)">Sil</button></div>';}).join('');
+      '<input type="checkbox" class="hlChk" value="'+d+'" onchange="hlBulkUpdate()"/></div>';}).join('');
+    hlBulkUpdate();
   });
   getD('auto_get',function(r){
     var el=document.getElementById('autoL'),ec=document.getElementById('autoCnt');if(!el)return;
     if(!r.ok||!r.data||!r.data.length){
       if(!retry){setTimeout(function(){hlLoad(true);},800);return;}
-      el.innerHTML='<div class="empty">Liste bo&#351;</div>';if(ec)ec.textContent='0 Domain';return;}
+      el.innerHTML='<div class="empty">Liste bo&#351;</div>';if(ec)ec.textContent='0 Domain';autoBulkUpdate();return;}
     if(ec)ec.textContent=r.data.length+' Domain';
     el.innerHTML=r.data.map(function(d){return '<div class="li"><span>'+d+'</span>'+
-      '<button class="danger" style="padding:3px 8px;font-size:11px" onclick="autoDel(\''+d+'\',this)">Sil</button></div>';}).join('');
+      '<input type="checkbox" class="autoChk" value="'+d+'" onchange="autoBulkUpdate()"/></div>';}).join('');
+    autoBulkUpdate();
   });
   getD('ex_get',function(r){
     var el=document.getElementById('exL'),ec=document.getElementById('exCnt');if(!el)return;
     if(!r.ok||!r.data||!r.data.length){
       if(!retry){setTimeout(function(){hlLoad(true);},800);return;}
-      el.innerHTML='<div class="empty">Liste bo&#351;</div>';if(ec)ec.textContent='0 Domain';return;}
+      el.innerHTML='<div class="empty">Liste bo&#351;</div>';if(ec)ec.textContent='0 Domain';exBulkUpdate();return;}
     if(ec)ec.textContent=r.data.length+' Domain';
     el.innerHTML=r.data.map(function(d){return '<div class="li"><span>'+d+'</span>'+
-      '<button class="danger" style="padding:3px 8px;font-size:11px" onclick="exDel(\''+d+'\',this)">Sil</button></div>';}).join('');
+      '<input type="checkbox" class="exChk" value="'+d+'" onchange="exBulkUpdate()"/></div>';}).join('');
+    exBulkUpdate();
   });
 }
 function mdpiNormalizeLines(s){
@@ -19462,10 +19504,25 @@ function mdpiSave(btn){
   .catch(function(){toast(L?'Connection error':'Ba&#287;lant&#305; hatas&#305;',false);if(btn){btn.disabled=false;btn.innerHTML=btn._o;}});
 }
 function hlAdd(){var v=(document.getElementById('hlIn').value||'').trim();if(!v)return;actD('hl_add','domain='+encodeURIComponent(v),null,'Eklendi');document.getElementById('hlIn').value='';setTimeout(hlLoad,1800);}
-function hlDel(d,b){actD('hl_del','domain='+encodeURIComponent(d),b,'Silindi');setTimeout(hlLoad,1800);}
+function hlBulkUpdate(){bulkUpdate('hlChk','hlBulkBtn');}
+function hlBulkDel(){bulkDel('hlChk','hlBulkBtn','hl_del_bulk');}
 function exAdd(){var v=(document.getElementById('exIn').value||'').trim();if(!v)return;actD('ex_add','domain='+encodeURIComponent(v),null,'Eklendi');document.getElementById('exIn').value='';setTimeout(hlLoad,1800);}
-function exDel(d,b){actD('ex_del','domain='+encodeURIComponent(d),b,'Silindi');setTimeout(hlLoad,1800);}
-function autoDel(d,b){actD('auto_del','domain='+encodeURIComponent(d),b,'Silindi');setTimeout(hlLoad,1800);}
+function exBulkUpdate(){bulkUpdate('exChk','exBulkBtn');}
+function exBulkDel(){bulkDel('exChk','exBulkBtn','ex_del_bulk');}
+function autoBulkUpdate(){bulkUpdate('autoChk','autoBulkBtn');}
+function autoBulkDel(){bulkDel('autoChk','autoBulkBtn','auto_del_bulk');}
+function bulkUpdate(chk,btnId){
+  var n=document.querySelectorAll('.'+chk+':checked').length,b=document.getElementById(btnId);
+  if(!b)return;
+  b.disabled=n===0;
+  b.innerHTML=(L?'Delete Selected':'Se&#231;ilenleri Sil')+(n>0?' ('+n+')':'');
+}
+function bulkDel(chk,btnId,action){
+  var sel=Array.prototype.map.call(document.querySelectorAll('.'+chk+':checked'),function(c){return c.value;});
+  if(!sel.length)return;
+  actD(action,'domains='+encodeURIComponent(sel.join(',')),document.getElementById(btnId),L?'Deleted':'Silindi');
+  setTimeout(hlLoad,1800);
+}
 function ipLoad(retry){
   if(!document.getElementById('ipL')){setTimeout(ipLoad,200);return;}
   getD('ip_get',function(r){
