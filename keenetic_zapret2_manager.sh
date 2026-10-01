@@ -37,7 +37,7 @@
 # -------------------------------------------------------------------
 SCRIPT_NAME="keenetic_zapret2_manager.sh"
 # Version scheme: vYY.M.D[.N]  (YY=year, M=month, D=day, N=daily revision)
-SCRIPT_VERSION="v26.9.22"
+SCRIPT_VERSION="v26.10.1"
 SCRIPT_REPO="https://github.com/RevolutionTR/keenetic-zapret2-manager"
 KZM2_SCRIPT_PATH="/opt/lib/opkg/keenetic_zapret2_manager.sh"
 SCRIPT_AUTHOR="RevolutionTR"
@@ -4059,7 +4059,7 @@ check_keenetic_components() {
     local missing_optional=0
     local all_components=""
     # PATH genislet: Entware ve sistem araclari her zaman erisilebilir olsun
-    export PATH="/opt/sbin:/opt/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:${PATH}"
+    export PATH="/opt/sbin:/opt/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:${PATH}:/opt/usr/sbin:/opt/usr/bin"
     # opkg update tek seferlik - eksik paketler kurulmadan once liste guncellenmeli
     if command -v opkg >/dev/null 2>&1; then
         opkg update >/dev/null 2>&1
@@ -14769,7 +14769,9 @@ healthmon_autostart_install() {
 # kzm2-s99-version: __KZM_VER__
 # Cron (guard) dar bir PATH ile calistirir; grep/cat bulunamazsa guard sessizce
 # "kapali" sanip cikar. Ortamdan bagimsiz tam PATH ver.
-export PATH="/opt/bin:/opt/sbin:/usr/sbin:/usr/bin:/sbin:/bin"
+# /opt/usr/* SONDA: bazi Entware kurulumlarinda pgrep yalnizca /opt/usr/bin'de;
+# sona eklendigi icin mevcut komut cozumlemesi degismez.
+export PATH="/opt/bin:/opt/sbin:/usr/sbin:/usr/bin:/sbin:/bin:/opt/usr/sbin:/opt/usr/bin"
 SCRIPT="/opt/lib/opkg/keenetic_zapret2_manager.sh"
 CONF="/opt/etc/healthmon.conf"
 PIDFILE="/tmp/kzm2_healthmon.pid"
@@ -16127,7 +16129,8 @@ kzm_gui_gen_status() {
     if [ "$(cat /opt/zapret2/dpi_profile 2>/dev/null | tr -d '[:space:]')" = "none" ]; then
         _zap_run=0
     else
-        pgrep -x nfqws2 >/dev/null 2>&1 && _zap_run=1
+        # pidof once: BusyBox "pgrep -x" tam yolu karsilastirdigi icin nfqws2'yi bulamaz
+        { pidof nfqws2 >/dev/null 2>&1 || pgrep nfqws2 >/dev/null 2>&1; } && _zap_run=1
     fi
     # HealthMon calisiyor mu?
     local _hm_run=0
@@ -16345,7 +16348,7 @@ kzm_gui_write_status_script() {
 # kzm2_status_gen.sh — KZM2 Web Panel JSON durum uretici (standalone)
 # Cron: */1 * * * * /opt/bin/kzm2_status_gen.sh >/dev/null 2>&1
 # NOT: Bu dosya KZM2 script tarafindan otomatik uretilmistir.
-export PATH=/opt/sbin:/opt/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+export PATH=/opt/sbin:/opt/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/opt/usr/sbin:/opt/usr/bin
 mkdir -p /opt/var/run 2>/dev/null
 # JSON /tmp'ye yazilir, /opt/var/run altinda symlink kalir (USB write azaltmak icin)
 ln -sf /tmp/kzm_status.json /opt/var/run/kzm2_status.json 2>/dev/null
@@ -16646,7 +16649,7 @@ kzm_gui_write_cgi() {
     cat > "$KZM2_GUI_CGI" << 'CGIEOF'
 #!/bin/sh
 # kzm-cgi-version: __KZM_VER__
-export PATH=/opt/sbin:/opt/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+export PATH=/opt/sbin:/opt/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/opt/usr/sbin:/opt/usr/bin
 printf 'Content-Type: application/json\r\n\r\n'
 CONTENT_LENGTH="${CONTENT_LENGTH:-0}"
 if [ "$CONTENT_LENGTH" -gt 0 ] 2>/dev/null; then
