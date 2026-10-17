@@ -274,7 +274,7 @@ KZM2 **does not write anything directly** to the Keenetic system log. The KZM2-r
 | `kzm2_status_gen.sh` | Produces the status data shown in the Web Panel (Zapret2 state, temperatures, version, etc.) | Only if the Web Panel is installed; removed when it is uninstalled |
 | `S99kzm2_healthmon guard` | Restarts the HealthMon process if it has stopped (safety net) | Only if HealthMon is enabled; removed when it is disabled |
 
-These tasks send no data, make no outbound connections and change no settings; they run locally and exit.
+These two tasks only read local state on the router; they make no network connections and send no data out.
 
 > `/opt/bin/run-parts` lines in the log belong to Entware's own scheduler, not to KZM2.
 ---
