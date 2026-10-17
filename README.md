@@ -69,7 +69,7 @@
 
 Bu betik aşağıdaki Keenetic OS sürümlerinde test edilmiştir:
 
-- **Keenetic OS 5.1.7**
+- **Keenetic OS 5.1.8**
 - **Keenetic OS 4.3.6.4**
 
 > Daha eski Keenetic OS sürümlerinde test edilmemiştir.  
@@ -260,6 +260,21 @@ Sadece bu betiğe ait yedekler temizlenir:
 
 > DPI profili daha sonra menüden değiştirilebilir.
 
+## 🔎 Keenetic sistem log'unda görülen KZM2 kayıtları
+
+KZM2, Keenetic sistem log'una kendisi **doğrudan hiçbir şey yazmaz**. Log'da görülen KZM2 kaynaklı satırlar, yalnızca iki dakikalık görevin cron tarafından çalıştırılmasının otomatik kaydıdır (cron her çalıştırdığı komutu log'a yazar):
+
+    (root) CMD (/opt/bin/kzm2_status_gen.sh >/dev/null 2>&1)
+    (root) CMD (/opt/etc/init.d/S99kzm2_healthmon guard >/dev/null 2>&1 # KZM2_HM_GUARD)
+
+| Satır | Ne yapar | Ne zaman bulunur |
+|---|---|---|
+| `kzm2_status_gen.sh` | Web Panel'in gösterdiği durum bilgisini (Zapret2 durumu, sıcaklık, sürüm vb.) üretir | Yalnızca Web Panel kuruluysa; panel kaldırılınca silinir |
+| `S99kzm2_healthmon guard` | HealthMon süreci kapanmışsa yeniden başlatır (güvenlik ağı) | Yalnızca HealthMon etkinse; kapatılınca silinir |
+
+Bu görevler hiçbir veri göndermez, ağa bağlanmaz, ayar değiştirmez; yerelde çalışıp biter.
+
+> Log'daki `/opt/bin/run-parts` satırları KZM2'ye değil, Entware'in kendi zamanlayıcısına aittir.
 ---
 
 ## 🎛️ DPI Profili Yönetimi
