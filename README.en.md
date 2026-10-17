@@ -68,7 +68,7 @@
 
 This script has been tested on the following Keenetic OS versions:
 
-- **Keenetic OS 5.1.7**
+- **Keenetic OS 5.1.8**
 - **Keenetic OS 4.3.6.4**
 
 > Not tested on older Keenetic OS versions.  
@@ -262,6 +262,21 @@ Only backups belonging to this script are removed:
 
 > The DPI profile can be changed later from the menu.
 
+## 🔎 KZM2 entries in the Keenetic system log
+
+KZM2 **does not write anything directly** to the Keenetic system log. The KZM2-related lines you may see are only cron's automatic record of two per-minute tasks (cron logs every command it runs):
+
+    (root) CMD (/opt/bin/kzm2_status_gen.sh >/dev/null 2>&1)
+    (root) CMD (/opt/etc/init.d/S99kzm2_healthmon guard >/dev/null 2>&1 # KZM2_HM_GUARD)
+
+| Line | What it does | When present |
+|---|---|---|
+| `kzm2_status_gen.sh` | Produces the status data shown in the Web Panel (Zapret2 state, temperatures, version, etc.) | Only if the Web Panel is installed; removed when it is uninstalled |
+| `S99kzm2_healthmon guard` | Restarts the HealthMon process if it has stopped (safety net) | Only if HealthMon is enabled; removed when it is disabled |
+
+These tasks send no data, make no outbound connections and change no settings; they run locally and exit.
+
+> `/opt/bin/run-parts` lines in the log belong to Entware's own scheduler, not to KZM2.
 ---
 
 ## 🎛️ DPI Profile Management
