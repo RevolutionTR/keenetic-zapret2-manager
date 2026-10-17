@@ -272,7 +272,7 @@ KZM2, Keenetic sistem log'una kendisi **doğrudan hiçbir şey yazmaz**. Log'da 
 | `kzm2_status_gen.sh` | Web Panel'in gösterdiği durum bilgisini (Zapret2 durumu, sıcaklık, sürüm vb.) üretir | Yalnızca Web Panel kuruluysa; panel kaldırılınca silinir |
 | `S99kzm2_healthmon guard` | HealthMon süreci kapanmışsa yeniden başlatır (güvenlik ağı) | Yalnızca HealthMon etkinse; kapatılınca silinir |
 
-Bu görevler hiçbir veri göndermez, ağa bağlanmaz, ayar değiştirmez; yerelde çalışıp biter.
+Bu iki görev yalnızca router üzerindeki yerel durumu okur; ağa bağlanmaz, dışarıya veri göndermez.
 
 > Log'daki `/opt/bin/run-parts` satırları KZM2'ye değil, Entware'in kendi zamanlayıcısına aittir.
 ---
