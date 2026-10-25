@@ -37,7 +37,7 @@
 # -------------------------------------------------------------------
 SCRIPT_NAME="keenetic_zapret2_manager.sh"
 # Version scheme: vYY.M.D[.N]  (YY=year, M=month, D=day, N=daily revision)
-SCRIPT_VERSION="v26.10.1"
+SCRIPT_VERSION="v26.10.25"
 SCRIPT_REPO="https://github.com/RevolutionTR/keenetic-zapret2-manager"
 KZM2_SCRIPT_PATH="/opt/lib/opkg/keenetic_zapret2_manager.sh"
 SCRIPT_AUTHOR="RevolutionTR"
@@ -4112,13 +4112,17 @@ check_keenetic_components() {
     
     # 4. Netfilter kernel modules - CRITICAL
     # Zapret2'yin zorunlu tuttugu modul: xt_multiport
-    # Tespit sirasi: lsmod > modinfo > /lib/modules *.ko dosyasi
+    # Tespit sirasi: lsmod > modinfo > /lib/modules *.ko dosyasi > cekirdege gomulu match
+    # Gomulu (built-in) ozellik lsmod/modinfo/.ko'da gorunmez (ornek: Hopper DSL,
+    # cekirdek 4.9-ndm-5); /proc/net/ip_tables_matches kayitli match'leri listeler.
     _nfmod_ok=0
     if lsmod 2>/dev/null | grep -qE "^xt_multiport"; then
         _nfmod_ok=1
     elif modinfo xt_multiport >/dev/null 2>&1; then
         _nfmod_ok=1
     elif find /lib/modules -name "xt_multiport.ko" 2>/dev/null | grep -q .; then
+        _nfmod_ok=1
+    elif grep -qw multiport /proc/net/ip_tables_matches 2>/dev/null; then
         _nfmod_ok=1
     fi
     if [ "$_nfmod_ok" -eq 1 ]; then
@@ -14275,7 +14279,7 @@ DEOF
             else _info "grep bulunamad&#305;"; fi
             command -v gzip >/dev/null 2>&1 && _ok "gzip" || _info "gzip bulunamad&#305;"
             { command -v crond >/dev/null 2>&1 || command -v cron >/dev/null 2>&1; } && _ok "cron" || _info "cron bulunamad&#305;"
-            lsmod 2>/dev/null | grep -qE "^xt_multiport" && _ok "Netfilter Queue mod&#252;lleri" || { find /lib/modules -name "xt_multiport.ko" 2>/dev/null | grep -q . && _ok "Netfilter (xt_multiport)" || _fail "Netfilter Queue mod&#252;lleri bulunamad&#305;"; }
+            lsmod 2>/dev/null | grep -qE "^xt_multiport" && _ok "Netfilter Queue mod&#252;lleri" || { { find /lib/modules -name "xt_multiport.ko" 2>/dev/null | grep -q . || grep -qw multiport /proc/net/ip_tables_matches 2>/dev/null; } && _ok "Netfilter (xt_multiport)" || _fail "Netfilter Queue mod&#252;lleri bulunamad&#305;"; }
             { opkg list-installed 2>/dev/null | grep -qE "^xtables-addons|^kmod-ipt-xtables" || lsmod 2>/dev/null | grep -qE "^xt_condition|^xt_fuzzy"; } && _ok "Netfilter Xtables-addons geni&#351;letme paketleri" || _fail "Netfilter Xtables-addons bulunamad&#305;"
             { lsmod 2>/dev/null | grep -qi "sch_\|ntc\|^cls_" || grep -qi "SCH_INGRESS\|SCH_HTB\|SCH_HFSC" /proc/net/psched 2>/dev/null || grep -rqi "sch_ingress\|sch_htb\|CONFIG_NET_SCH" /proc/config.gz 2>/dev/null || ls /sys/kernel/debug/tracing 2>/dev/null | grep -q . || find /lib/modules -name "sch_*.ko" 2>/dev/null | grep -q .; } && _ok "Trafik Kontrol (tc) kernel mod&#252;lleri" || _info "Trafik Kontrol (tc) bulunamad&#305;"
             [ -x "/opt/zapret2/nfq2/nfqws2" ] && _ok "nfqws2 binary" || _info "nfqws binary bulunamadi"
