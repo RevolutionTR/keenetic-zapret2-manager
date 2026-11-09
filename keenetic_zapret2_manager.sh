@@ -37,7 +37,7 @@
 # -------------------------------------------------------------------
 SCRIPT_NAME="keenetic_zapret2_manager.sh"
 # Version scheme: vYY.M.D[.N]  (YY=year, M=month, D=day, N=daily revision)
-SCRIPT_VERSION="v26.10.31"
+SCRIPT_VERSION="v26.11.9"
 SCRIPT_REPO="https://github.com/RevolutionTR/keenetic-zapret2-manager"
 KZM2_SCRIPT_PATH="/opt/lib/opkg/keenetic_zapret2_manager.sh"
 SCRIPT_AUTHOR="RevolutionTR"
@@ -2145,6 +2145,8 @@ TXT_OPKG_UPGRADED_TR="opkg upgrade tamamlandi."
 TXT_OPKG_UPGRADED_EN="opkg upgrade completed."
 TXT_OPKG_UPGRADE_FAIL_TR="opkg upgrade basarisiz oldu."
 TXT_OPKG_UPGRADE_FAIL_EN="opkg upgrade failed."
+TXT_OPKG_BB_LINKS_FIXED_TR="opkg upgrade busybox komut baglantilarini silmisti, %COUNT% adet geri kuruldu."
+TXT_OPKG_BB_LINKS_FIXED_EN="opkg upgrade had removed busybox command links, %COUNT% restored."
 TXT_ROLLBACK_TITLE_TR="Betik: Yedekten Geri Don (Rollback)"
 TXT_ROLLBACK_TITLE_EN="Script: Roll Back from Backup"
 # -----------------------------
@@ -8689,6 +8691,53 @@ configure_secure_dns() {
     fi
     press_enter_to_continue
 }
+# --- opkg upgrade: busybox applet baglanti korumasi ---
+# Entware busybox paketinin prerm betigi /opt/bin ve /opt/sbin'deki busybox'a
+# giden TUM baglantilari siler; postinst ise /opt/lib/functions.sh yoksa
+# sessizce cikip bunlari geri kurmaz. 09.11.2026'da sahada goruldu (busybox
+# 1.37 -> 1.38): sh, ps, date, tr, wc, sed, awk... kayboldu, KZM2 calismadi.
+# kzm2_bb_links_save yukseltmeden ONCE busybox'a giden baglantilari kaydeder;
+# kzm2_bb_links_restore SONRA yalniz eksik olanlari ayni hedefle geri yazar.
+# Var olan dosyaya dokunulmaz. Yukseltme sonrasi ln/rm/cat gibi applet'ler de
+# yok olabilecegi icin onarim yalniz kabuk ic komutlari ve busybox tam yoluyla
+# calisir. Sonuc: _bb_fixed (geri kurulan baglanti sayisi).
+KZM2_BB_LINKS_SNAP="/tmp/kzm2_bb_links.snap"
+kzm2_bb_links_save() {
+    local _bb="/opt/bin/busybox" _f _t
+    : > "$KZM2_BB_LINKS_SNAP" 2>/dev/null || return 1
+    [ -x "$_bb" ] || return 0
+    for _f in /opt/bin/* /opt/sbin/*; do
+        [ -L "$_f" ] || continue
+        _t="$("$_bb" readlink "$_f" 2>/dev/null)"
+        case "$_t" in
+            busybox|*/busybox) printf '%s %s\n' "$_f" "$_t" >> "$KZM2_BB_LINKS_SNAP" ;;
+        esac
+    done
+    return 0
+}
+kzm2_bb_links_restore() {
+    local _bb="/opt/bin/busybox" _f _t _a
+    _bb_fixed=0
+    [ -x "$_bb" ] || return 0
+    if [ -s "$KZM2_BB_LINKS_SNAP" ]; then
+        while read -r _f _t; do
+            [ -n "$_f" ] && [ -n "$_t" ] || continue
+            if [ ! -e "$_f" ] && [ ! -L "$_f" ]; then
+                "$_bb" ln -s "$_t" "$_f" 2>/dev/null && _bb_fixed=$((_bb_fixed + 1))
+            fi
+        done < "$KZM2_BB_LINKS_SNAP"
+    elif [ -s /opt/share/busybox_applets.lst.dist ]; then
+        # Kayit yoksa busybox paketinin kendi applet listesi (postinst'in isi)
+        while read -r _a; do
+            case "$_a" in bin/*|sbin/*) ;; *) continue ;; esac
+            if [ ! -e "/opt/$_a" ] && [ ! -L "/opt/$_a" ]; then
+                "$_bb" ln -s "$_bb" "/opt/$_a" 2>/dev/null && _bb_fixed=$((_bb_fixed + 1))
+            fi
+        done < /opt/share/busybox_applets.lst.dist
+    fi
+    "$_bb" rm -f "$KZM2_BB_LINKS_SNAP" 2>/dev/null
+    return 0
+}
 run_opkg_update() {
     print_line "-"
     print_status INFO "$(T TXT_OPKG_UPDATING)"
@@ -8722,11 +8771,17 @@ run_opkg_update() {
     case "$_ans" in
         e|E|y|Y)
             print_status INFO "$(T TXT_OPKG_UPGRADING)"
-            if opkg upgrade 2>&1; then
+            kzm2_bb_links_save
+            opkg upgrade 2>&1
+            local _up_rc="$?"
+            kzm2_bb_links_restore
+            if [ "$_up_rc" -eq 0 ]; then
                 print_status PASS "$(T TXT_OPKG_UPGRADED)"
             else
                 print_status WARN "$(T TXT_OPKG_UPGRADE_FAIL)"
             fi
+            [ "${_bb_fixed:-0}" -gt 0 ] && \
+                print_status WARN "$(tpl_render "$(T TXT_OPKG_BB_LINKS_FIXED)" COUNT "$_bb_fixed")"
             ;;
         *)
             print_status INFO "$(T TXT_CANCELLED)"
@@ -14852,6 +14907,15 @@ DEOF
                 > "$_hc_out"
             trap - EXIT
             ;;
+        opkg_upgrade)
+            # Web Panel opkg yukseltmesi, busybox baglanti korumasiyla
+            # (bkz. kzm2_bb_links_save). CGI son satirdaki iki sayiyi okur.
+            kzm2_bb_links_save
+            opkg upgrade >/dev/null 2>&1
+            _up_rc="$?"
+            kzm2_bb_links_restore
+            printf 'OPKG_RC=%s BB_FIXED=%s\n' "$_up_rc" "${_bb_fixed:-0}"
+            ;;
         *) ;;
     esac
     exit 0
@@ -18484,8 +18548,23 @@ case "$ACTION" in
             fail "opkg update basarisiz"
         fi ;;
     opkg_upgrade)
-        if opkg upgrade >/dev/null 2>&1; then
-            ok "opkg upgrade tamamlandi"
+        # Yukseltme ana betikte calisir: busybox paketi /opt/bin applet
+        # baglantilarini silerse ana betik bunlari geri kurar (v26.11.9).
+        _kzm="/opt/lib/opkg/keenetic_zapret2_manager.sh"
+        if [ -f "$_kzm" ]; then
+            _r="$(KZM2_SKIP_LOCK=1 sh "$_kzm" --cgi-action opkg_upgrade 2>/dev/null)"
+            _rc="$(printf '%s\n' "$_r" | sed -n 's/^OPKG_RC=\([0-9]*\) .*/\1/p' | tail -n 1)"
+            _fx="$(printf '%s\n' "$_r" | sed -n 's/^OPKG_RC=[0-9]* BB_FIXED=\([0-9]*\)$/\1/p' | tail -n 1)"
+        else
+            opkg upgrade >/dev/null 2>&1
+            _rc="$?"; _fx=0
+        fi
+        if [ "$_rc" = "0" ]; then
+            if [ "${_fx:-0}" -gt 0 ] 2>/dev/null; then
+                ok "opkg upgrade tamamlandi (busybox baglantilari onarildi: $_fx)"
+            else
+                ok "opkg upgrade tamamlandi"
+            fi
         else
             fail "opkg upgrade basarisiz"
         fi ;;
@@ -21454,8 +21533,15 @@ if [ "$1" = "--opkg-upgrade" ]; then
     fi
     _count="$(printf '%s\n' "$_upgradable" | grep -c .)"
     _pkglist="$(printf '%s\n' "$_upgradable" | awk '{print "📦 "$1" "$2" -> "$4}' | head -20)"
+    kzm2_bb_links_save
     opkg upgrade >> "$_log" 2>&1
     _rc="$?"
+    kzm2_bb_links_restore
+    if [ "${_bb_fixed:-0}" -gt 0 ]; then
+        _bbmsg="$(tpl_render "$(T TXT_OPKG_BB_LINKS_FIXED)" COUNT "$_bb_fixed")"
+        printf '%s | opkg_upgrade | %s\n' "$_ts" "$_bbmsg" >> "$_log"
+        _pkglist="$(printf '%s\n\n%s' "$_pkglist" "$_bbmsg")"
+    fi
     if [ "$_rc" -eq 0 ] || [ "$_rc" -eq 1 ]; then
         _msg="$(tpl_render "$(T TXT_OPKG_SCHED_RUN_OK)" COUNT "$_count")"
         printf '%s | opkg_upgrade | %s\n' "$_ts" "$_msg" >> "$_log"
