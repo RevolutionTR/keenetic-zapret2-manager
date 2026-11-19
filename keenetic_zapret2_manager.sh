@@ -37,7 +37,7 @@
 # -------------------------------------------------------------------
 SCRIPT_NAME="keenetic_zapret2_manager.sh"
 # Version scheme: vYY.M.D[.N]  (YY=year, M=month, D=day, N=daily revision)
-SCRIPT_VERSION="v26.11.9"
+SCRIPT_VERSION="v26.11.19"
 SCRIPT_REPO="https://github.com/RevolutionTR/keenetic-zapret2-manager"
 KZM2_SCRIPT_PATH="/opt/lib/opkg/keenetic_zapret2_manager.sh"
 SCRIPT_AUTHOR="RevolutionTR"
@@ -818,6 +818,30 @@ kzm2_banner_get_ndmc_field() {
     # $1: field name (e.g., "model:")
     [ -n "$1" ] || return 1
     ndmc -c 'show version' 2>/dev/null | tr -d '\r' | awk -v f="$1" '$1==f{ $1=""; sub(/^[ \t]+/,""); print; exit }'
+}
+# KeenDNS (ndns) bileseni kurulu mu? (19.11.2026)
+# Bilesen yoksa 'show ndns' her cagrida Keenetic sistem log'una
+# "Command::Base: no such command: ndns." yazar (2>/dev/null gizlemez).
+# 'show version' components listesine bakilir; liste terim ortasindan da
+# bolunebildigi icin devam satirlari bosluksuz birlestirilir.
+# Sonuc /tmp/kzm2_ndns.state'e yazilir (1=var 0=yok); bilesen kurmak/kaldirmak
+# reboot gerektirir, /tmp de reboot'ta silinir. Liste okunamazsa eski davranis
+# (sorgula) korunur ve cache yazilmaz. kzm2_status_gen.sh ayni dosyayi kullanir.
+kzm2_ndns_present() {
+    local _st="/tmp/kzm2_ndns.state" _c
+    if [ ! -s "$_st" ]; then
+        _c="$(LD_LIBRARY_PATH= ndmc -c 'show version' 2>/dev/null | tr -d '\r' | awk '
+            /^[[:space:]]*components:/ { f=1; sub(/^[[:space:]]*components:/, ""); gsub(/[[:space:]]/, ""); s=$0; next }
+            f && /:/ { exit }
+            f { gsub(/[[:space:]]/, ""); s=s $0 }
+            END { if (f) print "," s "," }')"
+        case "$_c" in
+            "") return 0 ;;
+            *,ndns,*) printf '1' > "$_st" 2>/dev/null ;;
+            *) printf '0' > "$_st" 2>/dev/null ;;
+        esac
+    fi
+    [ "$(cat "$_st" 2>/dev/null)" != "0" ]
 }
 # KN numarasindan cihaz adi dondurur
 _kzm2_kn_to_name() {
@@ -7728,7 +7752,7 @@ display_menu() {
         "${CLR_RESET}" "${CLR_RESET}" "$_wan_dev" "${CLR_RESET}" \
         "$(kzm2_banner_fmt_wan_state "$_wan_state")${_wan_ip_str}"
     local _kdns_raw _kdns_access
-    _kdns_raw="$(LD_LIBRARY_PATH= ndmc -c 'show ndns' 2>/dev/null)"
+    _kdns_raw="$(kzm2_ndns_present && LD_LIBRARY_PATH= ndmc -c 'show ndns' 2>/dev/null)"
     _kdns_access="$(printf '%s\n' "$_kdns_raw" | awk '/^[[:space:]]*access:/ {print $2; exit}')"
     if [ -n "$_kdns_access" ]; then
         local _kdns_name _kdns_domain
@@ -9302,7 +9326,7 @@ run_health_check() {
     add_line "$HC_SVC" "$(T TXT_HEALTH_ZAPRET)" "" "$zap_ok"
     # KeenDNS durumu (ndns varsa goster, yoksa INFO)
     local kdns_raw kdns_name kdns_domain kdns_access kdns_can_direct
-    kdns_raw="$(LD_LIBRARY_PATH= ndmc -c 'show ndns' 2>/dev/null)"
+    kdns_raw="$(kzm2_ndns_present && LD_LIBRARY_PATH= ndmc -c 'show ndns' 2>/dev/null)"
     kdns_name="$(printf '%s\n' "$kdns_raw"   | awk '/^[[:space:]]*name:/   {print $2; exit}')"
     kdns_domain="$(printf '%s\n' "$kdns_raw" | awk '/^[[:space:]]*domain:/ {print $2; exit}')"
     kdns_access="$(printf '%s\n' "$kdns_raw" | awk '/^[[:space:]]*access:/ {print $2; exit}')"
@@ -11623,7 +11647,7 @@ tgbot_device_detail_text() {
     [ -z "$mem_val" ] && mem_val="-"
     # KeenDNS
     local kdns_str kdns_raw kdns_name kdns_domain
-    kdns_raw="$(LD_LIBRARY_PATH= ndmc -c 'show ndns' 2>/dev/null)"
+    kdns_raw="$(kzm2_ndns_present && LD_LIBRARY_PATH= ndmc -c 'show ndns' 2>/dev/null)"
     kdns_name="$(printf '%s' "$kdns_raw" | awk '/name:/{print $2; exit}')"
     kdns_domain="$(printf '%s' "$kdns_raw" | awk '/domain:/{print $2; exit}')"
     if [ -n "$kdns_name" ] && [ -n "$kdns_domain" ]; then
@@ -11728,7 +11752,7 @@ tgbot_status_text() {
     # KeenDNS
     local keendns_val
     local _kdns_raw
-    _kdns_raw="$(LD_LIBRARY_PATH= ndmc -c 'show ndns' 2>/dev/null)"
+    _kdns_raw="$(kzm2_ndns_present && LD_LIBRARY_PATH= ndmc -c 'show ndns' 2>/dev/null)"
     if [ -n "$_kdns_raw" ]; then
         local _kdns_name _kdns_domain _kdns_access
         _kdns_name="$(printf '%s\n' "$_kdns_raw" | awk '/name:/{print $2; exit}')"
@@ -14005,7 +14029,7 @@ healthmon_loop() {
         healthmon_updatecheck_do
         # ---- KEENDNS MONITOR ----
         local kdns_raw2 kdns_name2 kdns_domain2 kdns_access2
-        kdns_raw2="$(LD_LIBRARY_PATH= ndmc -c 'show ndns' 2>/dev/null)"
+        kdns_raw2="$(kzm2_ndns_present && LD_LIBRARY_PATH= ndmc -c 'show ndns' 2>/dev/null)"
         kdns_name2="$(printf '%s\n' "$kdns_raw2"   | awk '/^[[:space:]]*name:/   {print $2; exit}')"
         kdns_domain2="$(printf '%s\n' "$kdns_raw2" | awk '/^[[:space:]]*domain:/ {print $2; exit}')"
         kdns_access2="$(printf '%s\n' "$kdns_raw2" | awk '/^[[:space:]]*access:/ {print $2; exit}')"
@@ -14855,7 +14879,7 @@ DEOF
             if is_zapret2_running; then _add "svc" "$(T TXT_HEALTH_ZAPRET)" "$(T _ 'Calisiyor' 'Running')" "PASS"
             else _add "svc" "$(T TXT_HEALTH_ZAPRET)" "$(T _ 'Durduruldu' 'Stopped')" "FAIL"; fi
             # KeenDNS
-            _kdns_raw="$(LD_LIBRARY_PATH= ndmc -c 'show ndns' 2>/dev/null)"
+            _kdns_raw="$(kzm2_ndns_present && LD_LIBRARY_PATH= ndmc -c 'show ndns' 2>/dev/null)"
             _kdns_name="$(printf '%s
 ' "$_kdns_raw" | awk '/name:/ {print $2; exit}')"
             _kdns_dom="$(printf '%s
@@ -16744,7 +16768,7 @@ kzm_gui_gen_status() {
     fi
     # KeenDNS bilgisi
     local _kdns_raw _kdns_access _kdns_fqdn
-    _kdns_raw="$(LD_LIBRARY_PATH= ndmc -c 'show ndns' 2>/dev/null)"
+    _kdns_raw="$(kzm2_ndns_present && LD_LIBRARY_PATH= ndmc -c 'show ndns' 2>/dev/null)"
     _kdns_access="$(printf '%s\n' "$_kdns_raw" | awk '/^[[:space:]]*access:/ {print $2; exit}')"
     _kdns_fqdn=""
     if [ -n "$_kdns_access" ]; then
@@ -17024,7 +17048,25 @@ esac
 [ -z "$_fw" ] && _fw="$(cat /opt/var/run/kzm2_hw_firmware 2>/dev/null | tr -d '\n')"
 [ -z "$_fw" ] && _fw="Unknown"
 _ts="$(date +%s 2>/dev/null)"; [ -z "$_ts" ] && _ts=0
-_kdns_raw="$(LD_LIBRARY_PATH= ndmc -c 'show ndns' 2>/dev/null)"
+# KeenDNS bileseni yoksa 'show ndns' Keenetic log'una her dakika "no such command" yazar.
+# Ana script'teki kzm2_ndns_present ile ayni mantik ve ayni cache (/tmp/kzm2_ndns.state).
+kzm2_ndns_present() {
+    _st="/tmp/kzm2_ndns.state"
+    if [ ! -s "$_st" ]; then
+        _c="$(LD_LIBRARY_PATH= ndmc -c 'show version' 2>/dev/null | tr -d '\r' | awk '
+            /^[[:space:]]*components:/ { f=1; sub(/^[[:space:]]*components:/, ""); gsub(/[[:space:]]/, ""); s=$0; next }
+            f && /:/ { exit }
+            f { gsub(/[[:space:]]/, ""); s=s $0 }
+            END { if (f) print "," s "," }')"
+        case "$_c" in
+            "") return 0 ;;
+            *,ndns,*) printf '1' > "$_st" 2>/dev/null ;;
+            *) printf '0' > "$_st" 2>/dev/null ;;
+        esac
+    fi
+    [ "$(cat "$_st" 2>/dev/null)" != "0" ]
+}
+_kdns_raw="$(kzm2_ndns_present && LD_LIBRARY_PATH= ndmc -c 'show ndns' 2>/dev/null)"
 _kdns_access="$(printf '%s\n' "$_kdns_raw" | awk '/^[[:space:]]*access:/ {print $2; exit}')"
 _kdns_fqdn=""
 if [ -n "$_kdns_access" ]; then
@@ -21608,10 +21650,11 @@ if [ -d "$KZM2_GUI_DIR" ]; then
         kzm_gui_write_html
         kzm_gui_write_cgi
     fi
-    # status_gen'de theme alani yoksa veya df -P eksikse yeniden olustur
+    # status_gen'de theme alani yoksa, df -P eksikse veya KeenDNS bilesen kontrolu yoksa yeniden olustur
     if [ -f "$KZM2_GUI_STATUS_SCRIPT" ] && \
        { ! grep -q '"theme"' "$KZM2_GUI_STATUS_SCRIPT" 2>/dev/null || \
-         grep -q 'df /opt' "$KZM2_GUI_STATUS_SCRIPT" 2>/dev/null; }; then
+         grep -q 'df /opt' "$KZM2_GUI_STATUS_SCRIPT" 2>/dev/null || \
+         ! grep -q 'kzm2_ndns_present' "$KZM2_GUI_STATUS_SCRIPT" 2>/dev/null; }; then
         kzm_gui_write_status_script 2>/dev/null
     fi
 fi
